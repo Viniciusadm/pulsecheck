@@ -8,9 +8,9 @@ Include what you found, how to reproduce it and the impact you expect. You will 
 
 Issues of particular interest:
 
-- Ways to make the server request internal addresses (SSRF), including through redirects, DNS or URL parsing tricks.
+- Ways to make the server request internal addresses (SSRF) from checks or notification webhooks, including through redirects, DNS or URL parsing tricks.
 - Access to another user's monitors, results, incidents or settings.
-- Exposure of the Telegram bot token, `APP_KEY` or other secrets in responses or logs.
+- Exposure of notification channel secrets (Telegram bot token, Slack or Discord webhook URLs, webhook headers), `APP_KEY` or other secrets in responses or logs.
 
 ## Supported versions
 

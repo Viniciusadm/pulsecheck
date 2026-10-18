@@ -1,6 +1,6 @@
 # PulseCheck
 
-Self-hosted uptime monitoring: PulseCheck checks your websites and APIs every few minutes, records response times and incidents, and tells you on Telegram when something goes down and when it comes back.
+Self-hosted uptime monitoring: PulseCheck checks your websites and APIs every few minutes, records response times and incidents, and alerts you on Telegram, Slack, Discord, email or any webhook when something goes down and when it comes back.
 
 ![Dashboard with five monitors, one of them down, and recent incidents](screenshots/dashboard.png)
 
@@ -13,7 +13,7 @@ Self-hosted uptime monitoring: PulseCheck checks your websites and APIs every fe
 - **Incidents** with cause, start, end and duration; one incident per outage.
 - **Metrics**: uptime per period (24 h, 7 d, 30 d), average and 95th percentile response time, latency chart and a 30-day availability bar that tells "no data" apart from "100%".
 - **Check history** with date filters and pagination.
-- **Telegram notifications** on down and recovery, with a test button; the bot token is stored encrypted and never shown again.
+- **Notification channels** on down and recovery: Telegram, Slack, Discord, email and a generic JSON webhook for anything else. Each monitor picks its channels; every channel has a test button, and secrets (tokens, webhook URLs, headers) are stored encrypted and never shown again.
 - **Accounts** with registration, login and password reset; every user only sees their own monitors.
 - **SSRF protection**: monitors cannot reach private networks, cloud metadata endpoints or other internal addresses, including through redirects or DNS tricks.
 - **Single `docker compose up`** on any Linux server; Redis is optional.
@@ -30,20 +30,23 @@ More screenshots: [login](screenshots/login.png), [settings](screenshots/setting
 flowchart LR
     browser[Browser] -->|HTTP| web[web: Nginx<br/>SPA + reverse proxy]
     web -->|/api, /sanctum, /up<br/>FastCGI| app[app: PHP-FPM<br/>Laravel API]
+    web -->|/app<br/>WebSocket| reverb[reverb:<br/>reverb:start]
+    workers -->|check recorded| reverb
     app --> db[(db: PostgreSQL)]
     scheduler[scheduler:<br/>schedule:work] -->|every minute:<br/>dispatch due monitors| queue[(queue:<br/>jobs table or Redis)]
     queue --> workers[queue: workers<br/>queue:work × N]
     workers -->|pinned IP, no proxy,<br/>revalidated redirects| targets([Monitored sites])
     workers --> db
-    workers -->|down / recovered| telegram([Telegram Bot API])
+    workers -->|down / recovered| channels([Telegram, Slack, Discord,<br/>email, webhooks])
     migrate[migrate:<br/>one-shot] -.->|before app, queue,<br/>scheduler start| db
 ```
 
 | Service | Responsibility |
 |---|---|
-| `web` | Nginx: serves the React build, proxies `/api`, `/sanctum` and `/up` to PHP-FPM, adds security headers. The only published port. |
+| `web` | Nginx: serves the React build, proxies `/api`, `/sanctum` and `/up` to PHP-FPM and `/app` (WebSocket) to Reverb, adds security headers. The only published port. |
 | `app` | PHP-FPM running the Laravel API (authentication, monitors, metrics, settings). |
-| `queue` | Workers (`QUEUE_WORKERS`, default 2) that run checks and send Telegram notifications. |
+| `queue` | Workers (`QUEUE_WORKERS`, default 2) that run checks and send notifications. |
+| `reverb` | Laravel Reverb WebSocket server. Pushes every recorded check to the owner's browser, so the dashboard, the monitor list and the monitor page update immediately (they still poll as a fallback). |
 | `scheduler` | Runs `monitors:dispatch-due` every minute and prunes old check results daily. |
 | `migrate` | Applies database migrations once, before the other PHP services start. |
 | `db` | PostgreSQL 17. Not reachable from outside the Compose network. |
@@ -54,7 +57,7 @@ flowchart LR
 1. Every minute the scheduler selects active monitors whose `next_check_at` has passed, moves `next_check_at` forward by the monitor's interval and queues one `RunMonitorCheck` job each (jobs are unique per monitor).
 2. A worker validates the URL again, resolves the host, rejects forbidden addresses and connects to the validated IP (`CURLOPT_RESOLVE`), following redirects manually and revalidating every hop, within the monitor's total timeout.
 3. In one database transaction with the monitor row locked, the result is stored and the state machine updates counters and status, opening or resolving an incident when the threshold is crossed.
-4. After the transaction commits, a down or recovery event queues a Telegram notification if the user enabled it.
+4. After the transaction commits, a down or recovery event queues one notification per enabled channel attached to the monitor, and the updated monitor is broadcast on the owner's private channel (`private-users.{id}`). A broadcast failure is logged and never discards the check.
 
 ## Tech stack
 
@@ -95,7 +98,7 @@ All variables live in the `.env` file next to `docker-compose.yml` (template: [`
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `APP_KEY` | **yes** | — | Encryption key for sessions and the stored Telegram token. Keep it secret and do not change it: stored tokens become unreadable. |
+| `APP_KEY` | **yes** | — | Encryption key for sessions and the stored notification channel secrets. Keep it secret and do not change it: stored secrets become unreadable. |
 | `APP_URL` | **yes** | — | Public address without trailing slash, e.g. `https://status.example.com`. Used for links in emails and to accept the SPA's session cookies. |
 | `DB_PASSWORD` | **yes** | — | PostgreSQL password, used by both the database and the application. |
 | `APP_PORT` | no | `80` | Host port published by the `web` container. |
@@ -106,6 +109,7 @@ All variables live in the `.env` file next to `docker-compose.yml` (template: [`
 | `LOG_LEVEL` | no | `info` | Laravel log level; logs go to the container output. |
 | `QUEUE_CONNECTION` / `CACHE_STORE` / `SESSION_DRIVER` | no | `database` | Set all three to `redis` to use Redis (see below). |
 | `REDIS_PASSWORD` | only with Redis | empty | Password required by the `redis` service. |
+| `REVERB_APP_KEY` / `REVERB_APP_SECRET` | no | `pulsecheck` / derived from `APP_KEY` | Credentials shared by the API and the `reverb` service. The key is public (sent to the browser); the secret signs channel subscriptions. |
 | `MAIL_MAILER` | no | `log` | `smtp` to send password reset emails. With `log`, emails (including reset links, which are valid for 60 minutes) are written to the container logs: anyone who can read the logs could use them. Configure SMTP in production. |
 | `MAIL_SCHEME`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` | with SMTP | empty, `587` | SMTP connection (`MAIL_SCHEME=smtps` for port 465). |
 | `MAIL_FROM_ADDRESS` / `MAIL_FROM_NAME` | no | `no-reply@example.com` / `PulseCheck` | Sender of password reset emails. |
@@ -176,7 +180,7 @@ Daily backup at 03:30 with cron (`crontab -e`, adjust the path; `%` must be esca
 30 3 * * * cd /opt/pulsecheck && mkdir -p backups && docker compose exec -T db pg_dump -U pulsecheck -d pulsecheck -Fc > backups/pulsecheck-$(date +\%F).dump
 ```
 
-Keep `.env` (especially `APP_KEY`) with your backups: without the same key, stored Telegram tokens cannot be decrypted.
+Keep `.env` (especially `APP_KEY`) with your backups: without the same key, stored notification channel secrets cannot be decrypted.
 
 ## Deploy on Hostinger
 
@@ -190,7 +194,7 @@ Before deploying, set these three variables in the Docker Manager (everything el
 - `APP_URL`: the address users will open, e.g. `http://YOUR_SERVER_IP` or your domain.
 - `DB_PASSWORD`: a long random string.
 
-The images are published by the release workflow when a `v*.*.*` tag is pushed; `PULSECHECK_VERSION` selects the image tag (default `1.0.0`). You can also deploy on any Hostinger VPS (or other server) with the regular [Quick start](#quick-start-docker-compose).
+The images are published by the release workflow when a `v*.*.*` tag is pushed; `PULSECHECK_VERSION` selects the image tag (default `1.1.0`; real-time updates need 1.1.0 or newer). You can also deploy on any Hostinger VPS (or other server) with the regular [Quick start](#quick-start-docker-compose).
 
 ## Local development
 
@@ -215,10 +219,11 @@ Run each of these in its own terminal:
 cd back && php artisan serve           # API on http://localhost:8000
 cd back && php artisan queue:work      # runs checks and notifications
 cd back && php artisan schedule:work   # dispatches due checks every minute
+cd back && php artisan reverb:start    # WebSocket server on port 8080
 cd web && npm install && npm run dev   # SPA on http://localhost:5173
 ```
 
-Open http://localhost:5173 and log in as `demo@example.com` / `password`. The Vite dev server proxies `/api` and `/sanctum` to port 8000, so the SPA and the API share one origin, as in production.
+Open http://localhost:5173 and log in as `demo@example.com` / `password`. The Vite dev server proxies `/api` and `/sanctum` to port 8000 and the `/app` WebSocket to port 8080, so the SPA and the API share one origin, as in production.
 
 > **`DevelopmentSeeder` is for development only.** It creates the demo user and a week of generated check history. It is not called by `DatabaseSeeder` and refuses to run when `APP_ENV=production`.
 
@@ -232,7 +237,7 @@ cd back && vendor/bin/pint --test  # code style
 cd web && npm run lint && npm run test && npm run build
 ```
 
-The development container creates `pulsecheck_test` automatically. Tests never call real external services: HTTP checks use a mocked Guzzle handler and fake DNS, Telegram uses `Http::fake()`.
+The development container creates `pulsecheck_test` automatically. Tests never call real external services: HTTP checks and webhook deliveries use a mocked Guzzle handler and fake DNS, Telegram uses `Http::fake()` and email uses `Mail::fake()`.
 
 Redis integration tests (queue, unique-job locks and cache on a real Redis) are in the `redis` group and are excluded from the default run. With the development Redis running (`docker compose -f docker-compose.dev.yml --profile redis up -d`):
 
@@ -241,6 +246,43 @@ cd back && php artisan test --group=redis
 ```
 
 They use Redis databases 15 and 14, so data in the default databases is never touched. GitHub Actions (`.github/workflows/ci.yml`) runs the backend suite with Pint, the Redis group, the frontend checks and the Docker build on pushes to `master` and on pull requests. Pushing a `vX.Y.Z` tag runs `.github/workflows/release.yml`, which publishes the `app` and `web` images to GitHub Container Registry.
+
+## Notifications
+
+Each user adds notification channels in **Settings** and picks, per monitor, which channels get its alerts. Channels marked *default* are selected automatically for new monitors. An alert is sent when a monitor goes down and when it recovers; deliveries are queued, retried twice on connection errors, timeouts, 429 and 5xx responses, and never block checks.
+
+| Channel | Settings | Notes |
+|---|---|---|
+| Telegram | Bot token, chat ID | Plain-text message through the Bot API. |
+| Slack | Incoming webhook URL (`https://hooks.slack.com/…`) | Block Kit message. |
+| Discord | Webhook URL (`https://discord.com/api/webhooks/…`) | Colored embed, mentions disabled. |
+| Email | Address | Sent with the mailer configured in `MAIL_*`. |
+| Webhook | URL, optional headers (up to 10) | JSON `POST` for any other service (PagerDuty, Opsgenie, n8n, Zapier, your own API…). |
+
+Slack, Discord and webhook deliveries go through the same SSRF guard as checks: private and internal addresses are refused, the connection is pinned to the validated IP and redirects are not followed. Webhook headers can carry credentials such as `Authorization`; `Host`, `Content-Type`, `Content-Length`, `Transfer-Encoding`, `Connection` and `User-Agent` are reserved.
+
+Webhook payload (version 1). `event` is `monitor.down`, `monitor.recovered` or `test` (with `monitor` and `incident` set to `null`); `monitor.host` never contains the URL path or query string. Any 2xx response counts as delivered.
+
+```json
+{
+  "version": 1,
+  "event": "monitor.down",
+  "severity": "critical",
+  "title": "🔴 Shop API is DOWN",
+  "text": "🔴 Shop API is DOWN\nHost: shop.example.com\nCause: timeout: Operation timed out\nSince: 2026-10-17 12:00:00 UTC",
+  "occurred_at": "2026-10-17T12:00:00Z",
+  "monitor": { "id": 7, "name": "Shop API", "host": "shop.example.com" },
+  "incident": {
+    "id": 3,
+    "cause": "timeout: Operation timed out",
+    "started_at": "2026-10-17T12:00:00Z",
+    "resolved_at": null,
+    "duration_seconds": null
+  }
+}
+```
+
+`severity` is `critical` for `monitor.down`, `resolved` for `monitor.recovered` and `info` for `test`. On recovery, `resolved_at` and `duration_seconds` are filled.
 
 ## Uptime
 
@@ -282,9 +324,9 @@ What is **not** guaranteed:
 
 - Users only see their own data: monitor routes resolve only the signed-in user's monitors and are also checked by a policy; another user's IDs return 404.
 - Session cookies are `HttpOnly`, `SameSite=Lax` and `Secure` when `SESSION_SECURE_COOKIE=true`; state-changing requests require the CSRF token.
-- The Telegram bot token is encrypted with `APP_KEY`, never returned by the API, never logged, and Telegram errors are reported with generic messages.
+- Notification channel settings are encrypted with `APP_KEY`. Secrets (Telegram bot token, Slack and Discord webhook URLs, webhook headers) are never returned by the API or logged, and delivery errors are reported with generic messages.
 - Error messages stored for failed checks drop URL query strings and are truncated.
-- Rate limits (per minute): login 5 per email and IP; registration, forgot-password and reset-password 5 per IP; monitor changes 30 per user; Telegram test messages 5 per user.
+- Rate limits (per minute): login 5 per email and IP; registration, forgot-password and reset-password 5 per IP; monitor and notification channel changes 30 per user; test notifications 5 per user.
 - Production passwords need at least 8 characters with mixed case and numbers, and are checked against known breaches.
 - Registration can be closed with `PULSECHECK_REGISTRATION_ENABLED=false`.
 - Password reset links contain a token: Nginx does not write `/reset-password` requests to its access log, but the `log` mailer writes the emails to the container logs, so use SMTP in production.
@@ -318,10 +360,10 @@ docker compose exec app ls -ld storage bootstrap/cache
 
 **"CSRF token mismatch" (HTTP 419) or being logged out right after logging in.** Usually a proxy or cookie mismatch: `APP_URL` must be exactly the address in the browser (scheme, host and port); behind HTTPS set `SESSION_SECURE_COOKIE=true`; behind a proxy set `TRUSTED_PROXIES`. Then recreate the PHP containers so the configuration cache is rebuilt: `docker compose up -d`.
 
-**Telegram notifications do not arrive.** Use *Send test message* in Settings: "rejected the token or chat ID" means the token or chat ID is wrong or the bot cannot write to that chat (send the bot a message first, or add it to the group or channel). Notifications are only sent on state changes (down and recovery), not on every failed check. Failed deliveries are logged without secrets:
+**Notifications do not arrive.** Use *Send test* next to the channel in Settings. "The destination rejected the notification" means the destination answered with an error such as 401, 403 or 404: for Telegram the token or chat ID is wrong or the bot cannot write to that chat (send the bot a message first, or add it to the group or channel); for Slack and Discord the webhook was deleted; for a webhook the URL or headers are wrong, or it redirected. Check also that the channel is enabled and selected in the monitor's settings. Notifications are only sent on state changes (down and recovery), not on every failed check. Failed deliveries are logged without secrets:
 
 ```sh
-docker compose logs queue | grep -i telegram
+docker compose logs queue | grep -i "notification delivery failed"
 ```
 
 **Every monitor fails with "Blocked destination".** The server's DNS resolver is returning private addresses (split-horizon DNS, a filtering resolver, or monitoring internal hosts). Check what the container resolves:
