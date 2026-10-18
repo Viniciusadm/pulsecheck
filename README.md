@@ -180,7 +180,7 @@ Keep `.env` (especially `APP_KEY`) with your backups: without the same key, stor
 
 ## Deploy on Hostinger
 
-[![Deploy on Hostinger](https://assets.hostinger.com/vps/deploy.svg)](https://www.hostinger.com/docker-hosting?compose_url=https://raw.githubusercontent.com/Viniciusadm/pulsecheck/refs/heads/main/docker-compose.hostinger.yml)
+[![Deploy on Hostinger](https://assets.hostinger.com/vps/deploy.svg)](https://www.hostinger.com/docker-hosting?compose_url=https://raw.githubusercontent.com/Viniciusadm/pulsecheck/refs/heads/master/docker-compose.hostinger.yml)
 
 The button opens Hostinger's Docker hosting checkout and then the Docker Manager with [`docker-compose.hostinger.yml`](docker-compose.hostinger.yml). That file works from its URL alone: it uses prebuilt images from GitHub Container Registry, needs no other file from the repository, and uses the `database` drivers (no Redis).
 
