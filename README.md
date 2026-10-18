@@ -180,19 +180,17 @@ Keep `.env` (especially `APP_KEY`) with your backups: without the same key, stor
 
 ## Deploy on Hostinger
 
-<!-- HOSTINGER DEPLOY BUTTON: insert the official button and referral code here after the project is approved. See docs/hostinger.md. -->
+[![Deploy on Hostinger](https://assets.hostinger.com/vps/deploy.svg)](https://www.hostinger.com/docker-hosting?compose_url=https://raw.githubusercontent.com/Viniciusadm/pulsecheck/refs/heads/main/docker-compose.hostinger.yml)
 
-PulseCheck ships a Compose file for Hostinger's "Deploy on Hostinger" flow, [`docker-compose.hostinger.yml`](docker-compose.hostinger.yml). It works from its URL alone: it uses prebuilt images from GitHub Container Registry, needs no other file from the repository, and uses the `database` drivers (no Redis).
+The button opens Hostinger's Docker hosting checkout and then the Docker Manager with [`docker-compose.hostinger.yml`](docker-compose.hostinger.yml). That file works from its URL alone: it uses prebuilt images from GitHub Container Registry, needs no other file from the repository, and uses the `database` drivers (no Redis).
 
-The one-click button is **not available yet**: it needs the published images and a confirmed setup on Hostinger. Until then you can deploy on any Hostinger VPS (or other server) with the regular [Quick start](#quick-start-docker-compose).
-
-When the deploy runs, set these three variables (everything else has safe defaults):
+Before deploying, set these three variables in the Docker Manager (everything else has safe defaults); the deploy stops with a clear error if one is missing:
 
 - `APP_KEY`: `base64:` plus 32 random bytes, e.g. `echo "base64:$(openssl rand -base64 32)"`.
 - `APP_URL`: the address users will open, e.g. `http://YOUR_SERVER_IP` or your domain.
 - `DB_PASSWORD`: a long random string.
 
-**Updating the button.** When Hostinger provides the final link, replace the comment above with the official Markdown snippet from their [button documentation](https://www.hostinger.com/support/deploy-on-hostinger-button/), using the raw URL of `docker-compose.hostinger.yml` as `compose_url` and a real referral code, if any. The research notes, what was validated and what is still pending confirmation from Hostinger are in [docs/hostinger.md](docs/hostinger.md).
+The images are published by the release workflow when a `v*.*.*` tag is pushed; `PULSECHECK_VERSION` selects the image tag (default `1.0.0`). You can also deploy on any Hostinger VPS (or other server) with the regular [Quick start](#quick-start-docker-compose).
 
 ## Local development
 

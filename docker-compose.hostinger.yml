@@ -7,7 +7,7 @@ x-app-environment: &app-environment
   APP_NAME: ${APP_NAME:-PulseCheck}
   APP_ENV: production
   APP_DEBUG: "false"
-  APP_KEY: ${APP_KEY:?Set the APP_KEY environment variable (see docs/hostinger.md)}
+  APP_KEY: ${APP_KEY:?Set the APP_KEY environment variable (see the README, Deploy on Hostinger)}
   APP_URL: ${APP_URL:?Set the APP_URL environment variable, e.g. http://YOUR_SERVER_IP}
   FRONTEND_URL: ${APP_URL}
   LOG_CHANNEL: stderr
