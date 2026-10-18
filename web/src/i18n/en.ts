@@ -101,7 +101,7 @@ export const en = {
       up: 'Up',
       down: 'Down',
       paused: 'Paused',
-      pending: '{count} waiting for their first checks',
+      pending: '{count} awaiting first check',
     },
     attentionHeading: 'Needs attention',
     allHealthy: 'All monitors are operating normally',

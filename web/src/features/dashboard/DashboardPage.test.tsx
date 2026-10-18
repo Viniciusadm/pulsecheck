@@ -72,6 +72,16 @@ describe('DashboardPage', () => {
     expect(within(summary).getByRole('link', { name: 'Paused' })).toHaveAttribute('href', '/monitors?status=paused')
   })
 
+  it('notes pending monitors inside the total card', async () => {
+    vi.mocked(dashboardApi.getDashboardSummary).mockResolvedValue({ total: 3, up: 0, down: 0, pending: 3, paused: 0 })
+
+    renderApp('/dashboard')
+
+    const summary = await screen.findByRole('region', { name: 'Status summary' })
+    const total = await within(summary).findByRole('link', { name: 'Monitors' })
+    expect(within(total.closest('div')!).getByText('3 awaiting first check')).toBeInTheDocument()
+  })
+
   it('lists only the monitors that are down under needs attention', async () => {
     vi.mocked(monitorsApi.listMonitors).mockResolvedValue(
       paginated([makeMonitor({ id: 8, name: 'Blog', url: 'https://blog.example.com', status: 'down', last_status_code: 503 })]),

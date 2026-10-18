@@ -16,33 +16,40 @@ export function StatusSummaryWidget() {
 
 function SummaryCards({ summary }: { summary: DashboardSummary }) {
   const cards = [
-    { label: t('dashboard.summary.total'), value: summary.total, icon: null, tone: 'text-neutral-900', to: '/monitors' },
-    { label: t('dashboard.summary.up'), value: summary.up, icon: <UpIcon />, tone: 'text-status-up', to: '/monitors?status=up' },
-    { label: t('dashboard.summary.down'), value: summary.down, icon: <DownIcon />, tone: 'text-status-down', to: '/monitors?status=down' },
-    { label: t('dashboard.summary.paused'), value: summary.paused, icon: <PausedIcon />, tone: 'text-status-paused', to: '/monitors?status=paused' },
+    {
+      label: t('dashboard.summary.total'),
+      value: summary.total,
+      icon: null,
+      tone: 'text-neutral-900',
+      to: '/monitors',
+      note: summary.pending > 0 ? t('dashboard.summary.pending', { count: summary.pending }) : null,
+    },
+    { label: t('dashboard.summary.up'), value: summary.up, icon: <UpIcon />, tone: 'text-status-up', to: '/monitors?status=up', note: null },
+    { label: t('dashboard.summary.down'), value: summary.down, icon: <DownIcon />, tone: 'text-status-down', to: '/monitors?status=down', note: null },
+    { label: t('dashboard.summary.paused'), value: summary.paused, icon: <PausedIcon />, tone: 'text-status-paused', to: '/monitors?status=paused', note: null },
   ]
 
   return (
-    <div className="flex flex-col gap-2">
-      <dl className="grid grid-cols-2 gap-3 @2xl:grid-cols-4">
-        {cards.map(({ label, value, icon, tone, to }) => (
-          <div
-            key={label}
-            className={`relative flex flex-col gap-0.5 rounded-lg border bg-surface px-4 py-2 hover:border-primary-300 ${
-              tone === 'text-status-down' && value > 0 ? 'border-status-down/40' : 'border-border'
-            }`}
-          >
-            <dt className={`flex items-center gap-1.5 text-sm font-medium ${tone}`}>
-              {icon}
-              <Link to={to} className="after:absolute after:inset-0 after:rounded-lg focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-primary-200">
-                {label}
-              </Link>
-            </dt>
-            <dd className="text-2xl font-semibold tabular-nums text-neutral-900">{value}</dd>
-          </div>
-        ))}
-      </dl>
-      {summary.pending > 0 && <p className="text-xs text-neutral-500">{t('dashboard.summary.pending', { count: summary.pending })}</p>}
-    </div>
+    <dl className="grid grid-cols-2 gap-3 @2xl:grid-cols-4">
+      {cards.map(({ label, value, icon, tone, to, note }) => (
+        <div
+          key={label}
+          className={`relative flex flex-col gap-0.5 rounded-lg border bg-surface px-4 py-2 hover:border-primary-300 ${
+            tone === 'text-status-down' && value > 0 ? 'border-status-down/40' : 'border-border'
+          }`}
+        >
+          <dt className={`flex items-center gap-1.5 text-sm/5 font-medium ${tone}`}>
+            {icon}
+            <Link to={to} className="after:absolute after:inset-0 after:rounded-lg focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-primary-200">
+              {label}
+            </Link>
+          </dt>
+          <dd className="flex min-w-0 items-baseline gap-2">
+            <span className="text-2xl font-semibold tabular-nums text-neutral-900">{value}</span>
+            {note && <span className="truncate text-xs text-neutral-500">{note}</span>}
+          </dd>
+        </div>
+      ))}
+    </dl>
   )
 }

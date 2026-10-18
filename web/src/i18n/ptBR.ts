@@ -103,7 +103,7 @@ export const ptBR = {
       up: 'No ar',
       down: 'Fora do ar',
       paused: 'Pausados',
-      pending: '{count} aguardando as primeiras checagens',
+      pending: '{count} aguardando checagem',
     },
     attentionHeading: 'Precisa de atenção',
     allHealthy: 'Todos os monitores estão operando normalmente',
