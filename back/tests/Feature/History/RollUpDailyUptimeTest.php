@@ -79,7 +79,7 @@ class RollUpDailyUptimeTest extends TestCase
             ->keyBy('date');
 
         $this->assertCount(90, $days);
-        $this->assertSame(['date' => '2026-08-18', 'total_checks' => 2, 'successful_checks' => 1, 'uptime_percentage' => 50], $days['2026-08-18']);
+        $this->assertSame(['date' => '2026-08-18', 'total_checks' => 2, 'successful_checks' => 1, 'degraded_checks' => 0, 'uptime_percentage' => 50], $days['2026-08-18']);
         $this->assertSame(1, $days['2026-10-16']['total_checks']);
         $this->assertSame(1, $days['2026-10-17']['total_checks']);
         $this->assertNull($days['2026-08-19']['uptime_percentage']);

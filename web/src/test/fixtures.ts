@@ -53,9 +53,14 @@ export function makeMonitor(overrides: Partial<Monitor> = {}): Monitor {
   return {
     id: 7,
     name: 'Shop API',
+    type: 'http',
     url: 'https://shop.example.com/health',
+    options: { method: 'GET', follow_redirects: true, expected_status_codes: ['200-399'], body_content_type: null },
+    secrets_set: [],
+    auth_type: 'none',
     interval_minutes: 5,
     timeout_seconds: 10,
+    latency_threshold_ms: null,
     status: 'up',
     is_paused: false,
     last_status_code: 200,
@@ -77,6 +82,7 @@ export function paginated<T>(data: T[]): PaginatedResponse<T> {
 
 export const openIncident: Incident = {
   id: 3,
+  kind: 'outage',
   started_at: '2026-10-17T10:00:00Z',
   resolved_at: null,
   cause: 'timeout: Connection timed out after 10000 milliseconds',
@@ -92,6 +98,7 @@ export function makeStats(overrides: Partial<MonitorStats> = {}): MonitorStats {
     to: '2026-10-17T12:00:00Z',
     total_checks: 0,
     successful_checks: 0,
+    degraded_checks: 0,
     uptime_percentage: null,
     average_latency_ms: null,
     p95_latency_ms: null,
@@ -102,8 +109,8 @@ export function makeStats(overrides: Partial<MonitorStats> = {}): MonitorStats {
 export const emptyLatency: LatencySeries = { period: '24h', bucket_minutes: 15, buckets: [] }
 
 export const emptyUptimeDays: UptimeDay[] = [
-  { date: '2026-10-16', total_checks: 0, successful_checks: 0, uptime_percentage: null },
-  { date: '2026-10-17', total_checks: 0, successful_checks: 0, uptime_percentage: null },
+  { date: '2026-10-16', total_checks: 0, successful_checks: 0, degraded_checks: 0, uptime_percentage: null },
+  { date: '2026-10-17', total_checks: 0, successful_checks: 0, degraded_checks: 0, uptime_percentage: null },
 ]
 
 export function makeTeam(overrides: Partial<Team> = {}): Team {

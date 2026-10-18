@@ -130,6 +130,12 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
             <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-neutral-600">
               <span>{t('monitors.detail.interval', { minutes: monitor.interval_minutes })}</span>
               <span>{t('monitors.detail.timeout', { seconds: monitor.timeout_seconds })}</span>
+              <span>
+                {t('monitors.detail.request', {
+                  method: monitor.options.method ?? 'GET',
+                  codes: (monitor.options.expected_status_codes ?? ['200-399']).join(', '),
+                })}
+              </span>
               {monitor.last_checked_at && (
                 <RelativeTime value={monitor.last_checked_at} format={(time) => t('monitors.detail.lastCheck', { time })} />
               )}
@@ -178,7 +184,7 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
           {latency.isError && <ErrorState onRetry={() => void latency.refetch()} />}
           {latency.data && (
             <Suspense fallback={<Skeleton className="h-56" />}>
-              <LatencyChart series={latency.data} />
+              <LatencyChart series={latency.data} thresholdMs={monitor.latency_threshold_ms} />
             </Suspense>
           )}
         </Card>

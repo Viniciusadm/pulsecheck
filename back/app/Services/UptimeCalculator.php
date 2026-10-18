@@ -16,6 +16,7 @@ class UptimeCalculator
             ->toBase()
             ->selectRaw('count(*) as total_checks')
             ->selectRaw('count(*) filter (where is_success) as successful_checks')
+            ->selectRaw('count(*) filter (where is_degraded) as degraded_checks')
             ->selectRaw('avg(latency_ms) filter (where is_success) as average_latency_ms')
             ->selectRaw('percentile_cont(0.95) within group (order by latency_ms) filter (where is_success and latency_ms is not null) as p95_latency_ms')
             ->first();
@@ -26,6 +27,7 @@ class UptimeCalculator
         return [
             'total_checks' => $totalChecks,
             'successful_checks' => $successfulChecks,
+            'degraded_checks' => (int) $row->degraded_checks,
             'uptime_percentage' => self::percentage($successfulChecks, $totalChecks),
             'average_latency_ms' => $row->average_latency_ms === null ? null : (int) round((float) $row->average_latency_ms),
             'p95_latency_ms' => $row->p95_latency_ms === null ? null : (int) round((float) $row->p95_latency_ms),
@@ -40,7 +42,7 @@ class UptimeCalculator
             ->where('date', '>=', $firstDay->toDateString())
             ->toBase()
             ->selectRaw("to_char(date, 'YYYY-MM-DD') as day")
-            ->addSelect(['total_checks', 'successful_checks'])
+            ->addSelect(['total_checks', 'successful_checks', 'degraded_checks'])
             ->orderBy('date')
             ->get()
             ->keyBy('day');
@@ -53,6 +55,7 @@ class UptimeCalculator
             ->selectRaw("to_char(started_at at time zone 'UTC', 'YYYY-MM-DD') as day")
             ->selectRaw('count(*) as total_checks')
             ->selectRaw('count(*) filter (where is_success) as successful_checks')
+            ->selectRaw('count(*) filter (where is_degraded) as degraded_checks')
             ->groupBy('day')
             ->get()
             ->keyBy('day');
@@ -69,6 +72,7 @@ class UptimeCalculator
                     'date' => $day,
                     'total_checks' => $totalChecks,
                     'successful_checks' => $successfulChecks,
+                    'degraded_checks' => (int) ($rows[$day]->degraded_checks ?? 0),
                     'uptime_percentage' => self::percentage($successfulChecks, $totalChecks),
                 ];
             })

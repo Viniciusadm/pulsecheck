@@ -2,12 +2,15 @@
 
 namespace App\Actions;
 
-use App\Enums\MonitorStatus;
+use App\Enums\IncidentKind;
 use App\Enums\Transition;
 use App\Events\MonitorChecked;
+use App\Events\MonitorDegradationResolved;
+use App\Events\MonitorDegraded;
 use App\Events\MonitorRecovered;
 use App\Events\MonitorWentDown;
 use App\Models\CheckResult;
+use App\Models\Incident;
 use App\Models\Monitor;
 use App\Services\CheckOutcome;
 use App\Services\MonitorStateMachine;
@@ -19,18 +22,20 @@ class RecordCheckResult
 {
     private const MAX_TEXT_LENGTH = 500;
 
+    private const MAX_WARNING_LENGTH = 255;
+
     private const MIN_CONFIRMATION_DELAY_SECONDS = 60;
 
     public function __construct(private MonitorStateMachine $stateMachine) {}
 
     public function handle(Monitor $monitor, CheckOutcome $outcome): ?CheckResult
     {
-        $checkedUrl = $monitor->url;
+        $checkedRevision = $monitor->config_revision;
 
-        $checkResult = DB::transaction(function () use ($monitor, $outcome, $checkedUrl): ?CheckResult {
+        $checkResult = DB::transaction(function () use ($monitor, $outcome, $checkedRevision): ?CheckResult {
             $monitor = Monitor::query()->lockForUpdate()->find($monitor->id);
 
-            if ($monitor === null || $monitor->url !== $checkedUrl) {
+            if ($monitor === null || $monitor->config_revision !== $checkedRevision) {
                 return null;
             }
 
@@ -40,8 +45,11 @@ class RecordCheckResult
                 'latency_ms' => $outcome->latencyMs,
                 'status_code' => $outcome->statusCode,
                 'is_success' => $outcome->isSuccess,
+                'is_degraded' => $outcome->isDegraded,
                 'error_type' => $outcome->errorType,
                 'error_message' => $this->limit($outcome->errorMessage),
+                'warning_type' => $outcome->warningType,
+                'warning_message' => $outcome->warningMessage === null ? null : Str::limit($outcome->warningMessage, self::MAX_WARNING_LENGTH - 3, '...'),
             ]);
 
             $transition = $monitor->is_paused ? null : $this->stateMachine->apply($monitor, $outcome);
@@ -63,8 +71,10 @@ class RecordCheckResult
             $monitor->save();
 
             match ($transition) {
-                Transition::WentDown => $this->openIncident($monitor, $outcome),
-                Transition::Recovered => $this->resolveIncident($monitor),
+                Transition::WentDown => $this->openOutage($monitor, $outcome),
+                Transition::Recovered => $this->resolveOutage($monitor),
+                Transition::BecameDegraded => $this->openDegradation($monitor, $outcome),
+                Transition::DegradationResolved => $this->resolveDegradation($monitor),
                 default => null,
             };
 
@@ -78,9 +88,15 @@ class RecordCheckResult
         return $checkResult;
     }
 
-    private function openIncident(Monitor $monitor, CheckOutcome $outcome): void
+    private function openOutage(Monitor $monitor, CheckOutcome $outcome): void
     {
+        $monitor->incidents()
+            ->where('kind', IncidentKind::Degradation)
+            ->whereNull('resolved_at')
+            ->update(['resolved_at' => $outcome->startedAt, 'updated_at' => now()]);
+
         $incident = $monitor->incidents()->create([
+            'kind' => IncidentKind::Outage,
             'started_at' => $this->streakStartedAt($monitor, $this->stateMachine->failuresToDown()),
             'cause' => $this->limit($outcome->errorType?->value.': '.$outcome->errorMessage),
         ]);
@@ -88,9 +104,9 @@ class RecordCheckResult
         MonitorWentDown::dispatch($monitor, $incident);
     }
 
-    private function resolveIncident(Monitor $monitor): void
+    private function resolveOutage(Monitor $monitor): void
     {
-        $incident = $monitor->incidents()->whereNull('resolved_at')->first();
+        $incident = $this->openIncident($monitor, IncidentKind::Outage);
 
         if ($incident === null) {
             return;
@@ -101,11 +117,38 @@ class RecordCheckResult
         MonitorRecovered::dispatch($monitor, $incident);
     }
 
+    private function openDegradation(Monitor $monitor, CheckOutcome $outcome): void
+    {
+        $incident = $monitor->incidents()->create([
+            'kind' => IncidentKind::Degradation,
+            'started_at' => $this->streakStartedAt($monitor, $this->stateMachine->degradedToConfirm()),
+            'cause' => $this->limit($outcome->warningType?->value.': '.$outcome->warningMessage),
+        ]);
+
+        MonitorDegraded::dispatch($monitor, $incident);
+    }
+
+    private function resolveDegradation(Monitor $monitor): void
+    {
+        $incident = $this->openIncident($monitor, IncidentKind::Degradation);
+
+        if ($incident === null) {
+            return;
+        }
+
+        $incident->update(['resolved_at' => $this->streakStartedAt($monitor, $this->stateMachine->successesToUp())]);
+
+        MonitorDegradationResolved::dispatch($monitor, $incident);
+    }
+
+    private function openIncident(Monitor $monitor, IncidentKind $kind): ?Incident
+    {
+        return $monitor->incidents()->where('kind', $kind)->whereNull('resolved_at')->first();
+    }
+
     private function awaitsConfirmation(Monitor $monitor, CheckOutcome $outcome): bool
     {
-        return $outcome->isSuccess
-            ? $monitor->status !== MonitorStatus::Up
-            : $monitor->status !== MonitorStatus::Down;
+        return $monitor->status !== $this->stateMachine->settledStatus($outcome);
     }
 
     private function scheduleConfirmationCheck(Monitor $monitor): void

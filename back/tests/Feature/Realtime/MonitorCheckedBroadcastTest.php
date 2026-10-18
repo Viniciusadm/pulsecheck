@@ -68,7 +68,7 @@ class MonitorCheckedBroadcastTest extends TestCase
     {
         Event::fake([MonitorChecked::class]);
         $monitor = Monitor::factory()->create(['url' => 'https://example.com']);
-        Monitor::query()->whereKey($monitor->id)->update(['url' => 'https://example.org']);
+        Monitor::query()->whereKey($monitor->id)->update(['url' => 'https://example.org', 'config_revision' => 2]);
 
         $this->record($monitor);
 

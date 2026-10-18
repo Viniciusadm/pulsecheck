@@ -5,7 +5,6 @@ namespace App\Jobs;
 use App\Actions\RecordCheckResult;
 use App\Models\InstanceSettings;
 use App\Models\Monitor;
-use App\Services\HttpChecker;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -36,7 +35,7 @@ class RunMonitorCheck implements ShouldBeUnique, ShouldQueue
         return (string) $this->monitorId;
     }
 
-    public function handle(HttpChecker $checker, RecordCheckResult $recordCheckResult): void
+    public function handle(RecordCheckResult $recordCheckResult): void
     {
         $monitor = Monitor::query()->find($this->monitorId);
 
@@ -46,7 +45,11 @@ class RunMonitorCheck implements ShouldBeUnique, ShouldQueue
 
         App::setLocale(InstanceSettings::currentLocale());
 
-        $outcome = $checker->check($monitor);
+        $outcome = $monitor->type->checker()->check($monitor)?->withLatencyThreshold($monitor->latency_threshold_ms);
+
+        if ($outcome === null) {
+            return;
+        }
 
         $recordCheckResult->handle($monitor, $outcome);
 

@@ -20,9 +20,13 @@ function dayClass(day: UptimeDay): string {
 function dayLabel(day: UptimeDay): string {
   const date = formatShortDate(day.date)
 
-  return day.uptime_percentage === null
-    ? t('monitors.detail.dailyUptimeNoData', { date })
-    : t('monitors.detail.dailyUptimeDay', { date, uptime: formatPercentage(day.uptime_percentage), total: day.total_checks })
+  if (day.uptime_percentage === null) {
+    return t('monitors.detail.dailyUptimeNoData', { date })
+  }
+
+  const label = t('monitors.detail.dailyUptimeDay', { date, uptime: formatPercentage(day.uptime_percentage), total: day.total_checks })
+
+  return day.degraded_checks > 0 ? `${label} · ${t('monitors.detail.dailyUptimeSlow', { count: day.degraded_checks })}` : label
 }
 
 const NAVIGATION_KEYS: Record<string, (index: number, last: number) => number> = {

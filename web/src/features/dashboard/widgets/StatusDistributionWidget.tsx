@@ -4,7 +4,7 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { getDashboardSummary } from '../../../api/dashboard.ts'
 import { queryKeys } from '../../../api/queryKeys.ts'
 import type { DashboardSummary } from '../../../api/types.ts'
-import { DownIcon, PausedIcon, PendingIcon, UpIcon } from '../../../components/ui/icons.tsx'
+import { DegradedIcon, DownIcon, PausedIcon, PendingIcon, UpIcon } from '../../../components/ui/icons.tsx'
 import { t } from '../../../i18n/index.ts'
 import { TOOLTIP_STYLE } from '../../../lib/chart.ts'
 import { EmptyChart, QueryContent } from './QueryContent.tsx'
@@ -26,6 +26,7 @@ function Distribution({ summary }: { summary: DashboardSummary }) {
 
   const slices: Slice[] = [
     { key: 'up', label: t('status.up'), value: summary.up, color: '#15803d', icon: <UpIcon />, tone: 'text-status-up' },
+    { key: 'degraded', label: t('status.degraded'), value: summary.degraded, color: '#a16207', icon: <DegradedIcon />, tone: 'text-status-degraded' },
     { key: 'down', label: t('status.down'), value: summary.down, color: '#dc2626', icon: <DownIcon />, tone: 'text-status-down' },
     { key: 'pending', label: t('status.pending'), value: summary.pending, color: '#b45309', icon: <PendingIcon />, tone: 'text-status-pending' },
     { key: 'paused', label: t('status.paused'), value: summary.paused, color: '#5f6876', icon: <PausedIcon />, tone: 'text-status-paused' },

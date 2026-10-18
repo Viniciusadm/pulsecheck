@@ -7,4 +7,5 @@ enum MonitorStatus: string
     case Pending = 'pending';
     case Up = 'up';
     case Down = 'down';
+    case Degraded = 'degraded';
 }

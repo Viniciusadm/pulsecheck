@@ -6,7 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class ListMonitorsRequest extends FormRequest
 {
-    public const STATUS_FILTERS = ['up', 'down', 'pending', 'paused'];
+    public const STATUS_FILTERS = ['up', 'degraded', 'down', 'pending', 'paused'];
 
     public function authorize(): bool
     {

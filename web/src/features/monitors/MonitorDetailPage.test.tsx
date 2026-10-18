@@ -77,7 +77,7 @@ describe('MonitorDetailPage', () => {
   })
 
   it('shows uptime with its check counts', async () => {
-    vi.mocked(monitorsApi.getMonitorStats).mockResolvedValue(makeStats({ total_checks: 10, successful_checks: 8, uptime_percentage: 80 }))
+    vi.mocked(monitorsApi.getMonitorStats).mockResolvedValue(makeStats({ total_checks: 10, successful_checks: 8, degraded_checks: 0, uptime_percentage: 80 }))
 
     renderApp('/monitors/7')
 
@@ -88,8 +88,8 @@ describe('MonitorDetailPage', () => {
 
   it('marks days without data differently from full uptime', async () => {
     vi.mocked(monitorsApi.getUptimeHistory).mockResolvedValue([
-      { date: '2026-10-16', total_checks: 0, successful_checks: 0, uptime_percentage: null },
-      { date: '2026-10-17', total_checks: 288, successful_checks: 288, uptime_percentage: 100 },
+      { date: '2026-10-16', total_checks: 0, successful_checks: 0, degraded_checks: 0, uptime_percentage: null },
+      { date: '2026-10-17', total_checks: 288, successful_checks: 288, degraded_checks: 0, uptime_percentage: 100 },
     ])
 
     renderApp('/monitors/7')

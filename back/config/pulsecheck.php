@@ -28,6 +28,10 @@ return [
 
     'successes_to_up' => (int) env('PULSECHECK_SUCCESSES_TO_UP', 2),
 
+    'degraded_to_confirm' => (int) env('PULSECHECK_DEGRADED_TO_CONFIRM', 2),
+
+    'max_request_body_bytes' => 16384,
+
     'allow_private_targets' => (bool) env('PULSECHECK_ALLOW_PRIVATE_TARGETS', false),
 
     'max_url_length' => 2048,

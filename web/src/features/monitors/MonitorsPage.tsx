@@ -15,7 +15,7 @@ import { MonitorFormDialog } from './MonitorFormDialog.tsx'
 import { usePollingInterval } from './realtimeConnection.ts'
 import { MonitorList } from './MonitorList.tsx'
 
-const STATUS_FILTERS: MonitorStatusFilter[] = ['up', 'down', 'pending', 'paused']
+const STATUS_FILTERS: MonitorStatusFilter[] = ['up', 'degraded', 'down', 'pending', 'paused']
 
 export function MonitorsPage() {
   const [searchParams, setSearchParams] = useSearchParams()

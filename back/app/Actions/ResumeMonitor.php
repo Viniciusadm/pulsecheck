@@ -20,6 +20,8 @@ class ResumeMonitor
                 'is_paused' => false,
                 'consecutive_failures' => 0,
                 'consecutive_successes' => 0,
+                'consecutive_degraded' => 0,
+                'consecutive_healthy' => 0,
                 'next_check_at' => now(),
             ])->save();
 

@@ -7,6 +7,7 @@ use App\Events\MonitorIncidentClosed;
 use App\Models\Monitor;
 use App\Models\NotificationChannel;
 use App\Models\User;
+use App\Support\SecretMerger;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
@@ -18,16 +19,21 @@ class UpdateMonitor
     {
         return DB::transaction(function () use ($user, $monitor, $attributes): Monitor {
             $monitor = Monitor::query()->lockForUpdate()->findOrFail($monitor->id);
+            if (array_key_exists('secrets', $attributes)) {
+                $attributes['secrets'] = SecretMerger::merge($monitor->secrets ?? [], $attributes['secrets'] ?? [], $monitor->type->checker()->secretKeys());
+            }
+
             $monitor->fill(Arr::except($attributes, ['notification_channel_ids', 'team_ids']));
 
-            $urlChanged = $monitor->isDirty('url');
+            $checkChanged = $monitor->isDirty(['url', 'options', 'secrets']);
             $intervalChanged = $monitor->isDirty('interval_minutes');
 
-            if ($urlChanged) {
+            if ($checkChanged) {
+                $monitor->config_revision++;
                 $this->resetCheckState($monitor);
             }
 
-            if (($urlChanged || $intervalChanged) && ! $monitor->is_paused) {
+            if (($checkChanged || $intervalChanged) && ! $monitor->is_paused) {
                 $monitor->next_check_at = now();
             }
 
@@ -55,6 +61,8 @@ class UpdateMonitor
             'status' => MonitorStatus::Pending,
             'consecutive_failures' => 0,
             'consecutive_successes' => 0,
+            'consecutive_degraded' => 0,
+            'consecutive_healthy' => 0,
             'last_status_code' => null,
             'last_latency_ms' => null,
             'last_checked_at' => null,

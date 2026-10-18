@@ -5,6 +5,7 @@ namespace Tests\Feature\StateMachine;
 use App\Enums\CheckErrorType;
 use App\Enums\MonitorStatus;
 use App\Enums\Transition;
+use App\Enums\WarningType;
 use App\Models\Monitor;
 use App\Services\CheckOutcome;
 use App\Services\MonitorStateMachine;
@@ -118,5 +119,77 @@ class MonitorStateMachineTest extends TestCase
         (new MonitorStateMachine)->apply($monitor, $this->outcome(true));
 
         $this->assertSame(32767, $monitor->consecutive_successes);
+    }
+
+    private function degradedOutcome(): CheckOutcome
+    {
+        $now = CarbonImmutable::now();
+
+        return new CheckOutcome($now, $now, 900, 200, true, null, null, true, WarningType::SlowResponse, 'Slow');
+    }
+
+    private function sequence(MonitorStatus $status, array $results): array
+    {
+        $monitor = $this->monitor($status, 3);
+        $machine = new MonitorStateMachine;
+
+        $transitions = array_map(fn (string $result) => match ($result) {
+            'ok' => $machine->apply($monitor, $this->outcome(true)),
+            'slow' => $machine->apply($monitor, $this->degradedOutcome()),
+            'fail' => $machine->apply($monitor, $this->outcome(false)),
+        }, $results);
+
+        return [$transitions, $monitor->status];
+    }
+
+    public function test_up_monitor_becomes_degraded_after_consecutive_slow_checks(): void
+    {
+        [$transitions, $status] = $this->sequence(MonitorStatus::Up, ['slow', 'slow', 'slow']);
+
+        $this->assertSame([null, Transition::BecameDegraded, null], $transitions);
+        $this->assertSame(MonitorStatus::Degraded, $status);
+    }
+
+    public function test_a_single_slow_check_does_not_degrade(): void
+    {
+        [$transitions, $status] = $this->sequence(MonitorStatus::Up, ['slow', 'ok', 'slow', 'ok']);
+
+        $this->assertSame([null, null, null, null], $transitions);
+        $this->assertSame(MonitorStatus::Up, $status);
+    }
+
+    public function test_degraded_monitor_returns_to_up_after_healthy_checks(): void
+    {
+        [$transitions, $status] = $this->sequence(MonitorStatus::Degraded, ['ok', 'slow', 'ok', 'ok']);
+
+        $this->assertSame([null, null, null, Transition::DegradationResolved], $transitions);
+        $this->assertSame(MonitorStatus::Up, $status);
+    }
+
+    public function test_degraded_monitor_goes_down_after_failures(): void
+    {
+        [$transitions, $status] = $this->sequence(MonitorStatus::Degraded, ['fail', 'fail']);
+
+        $this->assertSame([null, Transition::WentDown], $transitions);
+        $this->assertSame(MonitorStatus::Down, $status);
+    }
+
+    public function test_slow_checks_count_as_successes_for_recovery(): void
+    {
+        $monitor = $this->monitor(MonitorStatus::Down, 0, 3);
+        $machine = new MonitorStateMachine;
+
+        $this->assertNull($machine->apply($monitor, $this->degradedOutcome()));
+        $this->assertSame(Transition::Recovered, $machine->apply($monitor, $this->degradedOutcome()));
+        $this->assertSame(Transition::BecameDegraded, $machine->apply($monitor, $this->degradedOutcome()));
+    }
+
+    public function test_settled_status_follows_the_outcome(): void
+    {
+        $machine = new MonitorStateMachine;
+
+        $this->assertSame(MonitorStatus::Up, $machine->settledStatus($this->outcome(true)));
+        $this->assertSame(MonitorStatus::Down, $machine->settledStatus($this->outcome(false)));
+        $this->assertSame(MonitorStatus::Degraded, $machine->settledStatus($this->degradedOutcome()));
     }
 }

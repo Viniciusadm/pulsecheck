@@ -16,8 +16,11 @@ class CheckResultResource extends JsonResource
             'latency_ms' => $this->latency_ms,
             'status_code' => $this->status_code,
             'is_success' => $this->is_success,
+            'is_degraded' => $this->is_degraded,
             'error_type' => $this->error_type,
             'error_message' => $this->error_message,
+            'warning_type' => $this->warning_type,
+            'warning_message' => $this->warning_message,
         ];
     }
 }

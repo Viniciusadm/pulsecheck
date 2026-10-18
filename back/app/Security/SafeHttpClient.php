@@ -9,12 +9,15 @@ use GuzzleHttp\Handler\CurlHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Uri;
 use GuzzleHttp\Psr7\UriResolver;
+use Psr\Http\Message\StreamInterface;
 
 class SafeHttpClient
 {
     public const USER_AGENT = 'PulseCheck/1.0 (+uptime monitor)';
 
     private const REDIRECT_STATUSES = [301, 302, 303, 307, 308];
+
+    private const READ_CHUNK_BYTES = 8192;
 
     private Client $client;
 
@@ -27,9 +30,19 @@ class SafeHttpClient
 
     public function get(string $url, float $timeout = 10, float $connectTimeout = 5): SafeHttpResponse
     {
+        return $this->send(new SafeHttpRequest($url, timeout: $timeout, connectTimeout: $connectTimeout));
+    }
+
+    public function send(SafeHttpRequest $request): SafeHttpResponse
+    {
         $maxRedirects = (int) config('pulsecheck.max_redirects');
         $redirects = 0;
-        $deadline = hrtime(true) + (int) ($timeout * 1e9);
+        $deadline = hrtime(true) + (int) ($request->timeout * 1e9);
+        $originalOrigin = $this->origin($request->url);
+        $url = $request->url;
+        $method = $request->method;
+        $headers = $request->headers;
+        $body = $request->body;
 
         while (true) {
             $target = $this->guard->inspect($url);
@@ -40,15 +53,23 @@ class SafeHttpClient
                 throw new DeadlineExceededException;
             }
 
-            $options = $this->requestOptions($target, $remainingSeconds, min($connectTimeout, $remainingSeconds));
-            $response = $this->client->request('GET', $target->url, $options);
-            $response->getBody()->close();
+            $options = $this->requestOptions($target, $remainingSeconds, min($request->connectTimeout, $remainingSeconds), $headers);
 
-            $location = $response->getHeaderLine('Location');
-
-            if (! in_array($response->getStatusCode(), self::REDIRECT_STATUSES, true) || $location === '') {
-                return new SafeHttpResponse($response->getStatusCode(), $target->url, $redirects);
+            if ($body !== null) {
+                $options['body'] = $body;
             }
+
+            $response = $this->client->request($method, $target->url, $options);
+            $location = $response->getHeaderLine('Location');
+            $isRedirect = in_array($response->getStatusCode(), self::REDIRECT_STATUSES, true) && $location !== '';
+
+            if (! $request->followRedirects || ! $isRedirect) {
+                [$responseBody, $truncated] = $this->readBody($response->getBody(), $request->maxBodyBytes);
+
+                return new SafeHttpResponse($response->getStatusCode(), $target->url, $redirects, $responseBody, $truncated);
+            }
+
+            $response->getBody()->close();
 
             if ($redirects >= $maxRedirects) {
                 throw new TooManyRedirectsException($maxRedirects);
@@ -56,7 +77,50 @@ class SafeHttpClient
 
             $url = (string) UriResolver::resolve(new Uri($target->url), new Uri($location));
             $redirects++;
+
+            if ($this->redirectSwitchesToGet($response->getStatusCode(), $method)) {
+                $method = $method === 'HEAD' ? 'HEAD' : 'GET';
+                $body = null;
+                $headers = array_filter($headers, fn (string $name) => strtolower($name) !== 'content-type', ARRAY_FILTER_USE_KEY);
+            }
+
+            if ($this->origin($url) !== $originalOrigin) {
+                $headers = [];
+            }
         }
+    }
+
+    private function redirectSwitchesToGet(int $statusCode, string $method): bool
+    {
+        return $statusCode === 303 || (in_array($statusCode, [301, 302], true) && $method === 'POST');
+    }
+
+    private function origin(string $url): string
+    {
+        $uri = new Uri($url);
+
+        return strtolower($uri->getScheme()).'://'.strtolower($uri->getHost()).':'.($uri->getPort() ?? ($uri->getScheme() === 'https' ? 443 : 80));
+    }
+
+    private function readBody(StreamInterface $stream, int $maxBytes): array
+    {
+        if ($maxBytes <= 0) {
+            $stream->close();
+
+            return [null, false];
+        }
+
+        $body = '';
+
+        while (! $stream->eof() && strlen($body) <= $maxBytes) {
+            $body .= $stream->read(min(self::READ_CHUNK_BYTES, $maxBytes + 1 - strlen($body)));
+        }
+
+        $stream->close();
+
+        $truncated = strlen($body) > $maxBytes;
+
+        return [$truncated ? substr($body, 0, $maxBytes) : $body, $truncated];
     }
 
     public function post(string $url, array $json, array $headers = [], float $timeout = 10, float $connectTimeout = 5): SafeHttpResponse

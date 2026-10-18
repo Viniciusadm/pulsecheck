@@ -13,7 +13,7 @@ import type {
   UptimeDay,
 } from './types.ts'
 
-export type MonitorStatusFilter = 'up' | 'down' | 'pending' | 'paused'
+export type MonitorStatusFilter = 'up' | 'degraded' | 'down' | 'pending' | 'paused'
 
 export async function listMonitors(params: { page?: number; status?: MonitorStatusFilter } = {}) {
   const response = await http.get<PaginatedResponse<Monitor>>('/api/monitors', { params })

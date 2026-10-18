@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\IncidentKind;
 use App\Enums\StatsPeriod;
 use App\Models\Monitor;
 use App\Models\User;
@@ -78,7 +79,9 @@ class DashboardMetrics
         return $this->remember($user, __FUNCTION__, $period, function () use ($user, $period): array {
             $window = new BucketWindow($period);
 
-            $incidents = DB::table('incidents')->whereIn('monitor_id', $this->visibleMonitors($user)->select('monitors.id'));
+            $incidents = DB::table('incidents')
+                ->where('kind', IncidentKind::Outage->value)
+                ->whereIn('monitor_id', $this->visibleMonitors($user)->select('monitors.id'));
 
             $rows = $window->selectBucket($incidents, 'started_at')
                 ->selectRaw('count(*) as incidents')

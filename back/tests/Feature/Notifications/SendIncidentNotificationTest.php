@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Notifications;
 
+use App\Enums\IncidentKind;
 use App\Enums\NotificationType;
 use App\Jobs\RunMonitorCheck;
 use App\Jobs\SendIncidentNotification;
@@ -129,7 +130,7 @@ class SendIncidentNotificationTest extends TestCase
         Bus::dispatchSync(new SendIncidentNotification($incident->id, $channel->id, NotificationType::Closed));
 
         Http::assertSent(fn (Request $request) => str_contains($request['text'], 'Shop <API> incident closed')
-            && str_contains($request['text'], 'The monitor URL was changed')
+            && str_contains($request['text'], 'The monitor check settings were changed')
             && str_contains($request['text'], 'Downtime: 1h 5m 30s'));
     }
 
@@ -159,6 +160,7 @@ class SendIncidentNotificationTest extends TestCase
             'monitor' => ['id' => $incident->monitor_id, 'name' => 'Shop <API>', 'host' => 'shop.example.com:8443'],
             'incident' => [
                 'id' => $incident->id,
+                'kind' => 'outage',
                 'cause' => 'timeout: Operation timed out',
                 'started_at' => '2026-10-17T12:00:00Z',
                 'resolved_at' => null,
@@ -197,6 +199,37 @@ class SendIncidentNotificationTest extends TestCase
         $this->assertSame(0x16A34A, $payload['embeds'][0]['color']);
         $this->assertSame('2026-10-17T12:00:45Z', $payload['embeds'][0]['timestamp']);
         $this->assertSame(['name' => 'Downtime', 'value' => '45s', 'inline' => false], $payload['embeds'][0]['fields'][1]);
+    }
+
+    public function test_degradation_alerts_use_a_warning_and_a_resolution_message(): void
+    {
+        $this->fakeOutboundHttp(new Response(204), new Response(204));
+        $channel = NotificationChannel::factory()->discord()->create(['config' => ['webhook_url' => self::DISCORD_URL]]);
+        $incident = $this->incident($channel, 'open', ['kind' => IncidentKind::Degradation, 'cause' => 'slow_response: Response time 2500 ms exceeds 1000 ms.']);
+
+        Bus::dispatchSync(new SendIncidentNotification($incident->id, $channel->id, NotificationType::Degraded));
+        $incident->update(['resolved_at' => CarbonImmutable::parse('2026-10-17 12:10:00')]);
+        Bus::dispatchSync(new SendIncidentNotification($incident->id, $channel->id, NotificationType::DegradationResolved));
+
+        $degraded = $this->outboundRequests[0]['json']['embeds'][0];
+        $this->assertSame('🟡 Shop <API> is DEGRADED', $degraded['title']);
+        $this->assertSame(0xD97706, $degraded['color']);
+        $this->assertSame(['name' => 'Reason', 'value' => 'slow_response: Response time 2500 ms exceeds 1000 ms.', 'inline' => false], $degraded['fields'][1]);
+
+        $resolved = $this->outboundRequests[1]['json']['embeds'][0];
+        $this->assertSame('🟢 Shop <API> is performing normally again', $resolved['title']);
+        $this->assertSame(['name' => 'Duration', 'value' => '10m', 'inline' => false], $resolved['fields'][1]);
+    }
+
+    public function test_degraded_alert_is_skipped_when_the_incident_was_already_resolved(): void
+    {
+        $this->fakeOutboundHttp();
+        $channel = NotificationChannel::factory()->webhook()->create();
+        $incident = $this->incident($channel, 'resolved', ['kind' => IncidentKind::Degradation]);
+
+        Bus::dispatchSync(new SendIncidentNotification($incident->id, $channel->id, NotificationType::Degraded));
+
+        $this->assertSame([], $this->outboundRequests);
     }
 
     public function test_email_is_sent_to_the_configured_address(): void

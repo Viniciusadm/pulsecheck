@@ -26,7 +26,7 @@ class DashboardSummaryTest extends TestCase
 
         $this->getJson('/api/dashboard/summary')
             ->assertOk()
-            ->assertExactJson(['data' => ['total' => 8, 'up' => 3, 'down' => 2, 'pending' => 1, 'paused' => 2]]);
+            ->assertExactJson(['data' => ['total' => 8, 'up' => 3, 'down' => 2, 'degraded' => 0, 'pending' => 1, 'paused' => 2]]);
 
         $monitorQueries = collect(DB::getQueryLog())->filter(fn (array $query) => str_contains($query['query'], '"monitors"'));
         $this->assertCount(1, $monitorQueries);
@@ -36,6 +36,6 @@ class DashboardSummaryTest extends TestCase
     {
         $this->actingAs(User::factory()->admin()->create())->fromSpa()
             ->getJson('/api/dashboard/summary')
-            ->assertExactJson(['data' => ['total' => 0, 'up' => 0, 'down' => 0, 'pending' => 0, 'paused' => 0]]);
+            ->assertExactJson(['data' => ['total' => 0, 'up' => 0, 'down' => 0, 'degraded' => 0, 'pending' => 0, 'paused' => 0]]);
     }
 }

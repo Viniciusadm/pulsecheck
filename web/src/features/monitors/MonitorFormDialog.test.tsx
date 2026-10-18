@@ -7,7 +7,7 @@ import * as monitorsApi from '../../api/monitors.ts'
 import * as channelsApi from '../../api/notificationChannels.ts'
 import * as teamsApi from '../../api/teams.ts'
 import { axiosError } from '../../test/axiosErrors.ts'
-import { ada, makeConfig, makeChannel, makeMonitor, makeTeam, makeUser, paginated } from '../../test/fixtures.ts'
+import { ada, emptyLatency, emptyUptimeDays, makeConfig, makeChannel, makeMonitor, makeStats, makeTeam, makeUser, paginated } from '../../test/fixtures.ts'
 import { renderApp } from '../../test/renderApp.tsx'
 
 vi.mock('../../api/auth.ts')
@@ -162,5 +162,67 @@ describe('MonitorFormDialog', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Add monitor' }))
 
     expect(await within(dialog).findByText('The team ids field is required.')).toBeInTheDocument()
+  })
+
+  it('sends request options, headers, body and authentication', async () => {
+    vi.mocked(monitorsApi.createMonitor).mockResolvedValue(makeMonitor({ id: 42 }))
+    vi.mocked(monitorsApi.getMonitor).mockReturnValue(new Promise(() => {}))
+    const { user, dialog } = await openForm()
+
+    await user.type(within(dialog).getByLabelText('Name'), 'API')
+    await user.type(within(dialog).getByLabelText('URL'), 'https://api.example.com')
+    await user.type(within(dialog).getByLabelText('Slow response limit (ms)'), '800')
+    await user.click(within(dialog).getByText('Request options'))
+    await user.selectOptions(within(dialog).getByLabelText('Method'), 'POST')
+    await user.clear(within(dialog).getByLabelText('Expected status codes'))
+    await user.type(within(dialog).getByLabelText('Expected status codes'), '200-299, 304')
+    await user.click(within(dialog).getByRole('button', { name: 'Add header' }))
+    await user.type(within(dialog).getByLabelText('Header name'), 'X-Api-Key')
+    await user.type(within(dialog).getByLabelText('Header value'), 'abc')
+    await user.type(within(dialog).getByLabelText('Content type'), 'application/json')
+    await user.click(within(dialog).getByLabelText('Body'))
+    await user.paste('{"ping":true}')
+    await user.selectOptions(within(dialog).getByLabelText('Authentication'), 'bearer')
+    await user.type(within(dialog).getByLabelText('Token'), 'secret')
+    await user.click(within(dialog).getByRole('button', { name: 'Add monitor' }))
+
+    await screen.findByText('Monitor added. The first check runs within a minute.')
+    expect(monitorsApi.createMonitor).toHaveBeenCalledWith(expect.objectContaining({
+      latency_threshold_ms: 800,
+      options: { method: 'POST', follow_redirects: true, expected_status_codes: ['200-299', '304'], body_content_type: 'application/json' },
+      secrets: { headers: { 'X-Api-Key': 'abc' }, body: '{"ping":true}', auth: { type: 'bearer', token: 'secret' } },
+    }))
+  })
+
+  it('does not resend unchanged request options or saved secrets when editing', async () => {
+    const monitor = makeMonitor({
+      options: { method: 'POST', follow_redirects: true, expected_status_codes: ['200'], body_content_type: null },
+      secrets_set: ['headers', 'auth'],
+      auth_type: 'bearer',
+    })
+    vi.mocked(monitorsApi.getMonitor).mockResolvedValue(monitor)
+    vi.mocked(monitorsApi.updateMonitor).mockResolvedValue(monitor)
+    vi.mocked(monitorsApi.getMonitorStats).mockResolvedValue(makeStats())
+    vi.mocked(monitorsApi.getLatencySeries).mockResolvedValue(emptyLatency)
+    vi.mocked(monitorsApi.getUptimeHistory).mockResolvedValue(emptyUptimeDays)
+    vi.mocked(monitorsApi.listMonitorIncidents).mockResolvedValue(paginated([]))
+    vi.mocked(monitorsApi.listChecks).mockResolvedValue({ data: [], meta: { per_page: 50, next_cursor: null, prev_cursor: null } })
+    const user = userEvent.setup()
+    renderApp('/monitors/7')
+    await user.click(await screen.findByRole('button', { name: 'Edit' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Edit monitor' })
+
+    expect(within(dialog).getByText('Saved headers are hidden.')).toBeInTheDocument()
+    expect(within(dialog).getByText('Authentication is saved. Fill in the fields only to replace it.')).toBeInTheDocument()
+    await user.clear(within(dialog).getByLabelText('Name'))
+    await user.type(within(dialog).getByLabelText('Name'), 'Renamed')
+    await user.click(within(dialog).getByRole('button', { name: 'Save changes' }))
+
+    await screen.findByText('Changes saved.')
+    const input = vi.mocked(monitorsApi.updateMonitor).mock.calls[0][1]
+    expect(input.name).toBe('Renamed')
+    expect(input).not.toHaveProperty('options')
+    expect(input).not.toHaveProperty('secrets')
+    expect(input).not.toHaveProperty('latency_threshold_ms')
   })
 })

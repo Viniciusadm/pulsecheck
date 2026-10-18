@@ -4,6 +4,7 @@ import { fieldErrors } from '../../api/errors.ts'
 import { listChecks } from '../../api/monitors.ts'
 import { Alert } from '../../components/ui/Alert.tsx'
 import { queryKeys } from '../../api/queryKeys.ts'
+import type { CheckResult } from '../../api/types.ts'
 import { Badge } from '../../components/ui/Badge.tsx'
 import { Button } from '../../components/ui/Button.tsx'
 import { ErrorState } from '../../components/ui/ErrorState.tsx'
@@ -97,16 +98,20 @@ export function CheckHistory({ monitorId }: { monitorId: number }) {
                     <time dateTime={check.started_at}>{formatDateTime(check.started_at)}</time>
                   </td>
                   <td className="px-4 py-2.5">
-                    {check.is_success ? (
+                    {check.is_success && check.is_degraded && (
+                      <Badge className="bg-status-degraded-soft text-status-degraded">{t('monitors.checks.degraded')}</Badge>
+                    )}
+                    {check.is_success && !check.is_degraded && (
                       <Badge className="bg-status-up-soft text-status-up">{t('monitors.checks.success')}</Badge>
-                    ) : (
+                    )}
+                    {!check.is_success && (
                       <Badge className="bg-status-down-soft text-status-down">{t('monitors.checks.failure')}</Badge>
                     )}
                   </td>
                   <td className="px-4 py-2.5 text-right tabular-nums text-neutral-700">{check.status_code ?? '—'}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums text-neutral-700">{formatLatency(check.latency_ms)}</td>
-                  <td className="max-w-xs truncate px-4 py-2.5 text-neutral-600" title={check.error_message ?? undefined}>
-                    {check.error_type ? `${t(`monitors.errorTypes.${check.error_type}`)}: ${check.error_message ?? ''}` : '—'}
+                  <td className="max-w-xs truncate px-4 py-2.5 text-neutral-600" title={check.error_message ?? check.warning_message ?? undefined}>
+                    {checkCause(check)}
                   </td>
                 </tr>
               ))}
@@ -121,4 +126,16 @@ export function CheckHistory({ monitorId }: { monitorId: number }) {
       )}
     </section>
   )
+}
+
+function checkCause(check: CheckResult): string {
+  if (check.error_type) {
+    return `${t(`monitors.errorTypes.${check.error_type}`)}: ${check.error_message ?? ''}`
+  }
+
+  if (check.warning_type) {
+    return `${t(`monitors.warningTypes.${check.warning_type}`)}: ${check.warning_message ?? ''}`
+  }
+
+  return '—'
 }

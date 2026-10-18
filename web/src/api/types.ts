@@ -39,14 +39,38 @@ export type ValidationErrorResponse = {
   errors: Record<string, string[]>
 }
 
-export type MonitorStatus = 'pending' | 'up' | 'down'
+export type MonitorStatus = 'pending' | 'up' | 'degraded' | 'down'
+
+export type MonitorType = 'http'
+
+export type HttpMethod = 'GET' | 'HEAD' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+
+export type HttpAuthType = 'none' | 'basic' | 'bearer'
+
+export type MonitorOptions = {
+  method?: HttpMethod
+  follow_redirects?: boolean
+  expected_status_codes?: string[]
+  body_content_type?: string | null
+}
+
+export type MonitorSecretsInput = {
+  headers?: Record<string, string> | null
+  body?: string | null
+  auth?: { type: HttpAuthType; username?: string; password?: string; token?: string } | null
+}
 
 export type Monitor = {
   id: number
   name: string
+  type: MonitorType
   url: string
+  options: MonitorOptions
+  secrets_set: string[]
+  auth_type: HttpAuthType
   interval_minutes: number
   timeout_seconds: number
+  latency_threshold_ms: number | null
   status: MonitorStatus
   is_paused: boolean
   last_status_code: number | null
@@ -62,9 +86,13 @@ export type Monitor = {
 
 export type MonitorInput = {
   name: string
+  type?: MonitorType
   url: string
   interval_minutes: number
   timeout_seconds?: number
+  latency_threshold_ms?: number | null
+  options?: MonitorOptions
+  secrets?: MonitorSecretsInput
   notification_channel_ids?: number[]
   team_ids?: number[]
 }
@@ -85,12 +113,20 @@ export type CheckResult = {
   latency_ms: number | null
   status_code: number | null
   is_success: boolean
+  is_degraded: boolean
   error_type: CheckErrorType | null
   error_message: string | null
+  warning_type: WarningType | null
+  warning_message: string | null
 }
+
+export type WarningType = 'slow_response'
+
+export type IncidentKind = 'outage' | 'degradation'
 
 export type Incident = {
   id: number
+  kind: IncidentKind
   started_at: string
   resolved_at: string | null
   cause: string
@@ -107,6 +143,7 @@ export type MonitorStats = {
   to: string
   total_checks: number
   successful_checks: number
+  degraded_checks: number
   uptime_percentage: number | null
   average_latency_ms: number | null
   p95_latency_ms: number | null
@@ -129,12 +166,14 @@ export type UptimeDay = {
   date: string
   total_checks: number
   successful_checks: number
+  degraded_checks: number
   uptime_percentage: number | null
 }
 
 export type DashboardSummary = {
   total: number
   up: number
+  degraded: number
   down: number
   pending: number
   paused: number

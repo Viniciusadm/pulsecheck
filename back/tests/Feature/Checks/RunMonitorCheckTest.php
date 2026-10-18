@@ -219,7 +219,7 @@ class RunMonitorCheckTest extends TestCase
     {
         $monitor = Monitor::factory()->create(['url' => 'https://example.com', 'consecutive_failures' => 1]);
         $this->handler->append(function () use ($monitor) {
-            Monitor::whereKey($monitor->id)->update(['url' => 'https://example.org', 'consecutive_failures' => 0]);
+            Monitor::whereKey($monitor->id)->update(['url' => 'https://example.org', 'config_revision' => 2, 'consecutive_failures' => 0]);
 
             return new Response(503);
         });

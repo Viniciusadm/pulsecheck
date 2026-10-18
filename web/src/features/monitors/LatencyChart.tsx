@@ -1,10 +1,16 @@
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { LatencySeries } from '../../api/types.ts'
 import { t } from '../../i18n/index.ts'
 import { AXIS_LINE, AXIS_TICK, GRID_STROKE, PRIMARY, TOOLTIP_STYLE, bucketTickLabel } from '../../lib/chart.ts'
 import { formatDateTime, formatLatency } from '../../lib/format.ts'
 
-export function LatencyChart({ series, className = 'h-56' }: { series: LatencySeries; className?: string }) {
+type LatencyChartProps = {
+  series: LatencySeries
+  className?: string
+  thresholdMs?: number | null
+}
+
+export function LatencyChart({ series, className = 'h-56', thresholdMs = null }: LatencyChartProps) {
   const hasData = series.buckets.some((bucket) => bucket.average_latency_ms !== null)
 
   if (!hasData) {
@@ -37,6 +43,15 @@ export function LatencyChart({ series, className = 'h-56' }: { series: LatencySe
             separator=""
             contentStyle={TOOLTIP_STYLE}
           />
+          {thresholdMs !== null && (
+            <ReferenceLine
+              y={thresholdMs}
+              stroke="#a16207"
+              strokeDasharray="4 4"
+              ifOverflow="extendDomain"
+              label={{ value: t('monitors.detail.latencyThreshold', { value: formatLatency(thresholdMs) }), position: 'insideTopRight', fill: '#a16207', fontSize: 12 }}
+            />
+          )}
           <Area
             type="monotone"
             dataKey="average_latency_ms"

@@ -52,6 +52,7 @@ class DiscordDriver extends HttpChannelDriver
     {
         return match ($severity) {
             AlertSeverity::Critical => 0xDC2626,
+            AlertSeverity::Warning => 0xD97706,
             AlertSeverity::Resolved => 0x16A34A,
             AlertSeverity::Info => 0x2563EB,
         };

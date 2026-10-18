@@ -16,6 +16,8 @@ import { TextField } from '../../components/ui/TextField.tsx'
 import { useToast } from '../../components/ui/toast.ts'
 import { t } from '../../i18n/index.ts'
 import { TeamPicker } from '../teams/TeamPicker.tsx'
+import { HttpRequestFields } from './HttpRequestFields.tsx'
+import { changedRequestOptions, initialHttpRequestState, requestSecrets } from './httpRequest.ts'
 import { initialTeamIds, teamIdsError } from '../teams/teamSelection.ts'
 import { useCreateMonitor, useUpdateMonitor } from './useMonitorMutations.ts'
 
@@ -55,7 +57,9 @@ function MonitorForm({ isOpen, onClose, onSaved, monitor, config }: MonitorFormD
     url: monitor?.url ?? '',
     interval_minutes: monitor?.interval_minutes ?? config?.monitors.default_interval ?? 5,
     timeout_seconds: String(monitor?.timeout_seconds ?? config?.monitors.timeout_default ?? 10),
+    latency_threshold_ms: monitor?.latency_threshold_ms == null ? '' : String(monitor.latency_threshold_ms),
   })
+  const [request, setRequest] = useState(() => initialHttpRequestState(monitor))
 
   const channels = useQuery({ queryKey: queryKeys.notificationChannels, queryFn: listNotificationChannels })
   const [selectedChannelIds, setSelectedChannelIds] = useState<number[] | null>(null)
@@ -88,6 +92,23 @@ function MonitorForm({ isOpen, onClose, onSaved, monitor, config }: MonitorFormD
       url: form.url.trim(),
       interval_minutes: form.interval_minutes,
       ...(form.timeout_seconds.trim() === '' ? {} : { timeout_seconds: Number(form.timeout_seconds) }),
+    }
+
+    const latencyThresholdMs = form.latency_threshold_ms.trim() === '' ? null : Number(form.latency_threshold_ms)
+
+    if (latencyThresholdMs !== (monitor?.latency_threshold_ms ?? null)) {
+      input.latency_threshold_ms = latencyThresholdMs
+    }
+
+    const options = changedRequestOptions(request, monitor)
+    const secrets = requestSecrets(request, monitor)
+
+    if (options) {
+      input.options = options
+    }
+
+    if (secrets) {
+      input.secrets = secrets
     }
 
     if (selectedChannelIds !== null) {
@@ -164,6 +185,18 @@ function MonitorForm({ isOpen, onClose, onSaved, monitor, config }: MonitorFormD
             error={errors.timeout_seconds}
           />
         </div>
+        <TextField
+          label={t('monitors.form.latencyThreshold')}
+          name="latency_threshold_ms"
+          type="number"
+          min={1}
+          inputMode="numeric"
+          hint={t('monitors.form.latencyThresholdHint')}
+          value={form.latency_threshold_ms}
+          onChange={(event) => setForm({ ...form, latency_threshold_ms: event.target.value })}
+          error={errors.latency_threshold_ms}
+        />
+        <HttpRequestFields state={request} onChange={setRequest} monitor={monitor} errors={errors} />
         <TeamPicker teams={teams.data} selectedIds={teamIds} onChange={setSelectedTeamIds} error={teamIdsError(errors)} />
         <ChannelPicker
           channels={channels.data}

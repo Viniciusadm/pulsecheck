@@ -66,6 +66,15 @@ export function PendingIcon(props: IconProps) {
   )
 }
 
+export function DegradedIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="10" cy="10" r="7.5" />
+      <path d="M10 6.5v4m0 3h.01" />
+    </Icon>
+  )
+}
+
 export function MenuIcon(props: IconProps) {
   return (
     <Icon {...props}>

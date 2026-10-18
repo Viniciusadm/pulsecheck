@@ -37,6 +37,8 @@
   --color-status-paused-soft: #eef0f3;
   --color-status-pending: #b45309;
   --color-status-pending-soft: #fdf3e3;
+  --color-status-degraded: #a16207;
+  --color-status-degraded-soft: #fef7d6;
 
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 

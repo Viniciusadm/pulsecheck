@@ -36,7 +36,7 @@ function fakeEcho() {
 describe('useMonitorRealtime', () => {
   beforeEach(() => {
     vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(ada)
-    vi.mocked(dashboardApi.getDashboardSummary).mockResolvedValue({ total: 1, up: 1, down: 0, pending: 0, paused: 0 })
+    vi.mocked(dashboardApi.getDashboardSummary).mockResolvedValue({ total: 1, up: 1, degraded: 0, down: 0, pending: 0, paused: 0 })
     mockDashboardApi()
     vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([makeMonitor()]))
   })

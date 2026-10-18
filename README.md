@@ -8,7 +8,8 @@ Self-hosted uptime monitoring for one team or organization per deploy: PulseChec
 
 ## Features
 
-- **HTTP(S) monitors** checked every 1, 5 or 10 minutes with a configurable timeout (1–30 s).
+- **HTTP(S) monitors** checked every 1, 5 or 10 minutes with a configurable timeout (1–30 s). Each monitor can set the method, expected status codes (codes or ranges such as `200-299, 301`), whether redirects are followed, custom headers, a request body and basic or bearer authentication. Headers, body and credentials are stored encrypted and never shown again.
+- **Degraded status**: with a slow response limit set, responses slower than the limit mark the monitor `degraded` after 2 consecutive slow checks (`PULSECHECK_DEGRADED_TO_CONFIRM`). Degraded checks still count as available in uptime; the degradation gets its own incident and alerts.
 - **Stable status**: a monitor goes `down` after 2 consecutive failures and back `up` after 2 consecutive successes, so a single blip does not raise an alert. A result that contradicts the current status is confirmed after half the check interval (at least 1 minute) instead of a full one.
 - **Incidents** with cause, start, end and duration; one incident per outage.
 - **Metrics**: uptime per period (24 h, 7 d, 30 d), average and 95th percentile response time, latency chart and a 30-day availability bar that tells "no data" apart from "100%".
@@ -263,7 +264,7 @@ Administrators and managers add notification channels on the **Channels** page a
 
 Slack, Discord and webhook deliveries go through the same SSRF guard as checks: private and internal addresses are refused, the connection is pinned to the validated IP and redirects are not followed. Webhook headers can carry credentials such as `Authorization`; `Host`, `Content-Type`, `Content-Length`, `Transfer-Encoding`, `Connection` and `User-Agent` are reserved.
 
-Webhook payload (version 1). `event` is `monitor.down`, `monitor.recovered`, `monitor.incident_closed` (the monitor URL changed while it was down, so the incident was closed without a recovery check) or `test` (with `monitor` and `incident` set to `null`); `monitor.host` never contains the URL path or query string; `instance.name` is the name chosen at setup. Times in `text` use the instance time zone, while the ISO fields are always UTC. Any 2xx response counts as delivered.
+Webhook payload (version 1). `event` is `monitor.down`, `monitor.recovered`, `monitor.degraded`, `monitor.degradation_resolved`, `monitor.incident_closed` (the monitor URL or request options changed while an incident was open, so it was closed without a recovery check) or `test` (with `monitor` and `incident` set to `null`); `monitor.host` never contains the URL path or query string; `instance.name` is the name chosen at setup. Times in `text` use the instance time zone, while the ISO fields are always UTC. Any 2xx response counts as delivered.
 
 ```json
 {
@@ -277,6 +278,7 @@ Webhook payload (version 1). `event` is `monitor.down`, `monitor.recovered`, `mo
   "monitor": { "id": 7, "name": "Shop API", "host": "shop.example.com" },
   "incident": {
     "id": 3,
+    "kind": "outage",
     "cause": "timeout: Operation timed out",
     "started_at": "2026-10-17T12:00:00Z",
     "resolved_at": null,
@@ -285,7 +287,7 @@ Webhook payload (version 1). `event` is `monitor.down`, `monitor.recovered`, `mo
 }
 ```
 
-`severity` is `critical` for `monitor.down`, `resolved` for `monitor.recovered` and `monitor.incident_closed`, and `info` for `test`. On recovery or closing, `resolved_at` and `duration_seconds` are filled.
+`severity` is `critical` for `monitor.down`, `warning` for `monitor.degraded`, `resolved` for `monitor.recovered`, `monitor.degradation_resolved` and `monitor.incident_closed`, and `info` for `test`. `incident.kind` is `outage` or `degradation`. On recovery or closing, `resolved_at` and `duration_seconds` are filled.
 
 ## Uptime
 
@@ -296,7 +298,7 @@ uptime % = successful_checks / total_checks × 100   (within the period)
 - With no checks in the period, uptime is shown as **No data**, never 100%.
 - Time without checks (monitor paused, PulseCheck itself down) is not counted as available; it has no data.
 - Every value comes with `total_checks` and `successful_checks`, so it can be verified.
-- A check succeeds when the final response (after redirects) has a status from 200 to 399.
+- A check succeeds when the final response (after redirects, unless they are turned off) has an expected status, 200 to 399 by default. Slow checks over the monitor's limit still succeed; they are counted separately as degraded.
 - Average and 95th percentile response times only use successful checks.
 - Daily values use UTC days. Each closed day is aggregated hourly into a daily total, so the daily bar keeps its history after results older than `PULSECHECK_HISTORY_RETENTION_DAYS` are deleted. Daily totals are kept for `PULSECHECK_UPTIME_ROLLUP_RETENTION_DAYS`.
 
@@ -312,7 +314,7 @@ Monitors make the server request user-supplied URLs, so every request goes throu
 - Obfuscated IP hosts (`2130706433`, `0x7f.1`, `0177.0.0.1`, `127.1`), single-label hosts (`intranet`), `localhost`/`*.localhost` and cloud metadata hostnames are rejected.
 - The host is resolved (A and AAAA) and the request is refused if **any** address is loopback, private, link-local (`169.254.0.0/16`, which includes most cloud metadata endpoints), carrier-grade NAT, documentation, benchmarking, multicast, reserved, or an IPv6 form that embeds IPv4 (mapped, translated, compatible, NAT64, 6to4, Teredo).
 - The connection is pinned to the validated IP with `CURLOPT_RESOLVE`, so the address that was checked is the address that is connected to; TLS SNI and the `Host` header keep the original name.
-- Redirects are followed manually (at most 5), and each hop is validated and pinned again. Environment proxy variables are ignored. The monitor timeout covers the whole redirect chain.
+- Redirects are followed manually (at most 5), and each hop is validated and pinned again. Environment proxy variables are ignored. The monitor timeout covers the whole redirect chain. A redirect to another scheme, host or port drops the monitor's custom headers and authentication; `303`, and `301`/`302` after a `POST`, switch to `GET` without a body.
 - Validation runs both when a monitor is saved and on every check.
 
 What is **not** guaranteed:

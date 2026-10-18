@@ -46,7 +46,7 @@ describe('setup', () => {
   beforeEach(() => {
     vi.mocked(configApi.getAppConfig).mockResolvedValue(pendingConfig)
     vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(null)
-    vi.mocked(dashboardApi.getDashboardSummary).mockResolvedValue({ total: 0, up: 0, down: 0, pending: 0, paused: 0 })
+    vi.mocked(dashboardApi.getDashboardSummary).mockResolvedValue({ total: 0, up: 0, degraded: 0, down: 0, pending: 0, paused: 0 })
     vi.mocked(dashboardApi.listRecentIncidents).mockResolvedValue([])
     vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([]))
     vi.mocked(channelsApi.listNotificationChannels).mockResolvedValue([])

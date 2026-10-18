@@ -23,6 +23,9 @@ export function IncidentList({ incidents, showMonitor = false }: { incidents: In
             </p>
           </div>
           <div className="flex items-center gap-3">
+            {incident.kind === 'degradation' && (
+              <Badge className="bg-status-degraded-soft text-status-degraded">{t('monitors.incidents.kinds.degradation')}</Badge>
+            )}
             <span className="tabular-nums text-neutral-700">{formatDuration(incident.duration_seconds)}</span>
             {incident.state === 'open' ? (
               <Badge className="bg-status-down-soft text-status-down">{t('monitors.incidents.open')}</Badge>

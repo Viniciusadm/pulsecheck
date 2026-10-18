@@ -12,13 +12,7 @@ class MonitorStateMachine
 
     public function apply(Monitor $monitor, CheckOutcome $outcome): ?Transition
     {
-        if ($outcome->isSuccess) {
-            $monitor->consecutive_successes = min($monitor->consecutive_successes + 1, self::MAX_COUNTER);
-            $monitor->consecutive_failures = 0;
-        } else {
-            $monitor->consecutive_failures = min($monitor->consecutive_failures + 1, self::MAX_COUNTER);
-            $monitor->consecutive_successes = 0;
-        }
+        $this->updateCounters($monitor, $outcome);
 
         $previousStatus = $monitor->status;
 
@@ -28,13 +22,34 @@ class MonitorStateMachine
             return Transition::WentDown;
         }
 
-        if ($previousStatus !== MonitorStatus::Up && $monitor->consecutive_successes >= $this->successesToUp()) {
+        if (in_array($previousStatus, [MonitorStatus::Down, MonitorStatus::Pending], true) && $monitor->consecutive_successes >= $this->successesToUp()) {
             $monitor->status = MonitorStatus::Up;
 
             return $previousStatus === MonitorStatus::Down ? Transition::Recovered : Transition::BecameUp;
         }
 
+        if ($previousStatus === MonitorStatus::Up && $monitor->consecutive_degraded >= $this->degradedToConfirm()) {
+            $monitor->status = MonitorStatus::Degraded;
+
+            return Transition::BecameDegraded;
+        }
+
+        if ($previousStatus === MonitorStatus::Degraded && $monitor->consecutive_healthy >= $this->successesToUp()) {
+            $monitor->status = MonitorStatus::Up;
+
+            return Transition::DegradationResolved;
+        }
+
         return null;
+    }
+
+    public function settledStatus(CheckOutcome $outcome): MonitorStatus
+    {
+        return match (true) {
+            ! $outcome->isSuccess => MonitorStatus::Down,
+            $outcome->isDegraded => MonitorStatus::Degraded,
+            default => MonitorStatus::Up,
+        };
     }
 
     public function failuresToDown(): int
@@ -45,5 +60,38 @@ class MonitorStateMachine
     public function successesToUp(): int
     {
         return max(1, (int) config('pulsecheck.successes_to_up'));
+    }
+
+    public function degradedToConfirm(): int
+    {
+        return max(1, (int) config('pulsecheck.degraded_to_confirm'));
+    }
+
+    private function updateCounters(Monitor $monitor, CheckOutcome $outcome): void
+    {
+        if (! $outcome->isSuccess) {
+            $monitor->consecutive_failures = $this->increment($monitor->consecutive_failures);
+            $monitor->consecutive_successes = 0;
+            $monitor->consecutive_degraded = 0;
+            $monitor->consecutive_healthy = 0;
+
+            return;
+        }
+
+        $monitor->consecutive_failures = 0;
+        $monitor->consecutive_successes = $this->increment($monitor->consecutive_successes);
+
+        if ($outcome->isDegraded) {
+            $monitor->consecutive_degraded = $this->increment($monitor->consecutive_degraded);
+            $monitor->consecutive_healthy = 0;
+        } else {
+            $monitor->consecutive_healthy = $this->increment($monitor->consecutive_healthy);
+            $monitor->consecutive_degraded = 0;
+        }
+    }
+
+    private function increment(int $counter): int
+    {
+        return min($counter + 1, self::MAX_COUNTER);
     }
 }

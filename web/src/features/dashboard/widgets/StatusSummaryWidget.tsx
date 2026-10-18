@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 import { getDashboardSummary } from '../../../api/dashboard.ts'
 import { queryKeys } from '../../../api/queryKeys.ts'
 import type { DashboardSummary } from '../../../api/types.ts'
-import { DownIcon, PausedIcon, UpIcon } from '../../../components/ui/icons.tsx'
+import { DegradedIcon, DownIcon, PausedIcon, UpIcon } from '../../../components/ui/icons.tsx'
 import { t } from '../../../i18n/index.ts'
 import { QueryContent } from './QueryContent.tsx'
 import { useRefreshInterval } from './refresh.ts'
@@ -26,12 +26,13 @@ function SummaryCards({ summary }: { summary: DashboardSummary }) {
       note: summary.pending > 0 ? t('dashboard.summary.pending', { count: summary.pending }) : null,
     },
     { label: t('dashboard.summary.up'), value: summary.up, icon: <UpIcon />, tone: 'text-status-up', to: '/monitors?status=up', note: null },
+    { label: t('dashboard.summary.degraded'), value: summary.degraded, icon: <DegradedIcon />, tone: 'text-status-degraded', to: '/monitors?status=degraded', note: null },
     { label: t('dashboard.summary.down'), value: summary.down, icon: <DownIcon />, tone: 'text-status-down', to: '/monitors?status=down', note: null },
     { label: t('dashboard.summary.paused'), value: summary.paused, icon: <PausedIcon />, tone: 'text-status-paused', to: '/monitors?status=paused', note: null },
   ]
 
   return (
-    <dl className="grid grid-cols-2 gap-3 @2xl:grid-cols-4">
+    <dl className="grid grid-cols-2 gap-3 @2xl:grid-cols-5">
       {cards.map(({ label, value, icon, tone, to, note }) => (
         <div
           key={label}

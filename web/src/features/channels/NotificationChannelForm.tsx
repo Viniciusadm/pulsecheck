@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useRef, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { fieldErrors, generalErrorMessage } from '../../api/errors.ts'
 import { createNotificationChannel, updateNotificationChannel } from '../../api/notificationChannels.ts'
 import { queryKeys } from '../../api/queryKeys.ts'
@@ -7,6 +7,8 @@ import { listTeams } from '../../api/teams.ts'
 import type { NotificationChannel, NotificationChannelInput, NotificationChannelType } from '../../api/types.ts'
 import { Alert } from '../../components/ui/Alert.tsx'
 import { Button } from '../../components/ui/Button.tsx'
+import { HeaderRowsEditor } from '../../components/ui/HeaderRowsEditor.tsx'
+import { headerRowsToRecord, type HeaderRow } from '../../components/ui/headerRows.ts'
 import { SelectField } from '../../components/ui/SelectField.tsx'
 import { TextField } from '../../components/ui/TextField.tsx'
 import { useToast } from '../../components/ui/toast.ts'
@@ -14,8 +16,6 @@ import { t } from '../../i18n/index.ts'
 import { TeamPicker } from '../teams/TeamPicker.tsx'
 import { initialTeamIds, teamIdsError } from '../teams/teamSelection.ts'
 import { channelTypeOrder, channelTypes } from './channelTypes.ts'
-
-type HeaderRow = { id: number; name: string; value: string }
 
 type NotificationChannelFormProps = {
   channel?: NotificationChannel
@@ -44,7 +44,6 @@ export function NotificationChannelForm({
   const hasSavedHeaders = channel?.secrets_set.includes('headers') ?? false
   const [isReplacingHeaders, setIsReplacingHeaders] = useState(!hasSavedHeaders)
   const [headers, setHeaders] = useState<HeaderRow[]>([])
-  const nextHeaderId = useRef(0)
   const teams = useQuery({ queryKey: queryKeys.teams, queryFn: listTeams })
   const [selectedTeamIds, setSelectedTeamIds] = useState<number[] | null>(null)
   const teamIds = selectedTeamIds ?? initialTeamIds(teams.data, channel?.team_ids)
@@ -72,11 +71,6 @@ export function NotificationChannelForm({
     setHeaders([])
   }
 
-  const updateHeader = (id: number, row: Partial<HeaderRow>) =>
-    setHeaders(headers.map((header) => (header.id === id ? { ...header, ...row } : header)))
-
-  const addHeader = () => setHeaders([...headers, { id: nextHeaderId.current++, name: '', value: '' }])
-
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
 
@@ -95,9 +89,7 @@ export function NotificationChannelForm({
     }
 
     if (definition.hasHeaders && isReplacingHeaders) {
-      payload.headers = Object.fromEntries(
-        headers.filter((header) => header.name.trim() !== '').map((header) => [header.name.trim(), header.value]),
-      )
+      payload.headers = headerRowsToRecord(headers)
     }
 
     mutation.mutate({
@@ -166,54 +158,14 @@ export function NotificationChannelForm({
       ))}
 
       {definition.hasHeaders && (
-        <fieldset className="flex flex-col gap-2">
-          <legend className="text-sm font-medium text-neutral-800">{t('settings.channels.headers.label')}</legend>
-          <p className="text-xs text-neutral-500">{t('settings.channels.headers.hint')}</p>
-          {!isReplacingHeaders ? (
-            <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-700">
-              <span>{t('settings.channels.headers.saved')}</span>
-              <Button variant="secondary" onClick={() => setIsReplacingHeaders(true)}>
-                {t('settings.channels.headers.replace')}
-              </Button>
-            </div>
-          ) : (
-            <>
-              {headers.map((header, index) => (
-                <div key={header.id} className="flex items-end gap-2">
-                  <TextField
-                    className="flex-1"
-                    label={t('settings.channels.headers.name')}
-                    autoComplete="off"
-                    placeholder="Authorization"
-                    value={header.name}
-                    onChange={(event) => updateHeader(header.id, { name: event.target.value })}
-                  />
-                  <TextField
-                    className="flex-1"
-                    label={t('settings.channels.headers.value')}
-                    type="password"
-                    autoComplete="off"
-                    value={header.value}
-                    onChange={(event) => updateHeader(header.id, { value: event.target.value })}
-                  />
-                  <Button
-                    variant="ghost"
-                    aria-label={t('settings.channels.headers.remove', { position: index + 1 })}
-                    onClick={() => setHeaders(headers.filter((current) => current.id !== header.id))}
-                  >
-                    ×
-                  </Button>
-                </div>
-              ))}
-              <div>
-                <Button variant="secondary" onClick={addHeader}>
-                  {t('settings.channels.headers.add')}
-                </Button>
-              </div>
-            </>
-          )}
-          {headerError && <p className="text-xs font-medium text-status-down">{headerError}</p>}
-        </fieldset>
+        <HeaderRowsEditor
+          rows={headers}
+          onChange={setHeaders}
+          hint={t('settings.channels.headers.hint')}
+          isReplacing={isReplacingHeaders}
+          onReplace={() => setIsReplacingHeaders(true)}
+          error={headerError}
+        />
       )}
 
       <TeamPicker teams={teams.data} selectedIds={teamIds} onChange={setSelectedTeamIds} error={teamIdsError(errors)} />

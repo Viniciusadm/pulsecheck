@@ -16,6 +16,7 @@ class DashboardSummaryController extends Controller
             ->selectRaw('count(*) as total')
             ->selectRaw("count(*) filter (where not is_paused and status = 'up') as up")
             ->selectRaw("count(*) filter (where not is_paused and status = 'down') as down")
+            ->selectRaw("count(*) filter (where not is_paused and status = 'degraded') as degraded")
             ->selectRaw("count(*) filter (where not is_paused and status = 'pending') as pending")
             ->selectRaw('count(*) filter (where is_paused) as paused')
             ->first();

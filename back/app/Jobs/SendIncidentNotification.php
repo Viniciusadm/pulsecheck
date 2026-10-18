@@ -50,7 +50,7 @@ class SendIncidentNotification implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        if ($this->type === NotificationType::Down && $incident->resolved_at !== null) {
+        if (in_array($this->type, [NotificationType::Down, NotificationType::Degraded], true) && $incident->resolved_at !== null) {
             return;
         }
 
