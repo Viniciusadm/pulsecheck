@@ -13,4 +13,5 @@ export const queryKeys = {
   checks: (id: number, from: string, to: string) => ['monitors', id, 'checks', from, to] as const,
   monitorIncidents: (id: number, page: number) => ['monitors', id, 'incidents', page] as const,
   notificationChannels: ['notification-channels'] as const,
+  users: ['users'] as const,
 }

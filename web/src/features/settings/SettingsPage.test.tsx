@@ -3,17 +3,37 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as authApi from '../../api/auth.ts'
 import * as channelsApi from '../../api/notificationChannels.ts'
+import * as usersApi from '../../api/users.ts'
 import { axiosError } from '../../test/axiosErrors.ts'
-import { ada, makeChannel } from '../../test/fixtures.ts'
+import { ada, makeChannel, makeUser } from '../../test/fixtures.ts'
 import { renderApp } from '../../test/renderApp.tsx'
 
 vi.mock('../../api/auth.ts')
 vi.mock('../../api/notificationChannels.ts')
+vi.mock('../../api/users.ts')
 
 describe('SettingsPage', () => {
   beforeEach(() => {
     vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(ada)
     vi.mocked(channelsApi.listNotificationChannels).mockResolvedValue([])
+    vi.mocked(usersApi.listUsers).mockResolvedValue([ada])
+  })
+
+  it('shows the instance and users sections to administrators', async () => {
+    renderApp('/settings')
+
+    expect(await screen.findByRole('heading', { name: 'Instance' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Users' })).toBeInTheDocument()
+  })
+
+  it('shows only the channels section to members', async () => {
+    vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(makeUser())
+    renderApp('/settings')
+
+    expect(await screen.findByRole('heading', { name: 'Notification channels' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Instance' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Users' })).not.toBeInTheDocument()
+    expect(usersApi.listUsers).not.toHaveBeenCalled()
   })
 
   it('shows an empty state with a way to add a channel', async () => {

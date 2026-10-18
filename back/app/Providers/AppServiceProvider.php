@@ -2,13 +2,12 @@
 
 namespace App\Providers;
 
-use App\Models\Monitor;
-use App\Models\NotificationChannel;
+use App\Models\InstanceSettings;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -22,7 +21,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->scoped(InstanceSettings::CURRENT_BINDING, fn (): ?InstanceSettings => InstanceSettings::query()->first());
     }
 
     /**
@@ -34,21 +33,19 @@ class AppServiceProvider extends ServiceProvider
         $this->configurePasswordResetUrl();
         $this->configureRateLimiting();
         $this->configureRouteBindings();
+        $this->configureGates();
     }
 
     private function configureRouteBindings(): void
     {
         Route::pattern('monitor', '[0-9]+');
-
-        Route::bind('monitor', fn (string $value): Monitor => Monitor::query()
-            ->where('user_id', Auth::id())
-            ->findOrFail($value));
-
         Route::pattern('notificationChannel', '[0-9]+');
+        Route::pattern('user', '[0-9]+');
+    }
 
-        Route::bind('notificationChannel', fn (string $value): NotificationChannel => NotificationChannel::query()
-            ->where('user_id', Auth::id())
-            ->findOrFail($value));
+    private function configureGates(): void
+    {
+        Gate::define('manage-users', fn (User $user): bool => $user->isAdmin());
     }
 
     private function configurePasswordRules(): void
@@ -80,7 +77,7 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($email.'|'.$request->ip());
         });
 
-        RateLimiter::for('register', fn (Request $request): Limit => Limit::perMinute(5)->by($request->ip()));
+        RateLimiter::for('setup', fn (Request $request): Limit => Limit::perMinute(5)->by($request->ip()));
 
         RateLimiter::for('forgot-password', fn (Request $request): Limit => Limit::perMinute(5)->by($request->ip()));
 

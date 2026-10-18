@@ -3,11 +3,13 @@
 namespace App\Jobs;
 
 use App\Actions\RecordCheckResult;
+use App\Models\InstanceSettings;
 use App\Models\Monitor;
 use App\Services\HttpChecker;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
 
 class RunMonitorCheck implements ShouldBeUnique, ShouldQueue
@@ -41,6 +43,8 @@ class RunMonitorCheck implements ShouldBeUnique, ShouldQueue
         if ($monitor === null || $monitor->is_paused) {
             return;
         }
+
+        App::setLocale(InstanceSettings::currentLocale());
 
         $outcome = $checker->check($monitor);
 

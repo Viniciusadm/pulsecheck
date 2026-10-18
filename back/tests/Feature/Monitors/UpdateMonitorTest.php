@@ -32,7 +32,7 @@ class UpdateMonitorTest extends TestCase
         $monitor = Monitor::factory()->down()->create(['url' => 'https://example.com', 'next_check_at' => $nextCheckAt]);
         $openIncident = Incident::factory()->for($monitor)->open()->create();
 
-        $this->actingAs($monitor->user)->fromSpa()
+        $this->actingAs(User::factory()->create())->fromSpa()
             ->patchJson("/api/monitors/{$monitor->id}", ['name' => 'Renamed'])
             ->assertOk()
             ->assertJsonPath('data.name', 'Renamed');
@@ -50,7 +50,7 @@ class UpdateMonitorTest extends TestCase
         $monitor = Monitor::factory()->down()->create(['url' => 'https://example.com', 'next_check_at' => now()->addMinutes(4)]);
         $openIncident = Incident::factory()->for($monitor)->open()->create();
 
-        $this->actingAs($monitor->user)->fromSpa()
+        $this->actingAs(User::factory()->create())->fromSpa()
             ->putJson("/api/monitors/{$monitor->id}", ['url' => 'https://new.example.com/'])
             ->assertOk()
             ->assertJsonPath('data.url', 'https://new.example.com/')
@@ -83,7 +83,7 @@ class UpdateMonitorTest extends TestCase
     {
         $monitor = Monitor::factory()->paused()->create(['url' => 'https://example.com', 'next_check_at' => null]);
 
-        $this->actingAs($monitor->user)->fromSpa()
+        $this->actingAs(User::factory()->create())->fromSpa()
             ->patchJson("/api/monitors/{$monitor->id}", ['url' => 'https://new.example.com/'])
             ->assertOk();
 
@@ -97,7 +97,7 @@ class UpdateMonitorTest extends TestCase
         $this->freezeSecond();
         $monitor = Monitor::factory()->create(['interval_minutes' => 10, 'next_check_at' => now()->addMinutes(9)]);
 
-        $this->actingAs($monitor->user)->fromSpa()
+        $this->actingAs(User::factory()->create())->fromSpa()
             ->patchJson("/api/monitors/{$monitor->id}", ['interval_minutes' => 1])
             ->assertOk()
             ->assertJsonPath('data.interval_minutes', 1);
@@ -105,23 +105,10 @@ class UpdateMonitorTest extends TestCase
         $this->assertTrue($monitor->fresh()->next_check_at->equalTo(now()));
     }
 
-    public function test_user_id_in_the_payload_is_ignored(): void
-    {
-        $monitor = Monitor::factory()->create();
-        $otherUser = User::factory()->create();
-
-        $this->actingAs($monitor->user)->fromSpa()
-            ->patchJson("/api/monitors/{$monitor->id}", ['user_id' => $otherUser->id, 'name' => 'Still mine'])
-            ->assertOk();
-
-        $this->assertSame($monitor->user_id, $monitor->fresh()->user_id);
-        $this->assertSame(0, $otherUser->monitors()->count());
-    }
-
     public function test_update_validates_fields_that_are_sent(): void
     {
         $monitor = Monitor::factory()->create();
-        $this->actingAs($monitor->user)->fromSpa();
+        $this->actingAs(User::factory()->create())->fromSpa();
 
         $this->patchJson("/api/monitors/{$monitor->id}", ['url' => 'http://127.0.0.1'])->assertJsonValidationErrors('url');
         $this->patchJson("/api/monitors/{$monitor->id}", ['interval_minutes' => 2])->assertJsonValidationErrors('interval_minutes');
@@ -134,7 +121,7 @@ class UpdateMonitorTest extends TestCase
         config(['pulsecheck.timeout_max' => 120]);
         $monitor = Monitor::factory()->create(['interval_minutes' => 1, 'timeout_seconds' => 10]);
 
-        $this->actingAs($monitor->user)->fromSpa()
+        $this->actingAs(User::factory()->create())->fromSpa()
             ->patchJson("/api/monitors/{$monitor->id}", ['timeout_seconds' => 60])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('timeout_seconds');

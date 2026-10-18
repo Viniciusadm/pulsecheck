@@ -1,28 +1,25 @@
 <?php
 
-namespace App\Http\Requests\Auth;
+namespace App\Http\Requests;
 
-use Illuminate\Auth\Access\AuthorizationException;
+use App\Enums\UserRole;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
-class RegisterRequest extends FormRequest
+class StoreUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return (bool) config('pulsecheck.registration_enabled');
-    }
-
-    protected function failedAuthorization(): never
-    {
-        throw new AuthorizationException(__('Registration is disabled on this PulseCheck instance.'));
+        return true;
     }
 
     public function rules(): array
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')],
+            'role' => ['required', Rule::enum(UserRole::class)],
             'password' => ['required', 'string', 'confirmed', Password::defaults()],
         ];
     }

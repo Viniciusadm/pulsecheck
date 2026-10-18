@@ -4,7 +4,6 @@ namespace Database\Factories;
 
 use App\Enums\NotificationChannelType;
 use App\Models\NotificationChannel;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -15,7 +14,6 @@ class NotificationChannelFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory(),
             'type' => NotificationChannelType::Webhook,
             'name' => fake()->words(2, true),
             'config' => ['url' => 'https://hooks.example.com/'.fake()->uuid(), 'headers' => []],

@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { formatDuration, formatLatency, formatPercentage, formatRelativeTime } from './format.ts'
+import { afterEach, describe, expect, it } from 'vitest'
+import { formatDateTime, formatDuration, formatLatency, formatPercentage, formatRelativeTime, formatShortDate, formatTime, getDisplayTimeZone, setDisplayTimeZone } from './format.ts'
 
 describe('formatLatency', () => {
   it('uses milliseconds below one second', () => {
@@ -49,5 +49,30 @@ describe('formatRelativeTime', () => {
     ['2026-10-15T12:00:00Z', '2 days ago'],
   ])('formats %s', (value, expected) => {
     expect(formatRelativeTime(value, now)).toBe(expected)
+  })
+})
+
+describe('display time zone', () => {
+  afterEach(() => setDisplayTimeZone(undefined))
+
+  it('formats dates in the instance time zone', () => {
+    setDisplayTimeZone('America/Sao_Paulo')
+
+    expect(formatTime('2026-10-17T12:00:00Z')).toBe('9:00 AM')
+    expect(formatDateTime('2026-10-17T02:00:00Z')).toBe('Oct 16, 2026, 11:00 PM')
+  })
+
+  it('ignores an unknown time zone', () => {
+    setDisplayTimeZone('UTC')
+    setDisplayTimeZone('Not/A_Zone')
+
+    expect(getDisplayTimeZone()).toBeUndefined()
+    expect(() => formatTime('2026-10-17T12:00:00Z')).not.toThrow()
+  })
+
+  it('keeps calendar days independent of the time zone', () => {
+    setDisplayTimeZone('Pacific/Kiritimati')
+
+    expect(formatShortDate('2026-10-17')).toBe('Oct 17')
   })
 })

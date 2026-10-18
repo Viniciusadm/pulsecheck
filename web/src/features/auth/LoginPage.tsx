@@ -1,9 +1,7 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation } from 'react-router'
 import { login } from '../../api/auth.ts'
-import { getAppConfig } from '../../api/dashboard.ts'
-import { queryKeys } from '../../api/queryKeys.ts'
 import { fieldErrors, generalErrorMessage } from '../../api/errors.ts'
 import { Alert } from '../../components/ui/Alert.tsx'
 import { Button } from '../../components/ui/Button.tsx'
@@ -18,7 +16,6 @@ export function LoginPage() {
   const state = useLocation().state as LocationState
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const { data: config } = useQuery({ queryKey: queryKeys.config, queryFn: getAppConfig, staleTime: Infinity })
 
   const mutation = useMutation({
     mutationFn: login,
@@ -71,15 +68,6 @@ export function LoginPage() {
           {t('auth.login.submit')}
         </Button>
       </form>
-
-      {config?.registration_enabled !== false && (
-        <p className="text-neutral-600">
-          {t('auth.login.noAccount')}{' '}
-          <Link to="/register" className="font-medium text-primary-700 hover:underline">
-            {t('auth.login.register')}
-          </Link>
-        </p>
-      )}
     </div>
   )
 }

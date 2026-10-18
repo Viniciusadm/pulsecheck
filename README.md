@@ -1,6 +1,6 @@
 # PulseCheck
 
-Self-hosted uptime monitoring: PulseCheck checks your websites and APIs every few minutes, records response times and incidents, and alerts you on Telegram, Slack, Discord, email or any webhook when something goes down and when it comes back.
+Self-hosted uptime monitoring for one team or organization per deploy: PulseCheck checks your websites and APIs every few minutes, records response times and incidents, and alerts you on Telegram, Slack, Discord, email or any webhook when something goes down and when it comes back.
 
 ![Dashboard with five monitors, one of them down, and recent incidents](screenshots/dashboard.png)
 
@@ -14,7 +14,8 @@ Self-hosted uptime monitoring: PulseCheck checks your websites and APIs every fe
 - **Metrics**: uptime per period (24 h, 7 d, 30 d), average and 95th percentile response time, latency chart and a 30-day availability bar that tells "no data" apart from "100%".
 - **Check history** with date filters and pagination.
 - **Notification channels** on down and recovery: Telegram, Slack, Discord, email and a generic JSON webhook for anything else. Each monitor picks its channels; every channel has a test button, and secrets (tokens, webhook URLs, headers) are stored encrypted and never shown again.
-- **Accounts** with registration, login and password reset; every user only sees their own monitors.
+- **One instance per organization**: the first visit opens a setup wizard (instance name, time zone, language and the first administrator). Monitors and notification channels are shared by everyone on the instance.
+- **Users and roles**: administrators create accounts for their team (`admin` or `member`) and edit the instance settings; there is no public sign-up. Login and password reset for everyone.
 - **SSRF protection**: monitors cannot reach private networks, cloud metadata endpoints or other internal addresses, including through redirects or DNS tricks.
 - **Single `docker compose up`** on any Linux server; Redis is optional.
 
@@ -46,7 +47,7 @@ flowchart LR
 | `web` | Nginx: serves the React build, proxies `/api`, `/sanctum` and `/up` to PHP-FPM and `/app` (WebSocket) to Reverb, adds security headers. The only published port. |
 | `app` | PHP-FPM running the Laravel API (authentication, monitors, metrics, settings). |
 | `queue` | Workers (`QUEUE_WORKERS`, default 2) that run checks and send notifications. |
-| `reverb` | Laravel Reverb WebSocket server. Pushes every recorded check to the owner's browser, so the dashboard, the monitor list and the monitor page update immediately (they still poll as a fallback). |
+| `reverb` | Laravel Reverb WebSocket server. Pushes every recorded check to the browsers of signed-in users, so the dashboard, the monitor list and the monitor page update immediately (they still poll as a fallback). |
 | `scheduler` | Runs `monitors:dispatch-due` every minute and prunes old check results daily. |
 | `migrate` | Applies database migrations once, before the other PHP services start. |
 | `db` | PostgreSQL 17. Not reachable from outside the Compose network. |
@@ -57,7 +58,7 @@ flowchart LR
 1. Every minute the scheduler selects active monitors whose `next_check_at` has passed, moves `next_check_at` forward by the monitor's interval and queues one `RunMonitorCheck` job each (jobs are unique per monitor).
 2. A worker validates the URL again, resolves the host, rejects forbidden addresses and connects to the validated IP (`CURLOPT_RESOLVE`), following redirects manually and revalidating every hop, within the monitor's total timeout.
 3. In one database transaction with the monitor row locked, the result is stored and the state machine updates counters and status, opening or resolving an incident when the threshold is crossed.
-4. After the transaction commits, a down or recovery event queues one notification per enabled channel attached to the monitor, and the updated monitor is broadcast on the owner's private channel (`private-users.{id}`). A broadcast failure is logged and never discards the check.
+4. After the transaction commits, a down or recovery event queues one notification per enabled channel attached to the monitor, and the updated monitor is broadcast on the private `monitors` channel, which every signed-in user can join. A broadcast failure is logged and never discards the check.
 
 ## Tech stack
 
@@ -88,9 +89,9 @@ docker compose ps -a         # app and web "healthy", migrate "Exited (0)"
 curl -fsS http://localhost/up
 ```
 
-Open `APP_URL` in a browser, create an account and add a monitor. The first check runs within a minute; after two successful checks the monitor shows **Up**.
+Open `APP_URL` in a browser: the setup wizard asks for the instance name, time zone, language and the administrator account, and lets you add a first notification channel. Then add a monitor and create accounts for your team under **Settings → Users**. The first check runs within a minute; after two successful checks the monitor shows **Up**.
 
-PulseCheck serves plain HTTP on `APP_PORT`. For HTTPS, put it behind a TLS-terminating proxy (Caddy, Traefik, your provider's proxy), then set `APP_URL` to the `https://` address, `SESSION_SECURE_COOKIE=true` and `TRUSTED_PROXIES` (see the table below). On a public server, set `PULSECHECK_REGISTRATION_ENABLED=false` once your account exists, so strangers cannot use your instance to send requests.
+PulseCheck serves plain HTTP on `APP_PORT`. For HTTPS, put it behind a TLS-terminating proxy (Caddy, Traefik, your provider's proxy), then set `APP_URL` to the `https://` address, `SESSION_SECURE_COOKIE=true` and `TRUSTED_PROXIES` (see the table below). Until setup is done, anyone who reaches the instance can complete it and become the administrator. If the server is public before you finish setup, set `PULSECHECK_SETUP_TOKEN` and enter the same value in the wizard.
 
 ### Environment variables
 
@@ -113,8 +114,7 @@ All variables live in the `.env` file next to `docker-compose.yml` (template: [`
 | `MAIL_MAILER` | no | `log` | `smtp` to send password reset emails. With `log`, emails (including reset links, which are valid for 60 minutes) are written to the container logs: anyone who can read the logs could use them. Configure SMTP in production. |
 | `MAIL_SCHEME`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` | with SMTP | empty, `587` | SMTP connection (`MAIL_SCHEME=smtps` for port 465). |
 | `MAIL_FROM_ADDRESS` / `MAIL_FROM_NAME` | no | `no-reply@example.com` / `PulseCheck` | Sender of password reset emails. |
-| `PULSECHECK_REGISTRATION_ENABLED` | no | `true` | Set to `false` after creating your account(s) to stop new sign-ups. |
-| `PULSECHECK_MAX_MONITORS` | no | `20` | Monitors per user. |
+| `PULSECHECK_SETUP_TOKEN` | no | empty | When set, the first-run setup requires this token. Use it when the instance is publicly reachable before setup. |
 | `PULSECHECK_HISTORY_RETENTION_DAYS` | no | `30` | Check results older than this are deleted daily. Incidents are kept. |
 | `PULSECHECK_ALLOW_PRIVATE_TARGETS` | no | `false` | Allow private/internal targets. Read [Security](#security) first. |
 | `APP_IMAGE` / `WEB_IMAGE` | no | `pulsecheck-app:latest` / `pulsecheck-web:latest` | Image names; point them to prebuilt images to skip local builds. |
@@ -223,7 +223,7 @@ cd back && php artisan reverb:start    # WebSocket server on port 8080
 cd web && npm install && npm run dev   # SPA on http://localhost:5173
 ```
 
-Open http://localhost:5173 and log in as `demo@example.com` / `password`. The Vite dev server proxies `/api` and `/sanctum` to port 8000 and the `/app` WebSocket to port 8080, so the SPA and the API share one origin, as in production.
+Open http://localhost:5173 and log in as the administrator `demo@example.com` / `password` (the seeder also completes the setup). The Vite dev server proxies `/api` and `/sanctum` to port 8000 and the `/app` WebSocket to port 8080, so the SPA and the API share one origin, as in production.
 
 > **`DevelopmentSeeder` is for development only.** It creates the demo user and a week of generated check history. It is not called by `DatabaseSeeder` and refuses to run when `APP_ENV=production`.
 
@@ -261,7 +261,7 @@ Each user adds notification channels in **Settings** and picks, per monitor, whi
 
 Slack, Discord and webhook deliveries go through the same SSRF guard as checks: private and internal addresses are refused, the connection is pinned to the validated IP and redirects are not followed. Webhook headers can carry credentials such as `Authorization`; `Host`, `Content-Type`, `Content-Length`, `Transfer-Encoding`, `Connection` and `User-Agent` are reserved.
 
-Webhook payload (version 1). `event` is `monitor.down`, `monitor.recovered` or `test` (with `monitor` and `incident` set to `null`); `monitor.host` never contains the URL path or query string. Any 2xx response counts as delivered.
+Webhook payload (version 1). `event` is `monitor.down`, `monitor.recovered` or `test` (with `monitor` and `incident` set to `null`); `monitor.host` never contains the URL path or query string; `instance.name` is the name chosen at setup. Times in `text` use the instance time zone, while the ISO fields are always UTC. Any 2xx response counts as delivered.
 
 ```json
 {
@@ -271,6 +271,7 @@ Webhook payload (version 1). `event` is `monitor.down`, `monitor.recovered` or `
   "title": "🔴 Shop API is DOWN",
   "text": "🔴 Shop API is DOWN\nHost: shop.example.com\nCause: timeout: Operation timed out\nSince: 2026-10-17 12:00:00 UTC",
   "occurred_at": "2026-10-17T12:00:00Z",
+  "instance": { "name": "Acme Ops" },
   "monitor": { "id": 7, "name": "Shop API", "host": "shop.example.com" },
   "incident": {
     "id": 3,
@@ -318,17 +319,17 @@ What is **not** guaranteed:
 - Only the first validated address is used. If it is IPv6 and the server has no IPv6 connectivity, the check fails as a connection error; there is no fallback to other addresses.
 - Name resolution uses the DNS resolver (`dns_get_record`), not `/etc/hosts`.
 
-`PULSECHECK_ALLOW_PRIVATE_TARGETS=true` lets self-hosters monitor private ranges, loopback and `localhost`. **Risk:** every user of the instance can then probe your internal network through check results. Enable it only on instances where every account is trusted, with `PULSECHECK_REGISTRATION_ENABLED=false`. Link-local addresses (`169.254.0.0/16`), the metadata addresses `100.100.100.200`, `192.0.0.192` and `fd00:ec2::254`, metadata hostnames, unspecified/multicast/broadcast addresses, IPv4-embedding IPv6 forms and obfuscated IPs stay blocked even then.
+`PULSECHECK_ALLOW_PRIVATE_TARGETS=true` lets self-hosters monitor private ranges, loopback and `localhost`. **Risk:** every user of the instance can then probe your internal network through check results. Enable it only on instances where every account is trusted. Link-local addresses (`169.254.0.0/16`), the metadata addresses `100.100.100.200`, `192.0.0.192` and `fd00:ec2::254`, metadata hostnames, unspecified/multicast/broadcast addresses, IPv4-embedding IPv6 forms and obfuscated IPs stay blocked even then.
 
 ### Data and access
 
-- Users only see their own data: monitor routes resolve only the signed-in user's monitors and are also checked by a policy; another user's IDs return 404.
+- Every signed-in user sees and manages the instance's monitors and notification channels. Only administrators can manage users and instance settings; the last administrator cannot be demoted or deleted, and nobody can delete their own account.
+- There is no public sign-up. The setup endpoint only works while the instance has not been set up, and can require `PULSECHECK_SETUP_TOKEN`.
 - Session cookies are `HttpOnly`, `SameSite=Lax` and `Secure` when `SESSION_SECURE_COOKIE=true`; state-changing requests require the CSRF token.
 - Notification channel settings are encrypted with `APP_KEY`. Secrets (Telegram bot token, Slack and Discord webhook URLs, webhook headers) are never returned by the API or logged, and delivery errors are reported with generic messages.
 - Error messages stored for failed checks drop URL query strings and are truncated.
-- Rate limits (per minute): login 5 per email and IP; registration, forgot-password and reset-password 5 per IP; monitor and notification channel changes 30 per user; test notifications 5 per user.
+- Rate limits (per minute): login 5 per email and IP; setup, forgot-password and reset-password 5 per IP; monitor and notification channel changes 30 per user; test notifications 5 per user.
 - Production passwords need at least 8 characters with mixed case and numbers, and are checked against known breaches.
-- Registration can be closed with `PULSECHECK_REGISTRATION_ENABLED=false`.
 - Password reset links contain a token: Nginx does not write `/reset-password` requests to its access log, but the `log` mailer writes the emails to the container logs, so use SMTP in production.
 
 To report a vulnerability, see [SECURITY.md](SECURITY.md).

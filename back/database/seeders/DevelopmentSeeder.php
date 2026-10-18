@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Enums\CheckErrorType;
 use App\Enums\MonitorStatus;
 use App\Models\CheckResult;
+use App\Models\InstanceSettings;
 use App\Models\Monitor;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -23,33 +24,38 @@ class DevelopmentSeeder extends Seeder
 
         mt_srand(2026);
 
-        $user = User::factory()->create([
+        InstanceSettings::factory()->create([
+            'name' => 'PulseCheck Demo',
+            'timezone' => 'UTC',
+        ]);
+
+        User::factory()->admin()->create([
             'name' => 'Demo User',
             'email' => 'demo@example.com',
         ]);
 
         $now = CarbonImmutable::now()->startOfMinute();
 
-        $website = $this->monitor($user, 'Company website', 'https://example.com', 5);
+        $website = $this->monitor('Company website', 'https://example.com', 5);
         $this->seedHistory($website, $now, latencyBase: 140, outages: [[$now->subDays(3)->setTime(14, 10), 4]]);
 
-        $api = $this->monitor($user, 'Public API', 'https://api.example.com/health', 1);
+        $api = $this->monitor('Public API', 'https://api.example.com/health', 1);
         $this->seedHistory($api, $now, latencyBase: 90, outages: [[$now->subDay()->setTime(2, 40), 12]], days: 2);
 
-        $docs = $this->monitor($user, 'Documentation', 'https://docs.example.com', 10);
+        $docs = $this->monitor('Documentation', 'https://docs.example.com', 10);
         $this->seedHistory($docs, $now, latencyBase: 320, outages: []);
 
-        $shop = $this->monitor($user, 'Shop checkout', 'https://shop.example.com/checkout', 5);
+        $shop = $this->monitor('Shop checkout', 'https://shop.example.com/checkout', 5);
         $this->seedHistory($shop, $now, latencyBase: 210, outages: [[$now->subMinutes(25), 6]]);
 
-        $staging = $this->monitor($user, 'Staging', 'https://staging.example.com', 10);
+        $staging = $this->monitor('Staging', 'https://staging.example.com', 10);
         $this->seedHistory($staging, $now->subDays(2), latencyBase: 260, outages: [], days: 3);
         $staging->forceFill(['is_paused' => true, 'next_check_at' => null])->save();
     }
 
-    private function monitor(User $user, string $name, string $url, int $intervalMinutes): Monitor
+    private function monitor(string $name, string $url, int $intervalMinutes): Monitor
     {
-        return Monitor::factory()->for($user)->create([
+        return Monitor::factory()->create([
             'name' => $name,
             'url' => $url,
             'interval_minutes' => $intervalMinutes,

@@ -3,9 +3,9 @@
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
-use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\CurrentUserController;
 use App\Http\Controllers\DashboardSummaryController;
+use App\Http\Controllers\InstanceSettingsController;
 use App\Http\Controllers\MonitorCheckResultController;
 use App\Http\Controllers\MonitorController;
 use App\Http\Controllers\MonitorIncidentController;
@@ -18,13 +18,12 @@ use App\Http\Controllers\NotificationChannelController;
 use App\Http\Controllers\NotificationChannelTestController;
 use App\Http\Controllers\PublicConfigController;
 use App\Http\Controllers\RecentIncidentController;
+use App\Http\Controllers\SetupController;
+use App\Http\Controllers\UserController;
+use App\Http\Middleware\EnsureSetupIsPending;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->name('auth.')->group(function () {
-    Route::post('register', [RegisteredUserController::class, 'store'])
-        ->middleware('throttle:register')
-        ->name('register');
-
     Route::post('login', [AuthenticatedSessionController::class, 'store'])
         ->middleware('throttle:login')
         ->name('login');
@@ -44,6 +43,10 @@ Route::prefix('auth')->name('auth.')->group(function () {
 
 Route::get('config', PublicConfigController::class)->name('config');
 
+Route::post('setup', SetupController::class)
+    ->middleware(['throttle:setup', EnsureSetupIsPending::class])
+    ->name('setup');
+
 Route::get('user', CurrentUserController::class)
     ->middleware('auth:sanctum')
     ->name('user');
@@ -56,24 +59,33 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('notification-channels', [NotificationChannelController::class, 'store'])->middleware('throttle:notification-channel-writes')->name('notification-channels.store');
 
     Route::prefix('notification-channels/{notificationChannel}')->name('notification-channels.')->group(function () {
-        Route::match(['put', 'patch'], '/', [NotificationChannelController::class, 'update'])->can('update', 'notificationChannel')->middleware('throttle:notification-channel-writes')->name('update');
-        Route::delete('/', [NotificationChannelController::class, 'destroy'])->can('delete', 'notificationChannel')->middleware('throttle:notification-channel-writes')->name('destroy');
-        Route::post('test', NotificationChannelTestController::class)->can('test', 'notificationChannel')->middleware('throttle:notification-test')->name('test');
+        Route::match(['put', 'patch'], '/', [NotificationChannelController::class, 'update'])->middleware('throttle:notification-channel-writes')->name('update');
+        Route::delete('/', [NotificationChannelController::class, 'destroy'])->middleware('throttle:notification-channel-writes')->name('destroy');
+        Route::post('test', NotificationChannelTestController::class)->middleware('throttle:notification-test')->name('test');
+    });
+
+    Route::middleware('can:manage-users')->group(function () {
+        Route::put('instance', [InstanceSettingsController::class, 'update'])->name('instance.update');
+
+        Route::get('users', [UserController::class, 'index'])->name('users.index');
+        Route::post('users', [UserController::class, 'store'])->name('users.store');
+        Route::match(['put', 'patch'], 'users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
 
     Route::get('monitors', [MonitorController::class, 'index'])->name('monitors.index');
     Route::post('monitors', [MonitorController::class, 'store'])->middleware('throttle:monitor-writes')->name('monitors.store');
 
     Route::prefix('monitors/{monitor}')->name('monitors.')->scopeBindings()->group(function () {
-        Route::get('/', [MonitorController::class, 'show'])->can('view', 'monitor')->name('show');
-        Route::match(['put', 'patch'], '/', [MonitorController::class, 'update'])->can('update', 'monitor')->middleware('throttle:monitor-writes')->name('update');
-        Route::delete('/', [MonitorController::class, 'destroy'])->can('delete', 'monitor')->middleware('throttle:monitor-writes')->name('destroy');
-        Route::post('pause', MonitorPauseController::class)->can('pause', 'monitor')->middleware('throttle:monitor-writes')->name('pause');
-        Route::post('resume', MonitorResumeController::class)->can('resume', 'monitor')->middleware('throttle:monitor-writes')->name('resume');
-        Route::get('checks', [MonitorCheckResultController::class, 'index'])->can('view', 'monitor')->name('checks.index');
-        Route::get('incidents', [MonitorIncidentController::class, 'index'])->can('view', 'monitor')->name('incidents.index');
-        Route::get('stats', MonitorStatsController::class)->can('view', 'monitor')->name('stats');
-        Route::get('latency', MonitorLatencyController::class)->can('view', 'monitor')->name('latency');
-        Route::get('uptime-history', MonitorUptimeHistoryController::class)->can('view', 'monitor')->name('uptime-history');
+        Route::get('/', [MonitorController::class, 'show'])->name('show');
+        Route::match(['put', 'patch'], '/', [MonitorController::class, 'update'])->middleware('throttle:monitor-writes')->name('update');
+        Route::delete('/', [MonitorController::class, 'destroy'])->middleware('throttle:monitor-writes')->name('destroy');
+        Route::post('pause', MonitorPauseController::class)->middleware('throttle:monitor-writes')->name('pause');
+        Route::post('resume', MonitorResumeController::class)->middleware('throttle:monitor-writes')->name('resume');
+        Route::get('checks', [MonitorCheckResultController::class, 'index'])->name('checks.index');
+        Route::get('incidents', [MonitorIncidentController::class, 'index'])->name('incidents.index');
+        Route::get('stats', MonitorStatsController::class)->name('stats');
+        Route::get('latency', MonitorLatencyController::class)->name('latency');
+        Route::get('uptime-history', MonitorUptimeHistoryController::class)->name('uptime-history');
     });
 });

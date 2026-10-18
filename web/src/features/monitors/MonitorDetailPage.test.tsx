@@ -2,13 +2,18 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as authApi from '../../api/auth.ts'
+import * as configApi from '../../api/config.ts'
 import * as monitorsApi from '../../api/monitors.ts'
+import * as channelsApi from '../../api/notificationChannels.ts'
 import { axiosError } from '../../test/axiosErrors.ts'
+import { formatTime } from '../../lib/format.ts'
 import { ada, emptyLatency, emptyUptimeDays, makeMonitor, makeStats, paginated } from '../../test/fixtures.ts'
 import { renderApp } from '../../test/renderApp.tsx'
 
 vi.mock('../../api/auth.ts')
+vi.mock('../../api/config.ts')
 vi.mock('../../api/monitors.ts')
+vi.mock('../../api/notificationChannels.ts')
 
 describe('MonitorDetailPage', () => {
   beforeEach(() => {
@@ -20,6 +25,33 @@ describe('MonitorDetailPage', () => {
     vi.mocked(monitorsApi.listMonitorIncidents).mockResolvedValue(paginated([]))
     vi.mocked(monitorsApi.listChecks).mockResolvedValue({ data: [], meta: { per_page: 50, next_cursor: null, prev_cursor: null } })
     vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([]))
+    vi.mocked(channelsApi.listNotificationChannels).mockResolvedValue([])
+    vi.mocked(configApi.getAppConfig).mockResolvedValue({
+      setup_required: false,
+      setup_token_required: false,
+      instance: { name: 'PulseCheck', timezone: 'UTC', locale: 'en' },
+      available_locales: ['en'],
+      monitors: { allowed_intervals: [1, 5, 10], default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10 },
+      realtime: null,
+    })
+  })
+
+  it('shows when the next check is scheduled', async () => {
+    const nextCheckAt = new Date(Date.now() + 180_000).toISOString()
+    vi.mocked(monitorsApi.getMonitor).mockResolvedValue(makeMonitor({ next_check_at: nextCheckAt }))
+
+    renderApp('/monitors/7')
+
+    expect(await screen.findByText(`Next check at ${formatTime(nextCheckAt)}`)).toBeInTheDocument()
+  })
+
+  it('hides the next check while paused', async () => {
+    vi.mocked(monitorsApi.getMonitor).mockResolvedValue(makeMonitor({ is_paused: true, next_check_at: new Date().toISOString() }))
+
+    renderApp('/monitors/7')
+
+    await screen.findByText('Shop API', { selector: 'h1' })
+    expect(screen.queryByText(/Next check at/)).not.toBeInTheDocument()
   })
 
   it('shows "No data" instead of a percentage when there are no checks', async () => {
@@ -51,6 +83,22 @@ describe('MonitorDetailPage', () => {
 
     expect(await screen.findByLabelText('Oct 16: no data')).toBeInTheDocument()
     expect(screen.getByLabelText('Oct 17: 100% (288 checks)')).toHaveClass('bg-status-up')
+  })
+
+  it('edits the monitor from the detail page', async () => {
+    vi.mocked(monitorsApi.updateMonitor).mockResolvedValue(makeMonitor({ interval_minutes: 10 }))
+    const user = userEvent.setup()
+    renderApp('/monitors/7')
+
+    await user.click(await screen.findByRole('button', { name: 'Edit' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Edit monitor' })
+    await user.selectOptions(within(dialog).getByLabelText('Check every'), '10')
+    await user.click(within(dialog).getByRole('button', { name: 'Save changes' }))
+
+    await waitFor(() => expect(monitorsApi.updateMonitor).toHaveBeenCalledWith(7, expect.objectContaining({ interval_minutes: 10 })))
+    expect(await screen.findByText('Changes saved.')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('asks for confirmation before deleting', async () => {

@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Monitor;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class DashboardSummaryController extends Controller
 {
-    public function __invoke(Request $request): JsonResponse
+    public function __invoke(): JsonResponse
     {
-        $counts = $request->user()->monitors()
+        $counts = Monitor::query()
             ->toBase()
             ->selectRaw('count(*) as total')
             ->selectRaw("count(*) filter (where not is_paused and status = 'up') as up")

@@ -3,13 +3,12 @@
 namespace App\Actions;
 
 use App\Models\NotificationChannel;
-use App\Models\User;
 
 class SaveNotificationChannel
 {
-    public function create(User $user, array $attributes): NotificationChannel
+    public function create(array $attributes): NotificationChannel
     {
-        return $user->notificationChannels()->create($attributes);
+        return NotificationChannel::create($attributes);
     }
 
     public function update(NotificationChannel $channel, array $attributes): NotificationChannel

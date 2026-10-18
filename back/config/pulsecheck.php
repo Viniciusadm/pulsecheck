@@ -2,9 +2,11 @@
 
 return [
 
-    'registration_enabled' => (bool) env('PULSECHECK_REGISTRATION_ENABLED', true),
+    'setup_token' => env('PULSECHECK_SETUP_TOKEN'),
 
-    'max_monitors_per_user' => (int) env('PULSECHECK_MAX_MONITORS', 20),
+    'locales' => ['en', 'pt-BR'],
+
+    'default_locale' => 'en',
 
     'allowed_intervals' => array_map('intval', explode(',', env('PULSECHECK_ALLOWED_INTERVALS', '1,5,10'))),
 

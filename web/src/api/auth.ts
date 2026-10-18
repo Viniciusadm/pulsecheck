@@ -4,13 +4,6 @@ import type { DataResponse, User } from './types.ts'
 
 export type LoginInput = { email: string; password: string }
 
-export type RegisterInput = {
-  name: string
-  email: string
-  password: string
-  password_confirmation: string
-}
-
 export type ResetPasswordInput = {
   token: string
   email: string
@@ -35,13 +28,6 @@ export async function fetchCurrentUser(): Promise<User | null> {
 export async function login(input: LoginInput): Promise<User> {
   await fetchCsrfCookie()
   const response = await http.post<DataResponse<User>>('/api/auth/login', input)
-
-  return response.data.data
-}
-
-export async function register(input: RegisterInput): Promise<User> {
-  await fetchCsrfCookie()
-  const response = await http.post<DataResponse<User>>('/api/auth/register', input)
 
   return response.data.data
 }

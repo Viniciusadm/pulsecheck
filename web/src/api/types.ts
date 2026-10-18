@@ -1,7 +1,10 @@
+export type UserRole = 'admin' | 'member'
+
 export type User = {
   id: number
   name: string
   email: string
+  role: UserRole
   email_verified_at: string | null
   created_at: string
 }
@@ -133,15 +136,23 @@ export type DashboardSummary = {
   paused: number
 }
 
+export type InstanceSettings = {
+  name: string
+  timezone: string
+  locale: string
+}
+
 export type AppConfig = {
-  registration_enabled: boolean
+  setup_required: boolean
+  setup_token_required: boolean
+  instance: InstanceSettings
+  available_locales: string[]
   monitors: {
     allowed_intervals: number[]
     default_interval: number
     timeout_min: number
     timeout_max: number
     timeout_default: number
-    max_per_user: number
   }
   realtime: { key: string } | null
 }
@@ -167,4 +178,23 @@ export type NotificationChannelInput = {
   enabled: boolean
   is_default: boolean
   config: Record<string, string | Record<string, string>>
+}
+
+export type UserInput = {
+  name: string
+  email: string
+  role: UserRole
+  password?: string
+  password_confirmation?: string
+}
+
+export type SetupInput = {
+  instance_name: string
+  timezone: string
+  locale: string
+  name: string
+  email: string
+  password: string
+  password_confirmation: string
+  token?: string
 }

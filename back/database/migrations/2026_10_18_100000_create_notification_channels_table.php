@@ -10,7 +10,6 @@ return new class extends Migration
     {
         Schema::create('notification_channels', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('type', 20);
             $table->string('name', 100);
             $table->text('config');

@@ -4,7 +4,6 @@ namespace Tests\Feature\Models;
 
 use App\Enums\MonitorStatus;
 use App\Models\Monitor;
-use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -16,7 +15,7 @@ class MonitorTest extends TestCase
 
     public function test_new_monitor_starts_pending_and_active(): void
     {
-        $monitor = User::factory()->create()->monitors()->create([
+        $monitor = Monitor::create([
             'name' => 'Example',
             'url' => 'https://example.com',
             'interval_minutes' => 5,
@@ -29,14 +28,6 @@ class MonitorTest extends TestCase
         $this->assertFalse($monitor->is_paused);
         $this->assertSame(0, $monitor->consecutive_failures);
         $this->assertSame(0, $monitor->consecutive_successes);
-    }
-
-    public function test_user_id_cannot_be_mass_assigned(): void
-    {
-        $monitor = new Monitor(['user_id' => 123, 'name' => 'Example']);
-
-        $this->assertNull($monitor->user_id);
-        $this->assertSame('Example', $monitor->name);
     }
 
     #[DataProvider('allowedIntervals')]

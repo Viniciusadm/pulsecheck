@@ -7,15 +7,14 @@ use App\Http\Requests\StoreNotificationChannelRequest;
 use App\Http\Requests\UpdateNotificationChannelRequest;
 use App\Http\Resources\NotificationChannelResource;
 use App\Models\NotificationChannel;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 
 class NotificationChannelController extends Controller
 {
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(): AnonymousResourceCollection
     {
-        $channels = $request->user()->notificationChannels()
+        $channels = NotificationChannel::query()
             ->withCount('monitors')
             ->orderBy('name')
             ->orderBy('id')
@@ -26,7 +25,7 @@ class NotificationChannelController extends Controller
 
     public function store(StoreNotificationChannelRequest $request, SaveNotificationChannel $saveNotificationChannel): NotificationChannelResource
     {
-        $channel = $saveNotificationChannel->create($request->user(), $request->validated());
+        $channel = $saveNotificationChannel->create($request->validated());
 
         return new NotificationChannelResource($channel->loadCount('monitors'));
     }

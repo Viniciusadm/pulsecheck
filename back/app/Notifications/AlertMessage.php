@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Enums\NotificationType;
 use App\Models\Incident;
+use App\Models\InstanceSettings;
 use Carbon\CarbonInterface;
 
 final readonly class AlertMessage
@@ -29,12 +30,12 @@ final readonly class AlertMessage
             NotificationType::Down => new self(
                 event: 'monitor.down',
                 severity: AlertSeverity::Critical,
-                title: "🔴 {$monitor->name} is DOWN",
+                title: '🔴 '.__(':monitor is DOWN', ['monitor' => $monitor->name]),
                 summary: null,
                 fields: [
-                    'Host' => $host,
-                    'Cause' => (string) $incident->cause,
-                    'Since' => self::formatTime($incident->started_at),
+                    __('Host') => $host,
+                    __('Cause') => (string) $incident->cause,
+                    __('Since') => self::formatTime($incident->started_at),
                 ],
                 occurredAt: $incident->started_at,
                 incident: $incident,
@@ -42,12 +43,12 @@ final readonly class AlertMessage
             NotificationType::Recovered => new self(
                 event: 'monitor.recovered',
                 severity: AlertSeverity::Resolved,
-                title: "🟢 {$monitor->name} is back UP",
+                title: '🟢 '.__(':monitor is back UP', ['monitor' => $monitor->name]),
                 summary: null,
                 fields: [
-                    'Host' => $host,
-                    'Downtime' => self::formatDuration($incident->duration_seconds),
-                    'Resolved' => self::formatTime($incident->resolved_at ?? now()),
+                    __('Host') => $host,
+                    __('Downtime') => self::formatDuration($incident->duration_seconds),
+                    __('Resolved') => self::formatTime($incident->resolved_at ?? now()),
                 ],
                 occurredAt: $incident->resolved_at ?? now(),
                 incident: $incident,
@@ -60,8 +61,8 @@ final readonly class AlertMessage
         return new self(
             event: 'test',
             severity: AlertSeverity::Info,
-            title: '✅ PulseCheck test message',
-            summary: 'Down and recovery alerts for your monitors will arrive here.',
+            title: '✅ '.__(':instance test message', ['instance' => InstanceSettings::currentName()]),
+            summary: __('Down and recovery alerts for your monitors will arrive here.'),
             fields: [],
             occurredAt: now(),
         );
@@ -93,6 +94,9 @@ final readonly class AlertMessage
             'title' => $this->title,
             'text' => $this->toText(),
             'occurred_at' => self::isoTime($this->occurredAt),
+            'instance' => [
+                'name' => InstanceSettings::currentName(),
+            ],
             'monitor' => $monitor === null ? null : [
                 'id' => $monitor->id,
                 'name' => $monitor->name,
@@ -118,7 +122,7 @@ final readonly class AlertMessage
 
     private static function formatTime(CarbonInterface $moment): string
     {
-        return $moment->copy()->utc()->format('Y-m-d H:i:s').' UTC';
+        return $moment->copy()->setTimezone(InstanceSettings::currentTimezone())->format('Y-m-d H:i:s T');
     }
 
     private static function isoTime(CarbonInterface $moment): string

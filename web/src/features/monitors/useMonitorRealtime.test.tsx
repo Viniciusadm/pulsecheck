@@ -1,12 +1,13 @@
 import { screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as authApi from '../../api/auth.ts'
+import * as configApi from '../../api/config.ts'
 import * as dashboardApi from '../../api/dashboard.ts'
 import * as monitorsApi from '../../api/monitors.ts'
 import * as realtimeApi from '../../api/realtime.ts'
 import type { Monitor } from '../../api/types.ts'
 import { queryKeys } from '../../api/queryKeys.ts'
-import { ada, makeMonitor, paginated } from '../../test/fixtures.ts'
+import { ada, makeConfig, makeMonitor, paginated } from '../../test/fixtures.ts'
 import { renderApp } from '../../test/renderApp.tsx'
 
 vi.mock('../../api/auth.ts')
@@ -38,20 +39,16 @@ describe('useMonitorRealtime', () => {
     vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([makeMonitor()]))
   })
 
-  it('subscribes to the user channel and refreshes monitors when a check arrives', async () => {
+  it('subscribes to the shared monitors channel and refreshes monitors when a check arrives', async () => {
     const echo = fakeEcho()
-    vi.mocked(dashboardApi.getAppConfig).mockResolvedValue({
-      registration_enabled: true,
-      monitors: { allowed_intervals: [1, 5, 10], default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10, max_per_user: 20 },
-      realtime: { key: 'public-key' },
-    })
+    vi.mocked(configApi.getAppConfig).mockResolvedValue(makeConfig({ realtime: { key: 'public-key' } }))
 
     const { queryClient } = renderApp('/dashboard')
 
     expect(await screen.findAllByRole('link', { name: 'Shop API' })).not.toHaveLength(0)
     await waitFor(() => expect(echo.listeners.has('.monitor.checked')).toBe(true))
     expect(realtimeApi.createEcho).toHaveBeenCalledWith('public-key')
-    expect(echo.privateChannel).toHaveBeenCalledWith(`users.${ada.id}`)
+    expect(echo.privateChannel).toHaveBeenCalledWith('monitors')
 
     const summaryCalls = vi.mocked(dashboardApi.getDashboardSummary).mock.calls.length
     const listCalls = vi.mocked(monitorsApi.listMonitors).mock.calls.length
@@ -66,11 +63,7 @@ describe('useMonitorRealtime', () => {
 
   it('does not connect when realtime is disabled', async () => {
     fakeEcho()
-    vi.mocked(dashboardApi.getAppConfig).mockResolvedValue({
-      registration_enabled: true,
-      monitors: { allowed_intervals: [1, 5, 10], default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10, max_per_user: 20 },
-      realtime: null,
-    })
+    vi.mocked(configApi.getAppConfig).mockResolvedValue(makeConfig())
 
     renderApp('/dashboard')
 

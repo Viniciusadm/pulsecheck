@@ -1,11 +1,36 @@
-import type { Incident, LatencySeries, Monitor, MonitorStats, NotificationChannel, PaginatedResponse, UptimeDay, User } from '../api/types.ts'
+import type { AppConfig, Incident, LatencySeries, Monitor, MonitorStats, NotificationChannel, PaginatedResponse, UptimeDay, User } from '../api/types.ts'
 
 export const ada: User = {
   id: 1,
   name: 'Ada Lovelace',
   email: 'ada@example.com',
+  role: 'admin',
   email_verified_at: null,
   created_at: '2026-10-17T12:00:00Z',
+}
+
+export function makeUser(overrides: Partial<User> = {}): User {
+  return {
+    id: 2,
+    name: 'Grace Hopper',
+    email: 'grace@example.com',
+    role: 'member',
+    email_verified_at: null,
+    created_at: '2026-10-17T12:00:00Z',
+    ...overrides,
+  }
+}
+
+export function makeConfig(overrides: Partial<AppConfig> = {}): AppConfig {
+  return {
+    setup_required: false,
+    setup_token_required: false,
+    instance: { name: 'Acme', timezone: 'UTC', locale: 'en' },
+    available_locales: ['en'],
+    monitors: { allowed_intervals: [1, 5, 10], default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10 },
+    realtime: null,
+    ...overrides,
+  }
 }
 
 export function makeMonitor(overrides: Partial<Monitor> = {}): Monitor {

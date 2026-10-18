@@ -1,10 +1,13 @@
+import { useState } from 'react'
 import { Link } from 'react-router'
 import type { Monitor } from '../../api/types.ts'
 import { StatusBadge } from '../../components/ui/Badge.tsx'
+import { Button } from '../../components/ui/Button.tsx'
 import { RelativeTime } from '../../components/ui/RelativeTime.tsx'
 import { t } from '../../i18n/index.ts'
 import { formatLatency } from '../../lib/format.ts'
 import { displayStatus, hostOf } from '../../lib/monitor.ts'
+import { MonitorFormDialog } from './MonitorFormDialog.tsx'
 
 function LastCheck({ value }: { value: string | null }) {
   if (value === null) {
@@ -14,7 +17,17 @@ function LastCheck({ value }: { value: string | null }) {
   return <RelativeTime value={value} />
 }
 
+function EditButton({ monitor, onEdit }: { monitor: Monitor; onEdit: (monitor: Monitor) => void }) {
+  return (
+    <Button variant="secondary" onClick={() => onEdit(monitor)} aria-label={t('monitors.editMonitor', { name: monitor.name })}>
+      {t('monitors.detail.edit')}
+    </Button>
+  )
+}
+
 export function MonitorList({ monitors }: { monitors: Monitor[] }) {
+  const [editingMonitor, setEditingMonitor] = useState<Monitor | null>(null)
+
   return (
     <>
       <div className="hidden overflow-hidden rounded-lg border border-border bg-surface md:block">
@@ -26,6 +39,9 @@ export function MonitorList({ monitors }: { monitors: Monitor[] }) {
               <th scope="col" className="px-4 py-2.5 text-right">{t('monitors.columns.latency')}</th>
               <th scope="col" className="px-4 py-2.5">{t('monitors.columns.lastCheck')}</th>
               <th scope="col" className="px-4 py-2.5 text-right">{t('monitors.columns.httpCode')}</th>
+              <th scope="col" className="px-4 py-2.5 text-right">
+                <span className="sr-only">{t('monitors.columns.actions')}</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -45,6 +61,9 @@ export function MonitorList({ monitors }: { monitors: Monitor[] }) {
                   <LastCheck value={monitor.last_checked_at} />
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums text-neutral-700">{monitor.last_status_code ?? '—'}</td>
+                <td className="px-4 py-2 text-right">
+                  <EditButton monitor={monitor} onEdit={setEditingMonitor} />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -53,11 +72,8 @@ export function MonitorList({ monitors }: { monitors: Monitor[] }) {
 
       <ul className="flex flex-col gap-2 md:hidden">
         {monitors.map((monitor) => (
-          <li key={monitor.id}>
-            <Link
-              to={`/monitors/${monitor.id}`}
-              className="flex flex-col gap-2 rounded-lg border border-border bg-surface px-4 py-3 hover:border-primary-300"
-            >
+          <li key={monitor.id} className="flex items-center gap-2 rounded-lg border border-border bg-surface pr-3 hover:border-primary-300">
+            <Link to={`/monitors/${monitor.id}`} className="flex min-w-0 flex-1 flex-col gap-2 px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate font-semibold text-neutral-900">{monitor.name}</p>
@@ -71,9 +87,17 @@ export function MonitorList({ monitors }: { monitors: Monitor[] }) {
                 <LastCheck value={monitor.last_checked_at} />
               </div>
             </Link>
+            <EditButton monitor={monitor} onEdit={setEditingMonitor} />
           </li>
         ))}
       </ul>
+
+      <MonitorFormDialog
+        key={editingMonitor?.id}
+        isOpen={editingMonitor !== null}
+        monitor={editingMonitor ?? undefined}
+        onClose={() => setEditingMonitor(null)}
+      />
     </>
   )
 }

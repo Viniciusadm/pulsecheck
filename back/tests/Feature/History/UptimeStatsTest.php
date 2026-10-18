@@ -3,6 +3,7 @@
 namespace Tests\Feature\History;
 
 use App\Models\Monitor;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +29,7 @@ class UptimeStatsTest extends TestCase
             $this->checkAt($monitor, now()->subMinutes($i * 5), isSuccess: $i > 2, latencyMs: $i > 2 ? $i * 100 : null);
         }
 
-        $this->actingAs($monitor->user)->fromSpa()
+        $this->actingAs(User::factory()->create())->fromSpa()
             ->getJson("/api/monitors/{$monitor->id}/stats?period=24h")
             ->assertOk()
             ->assertJsonPath('data.period', '24h')
@@ -44,7 +45,7 @@ class UptimeStatsTest extends TestCase
         $monitor = Monitor::factory()->create();
         $this->checkAt($monitor, now()->subDays(2));
 
-        $this->actingAs($monitor->user)->fromSpa()
+        $this->actingAs(User::factory()->create())->fromSpa()
             ->getJson("/api/monitors/{$monitor->id}/stats?period=24h")
             ->assertOk()
             ->assertJsonPath('data.total_checks', 0)
@@ -62,7 +63,7 @@ class UptimeStatsTest extends TestCase
         $this->checkAt($monitor, now()->subDays(20), isSuccess: false, latencyMs: null);
         $this->checkAt($monitor, now()->subDays(40));
 
-        $this->actingAs($monitor->user)->fromSpa();
+        $this->actingAs(User::factory()->create())->fromSpa();
 
         $this->getJson("/api/monitors/{$monitor->id}/stats?period=24h")->assertJsonPath('data.total_checks', 1);
         $this->getJson("/api/monitors/{$monitor->id}/stats?period=7d")->assertJsonPath('data.total_checks', 2)->assertJsonPath('data.uptime_percentage', 50);
@@ -76,7 +77,7 @@ class UptimeStatsTest extends TestCase
         $this->checkAt($monitor, now()->subMinutes(2));
         $this->checkAt($monitor, now()->subMinutes(3), isSuccess: false, latencyMs: null);
 
-        $this->actingAs($monitor->user)->fromSpa()
+        $this->actingAs(User::factory()->create())->fromSpa()
             ->getJson("/api/monitors/{$monitor->id}/stats?period=24h")
             ->assertJsonPath('data.uptime_percentage', 66.67);
     }
@@ -91,7 +92,7 @@ class UptimeStatsTest extends TestCase
             [$monitor->id, now()->toIso8601String(), now()->toIso8601String()],
         );
 
-        $this->actingAs($monitor->user)->fromSpa()
+        $this->actingAs(User::factory()->create())->fromSpa()
             ->getJson("/api/monitors/{$monitor->id}/stats?period=24h")
             ->assertJsonPath('data.successful_checks', 29999)
             ->assertJsonPath('data.uptime_percentage', 99.99);
@@ -101,7 +102,7 @@ class UptimeStatsTest extends TestCase
     {
         $monitor = Monitor::factory()->create();
 
-        $this->actingAs($monitor->user)->fromSpa()
+        $this->actingAs(User::factory()->create())->fromSpa()
             ->getJson("/api/monitors/{$monitor->id}/stats?period=1y")
             ->assertUnprocessable()
             ->assertJsonValidationErrors('period');
@@ -111,7 +112,7 @@ class UptimeStatsTest extends TestCase
     {
         $monitor = Monitor::factory()->create();
 
-        $this->actingAs($monitor->user)->fromSpa()
+        $this->actingAs(User::factory()->create())->fromSpa()
             ->getJson("/api/monitors/{$monitor->id}/stats")
             ->assertOk()
             ->assertJsonPath('data.period', '24h');

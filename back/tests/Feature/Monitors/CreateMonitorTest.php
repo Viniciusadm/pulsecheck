@@ -51,7 +51,6 @@ class CreateMonitorTest extends TestCase
             ->assertJsonPath('data.is_paused', false);
 
         $monitor = Monitor::findOrFail($response->json('data.id'));
-        $this->assertTrue($monitor->user->is($user));
         $this->assertTrue($monitor->next_check_at->equalTo(now()));
     }
 
@@ -67,16 +66,16 @@ class CreateMonitorTest extends TestCase
             ->assertJsonPath('data.timeout_seconds', 10);
     }
 
-    public function test_user_id_in_the_payload_is_ignored(): void
+    public function test_monitors_are_shared_with_every_user(): void
     {
-        $user = User::factory()->create();
-        $otherUser = User::factory()->create();
-
-        $response = $this->actingAs($user)->fromSpa()->postJson('/api/monitors', $this->validPayload(['user_id' => $otherUser->id]));
+        $response = $this->actingAs(User::factory()->create())->fromSpa()->postJson('/api/monitors', $this->validPayload());
 
         $response->assertCreated();
-        $this->assertSame($user->id, Monitor::findOrFail($response->json('data.id'))->user_id);
-        $this->assertSame(0, $otherUser->monitors()->count());
+
+        $this->actingAs(User::factory()->create())->fromSpa()
+            ->getJson('/api/monitors/'.$response->json('data.id'))
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Example');
     }
 
     public function test_server_controlled_fields_in_the_payload_are_ignored(): void
@@ -134,21 +133,6 @@ class CreateMonitorTest extends TestCase
             ->postJson('/api/monitors', $this->validPayload(['interval_minutes' => 1, 'timeout_seconds' => 60]))
             ->assertUnprocessable()
             ->assertJsonValidationErrors('timeout_seconds');
-    }
-
-    public function test_monitor_limit_is_enforced_with_a_clear_message(): void
-    {
-        config(['pulsecheck.max_monitors_per_user' => 2]);
-        $user = User::factory()->create();
-        Monitor::factory()->for($user)->count(2)->create();
-        Monitor::factory()->count(3)->create();
-
-        $this->actingAs($user)->fromSpa()
-            ->postJson('/api/monitors', $this->validPayload())
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['monitors' => 'You have reached the limit of 2 monitors.']);
-
-        $this->assertSame(2, $user->monitors()->count());
     }
 
     public function test_monitor_writes_are_rate_limited_per_user(): void

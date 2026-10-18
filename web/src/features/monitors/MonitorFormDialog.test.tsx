@@ -2,15 +2,14 @@ import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as authApi from '../../api/auth.ts'
-import * as dashboardApi from '../../api/dashboard.ts'
+import * as configApi from '../../api/config.ts'
 import * as monitorsApi from '../../api/monitors.ts'
 import * as channelsApi from '../../api/notificationChannels.ts'
 import { axiosError } from '../../test/axiosErrors.ts'
-import { ada, makeChannel, makeMonitor, paginated } from '../../test/fixtures.ts'
+import { ada, makeConfig, makeChannel, makeMonitor, paginated } from '../../test/fixtures.ts'
 import { renderApp } from '../../test/renderApp.tsx'
 
 vi.mock('../../api/auth.ts')
-vi.mock('../../api/dashboard.ts')
 vi.mock('../../api/monitors.ts')
 vi.mock('../../api/notificationChannels.ts')
 
@@ -19,11 +18,7 @@ describe('MonitorFormDialog', () => {
     vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(ada)
     vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([makeMonitor()]))
     vi.mocked(channelsApi.listNotificationChannels).mockResolvedValue([])
-    vi.mocked(dashboardApi.getAppConfig).mockResolvedValue({
-      registration_enabled: true,
-      monitors: { allowed_intervals: [1, 5, 10], default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10, max_per_user: 20 },
-      realtime: null,
-    })
+    vi.mocked(configApi.getAppConfig).mockResolvedValue(makeConfig())
   })
 
   async function openForm() {

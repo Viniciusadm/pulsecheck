@@ -15,12 +15,11 @@ class DashboardSummaryTest extends TestCase
     public function test_counts_paused_separately_from_status_in_a_single_query(): void
     {
         $user = User::factory()->create();
-        Monitor::factory()->for($user)->up()->count(3)->create();
-        Monitor::factory()->for($user)->down()->count(2)->create();
-        Monitor::factory()->for($user)->create();
-        Monitor::factory()->for($user)->up()->paused()->create();
-        Monitor::factory()->for($user)->down()->paused()->create();
-        Monitor::factory()->down()->count(4)->create();
+        Monitor::factory()->up()->count(3)->create();
+        Monitor::factory()->down()->count(2)->create();
+        Monitor::factory()->create();
+        Monitor::factory()->up()->paused()->create();
+        Monitor::factory()->down()->paused()->create();
 
         $this->actingAs($user)->fromSpa();
         DB::enableQueryLog();

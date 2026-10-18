@@ -4,6 +4,7 @@ namespace Tests\Feature\Notifications;
 
 use App\Mail\AlertMail;
 use App\Models\NotificationChannel;
+use App\Models\User;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -27,9 +28,9 @@ class NotificationChannelTestMessageTest extends TestCase
         $this->fakeDns(['hooks.example.com' => ['93.184.215.14']]);
     }
 
-    private function sendTest(NotificationChannel $channel)
+    private function sendTest(NotificationChannel $channel, ?User $user = null)
     {
-        return $this->actingAs($channel->user)->fromSpa()->postJson("/api/notification-channels/{$channel->id}/test");
+        return $this->actingAs($user ?? User::factory()->create())->fromSpa()->postJson("/api/notification-channels/{$channel->id}/test");
     }
 
     public function test_telegram_test_message_is_sent(): void
@@ -90,11 +91,13 @@ class NotificationChannelTestMessageTest extends TestCase
         Mail::fake();
         RateLimiter::clear('notification-test');
         $channel = NotificationChannel::factory()->email()->create();
+        $user = User::factory()->create();
 
         foreach (range(1, 5) as $attempt) {
-            $this->sendTest($channel)->assertOk();
+            $this->sendTest($channel, $user)->assertOk();
         }
 
-        $this->sendTest($channel)->assertTooManyRequests();
+        $this->sendTest($channel, $user)->assertTooManyRequests();
+        $this->sendTest($channel)->assertOk();
     }
 }

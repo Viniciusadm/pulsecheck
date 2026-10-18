@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
-import { getAppConfig } from '../../api/dashboard.ts'
+import { getAppConfig } from '../../api/config.ts'
 import { queryKeys } from '../../api/queryKeys.ts'
 import type { createEcho } from '../../api/realtime.ts'
 import type { Monitor } from '../../api/types.ts'
@@ -15,10 +15,10 @@ export function useMonitorRealtime() {
   const queryClient = useQueryClient()
   const { data: config } = useQuery({ queryKey: queryKeys.config, queryFn: getAppConfig, staleTime: Infinity })
   const realtimeKey = config?.realtime?.key
-  const userId = user?.id
+  const isAuthenticated = user !== null
 
   useEffect(() => {
-    if (!realtimeKey || userId === undefined) {
+    if (!realtimeKey || !isAuthenticated) {
       return
     }
 
@@ -38,7 +38,7 @@ export function useMonitorRealtime() {
       }
 
       echo = realtime.createEcho(realtimeKey)
-      echo.private(`users.${userId}`).listen('.monitor.checked', ({ monitor }: MonitorCheckedEvent) => {
+      echo.private('monitors').listen('.monitor.checked', ({ monitor }: MonitorCheckedEvent) => {
         queryClient.setQueryData(queryKeys.monitor(monitor.id), monitor)
         refreshTimer ??= setTimeout(refresh, REFRESH_DEBOUNCE_MS)
       })
@@ -49,5 +49,5 @@ export function useMonitorRealtime() {
       clearTimeout(refreshTimer)
       echo?.disconnect()
     }
-  }, [realtimeKey, userId, queryClient])
+  }, [realtimeKey, isAuthenticated, queryClient])
 }

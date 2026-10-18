@@ -17,7 +17,7 @@ class MonitorChecked implements ShouldBroadcastNow
 
     public function broadcastOn(): PrivateChannel
     {
-        return new PrivateChannel("users.{$this->monitor->user_id}");
+        return new PrivateChannel('monitors');
     }
 
     public function broadcastAs(): string

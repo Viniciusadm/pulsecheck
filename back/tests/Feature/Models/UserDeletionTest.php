@@ -14,44 +14,39 @@ class UserDeletionTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_deleting_a_user_removes_all_of_their_data(): void
+    public function test_deleting_a_user_keeps_the_shared_data(): void
     {
         $user = User::factory()->create();
-        $monitor = Monitor::factory()->for($user)->create();
+        $monitor = Monitor::factory()->create();
+        CheckResult::factory()->for($monitor)->count(3)->create();
+        $channel = NotificationChannel::factory()->create();
+
+        $user->delete();
+
+        $this->assertModelExists($monitor);
+        $this->assertModelExists($channel);
+        $this->assertSame(3, $monitor->checkResults()->count());
+    }
+
+    public function test_deleting_a_monitor_removes_its_results_and_incidents(): void
+    {
+        $monitor = Monitor::factory()->create();
         CheckResult::factory()->for($monitor)->count(3)->create();
         Incident::factory()->for($monitor)->resolved()->create();
         Incident::factory()->for($monitor)->open()->create();
-        NotificationChannel::factory()->for($user)->create();
 
-        $user->delete();
+        $monitor->delete();
 
-        $this->assertDatabaseCount('monitors', 0);
         $this->assertDatabaseCount('check_results', 0);
         $this->assertDatabaseCount('incidents', 0);
-        $this->assertDatabaseCount('notification_channels', 0);
     }
 
-    public function test_deleting_a_user_keeps_other_users_data(): void
+    public function test_relationships_connect_monitors_results_and_incidents(): void
     {
-        $otherMonitor = Monitor::factory()->create();
-        CheckResult::factory()->for($otherMonitor)->create();
-        $user = User::factory()->has(Monitor::factory())->create();
-
-        $user->delete();
-
-        $this->assertModelExists($otherMonitor);
-        $this->assertSame(1, $otherMonitor->checkResults()->count());
-    }
-
-    public function test_relationships_connect_users_monitors_results_and_incidents(): void
-    {
-        $user = User::factory()->create();
-        $monitor = Monitor::factory()->for($user)->create();
+        $monitor = Monitor::factory()->create();
         $checkResult = CheckResult::factory()->for($monitor)->create();
         $incident = Incident::factory()->for($monitor)->create();
 
-        $this->assertTrue($user->monitors->first()->is($monitor));
-        $this->assertTrue($monitor->user->is($user));
         $this->assertTrue($monitor->checkResults->first()->is($checkResult));
         $this->assertTrue($monitor->incidents->first()->is($incident));
         $this->assertTrue($checkResult->monitor->is($monitor));

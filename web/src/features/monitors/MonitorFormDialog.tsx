@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
-import { getAppConfig } from '../../api/dashboard.ts'
+import { getAppConfig } from '../../api/config.ts'
 import { fieldErrors, generalErrorMessage } from '../../api/errors.ts'
 import { listNotificationChannels } from '../../api/notificationChannels.ts'
 import { queryKeys } from '../../api/queryKeys.ts'

@@ -13,11 +13,11 @@ class RouteMatrixAuthorizationTest extends TestCase
     use RefreshDatabase;
 
     private const PUBLIC_API_ROUTES = [
-        'POST api/auth/register',
         'POST api/auth/login',
         'POST api/auth/forgot-password',
         'POST api/auth/reset-password',
         'GET api/config',
+        'POST api/setup',
     ];
 
     public function test_every_private_api_route_requires_authentication(): void

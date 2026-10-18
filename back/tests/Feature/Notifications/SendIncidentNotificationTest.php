@@ -7,6 +7,7 @@ use App\Jobs\RunMonitorCheck;
 use App\Jobs\SendIncidentNotification;
 use App\Mail\AlertMail;
 use App\Models\Incident;
+use App\Models\InstanceSettings;
 use App\Models\Monitor;
 use App\Models\NotificationChannel;
 use App\Notifications\AlertMessage;
@@ -58,7 +59,7 @@ class SendIncidentNotificationTest extends TestCase
 
     private function incident(NotificationChannel $channel, string $state = 'open', array $attributes = []): Incident
     {
-        $monitor = Monitor::factory()->for($channel->user)->create(['name' => 'Shop <API>', 'url' => 'https://shop.example.com:8443/health?key=secret']);
+        $monitor = Monitor::factory()->create(['name' => 'Shop <API>', 'url' => 'https://shop.example.com:8443/health?key=secret']);
         $monitor->notificationChannels()->attach($channel);
 
         return Incident::factory()->for($monitor)->{$state}()->create([
@@ -141,6 +142,7 @@ class SendIncidentNotificationTest extends TestCase
             'title' => '🔴 Shop <API> is DOWN',
             'text' => "🔴 Shop <API> is DOWN\nHost: shop.example.com:8443\nCause: timeout: Operation timed out\nSince: 2026-10-17 12:00:00 UTC",
             'occurred_at' => '2026-10-17T12:00:00Z',
+            'instance' => ['name' => 'PulseCheck'],
             'monitor' => ['id' => $incident->monitor_id, 'name' => 'Shop <API>', 'host' => 'shop.example.com:8443'],
             'incident' => [
                 'id' => $incident->id,
@@ -203,10 +205,33 @@ class SendIncidentNotificationTest extends TestCase
 
         $mail = new AlertMail(AlertMessage::fromIncident($incident->load('monitor'), NotificationType::Down));
 
-        $mail->assertHasSubject('🔴 Shop <API> is DOWN');
+        $mail->assertHasSubject('[PulseCheck] 🔴 Shop <API> is DOWN');
         $mail->assertSeeInHtml('shop.example.com:8443');
         $mail->assertSeeInHtml('timeout: Operation timed out');
         $mail->assertDontSeeInHtml('key=secret');
+    }
+
+    public function test_alerts_use_the_instance_name_and_timezone(): void
+    {
+        InstanceSettings::factory()->create(['name' => 'Acme Ops', 'timezone' => 'America/New_York']);
+        $channel = NotificationChannel::factory()->email()->create();
+        $incident = $this->incident($channel)->load('monitor');
+
+        $alert = AlertMessage::fromIncident($incident, NotificationType::Down);
+        $mail = new AlertMail($alert);
+
+        $this->assertStringContainsString('Since: 2026-10-17 08:00:00 EDT', $alert->toText());
+        $this->assertSame('2026-10-17T12:00:00Z', $alert->toPayload()['occurred_at']);
+        $this->assertSame(['name' => 'Acme Ops'], $alert->toPayload()['instance']);
+        $mail->assertHasSubject('[Acme Ops] 🔴 Shop <API> is DOWN');
+        $mail->assertSeeInHtml('Acme Ops');
+    }
+
+    public function test_test_message_mentions_the_instance_name(): void
+    {
+        InstanceSettings::factory()->create(['name' => 'Acme Ops']);
+
+        $this->assertSame('✅ Acme Ops test message', AlertMessage::test()->title);
     }
 
     public function test_nothing_is_sent_when_the_channel_was_disabled_detached_or_deleted_meanwhile(): void
@@ -230,7 +255,7 @@ class SendIncidentNotificationTest extends TestCase
         $this->assertSame([], $this->outboundRequests);
     }
 
-    public function test_a_channel_of_another_user_is_never_used(): void
+    public function test_a_channel_not_attached_to_the_monitor_is_never_used(): void
     {
         $this->fakeOutboundHttp();
         $incident = $this->incident(NotificationChannel::factory()->create());
@@ -332,7 +357,7 @@ class SendIncidentNotificationTest extends TestCase
     {
         Http::fake(['api.telegram.org/*' => Http::failedConnection()]);
         $channel = NotificationChannel::factory()->telegram()->create(['config' => ['bot_token' => self::TOKEN, 'chat_id' => '1']]);
-        $monitor = Monitor::factory()->for($channel->user)->up()->create(['url' => 'https://shop.example.com/']);
+        $monitor = Monitor::factory()->up()->create(['url' => 'https://shop.example.com/']);
         $monitor->notificationChannels()->attach($channel);
         $this->fakeOutboundHttp(new Response(503), new Response(503), new Response(503));
 

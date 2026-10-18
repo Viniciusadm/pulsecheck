@@ -1,13 +1,26 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
-import { Spinner } from '../components/ui/Spinner.tsx'
+import { FullPageSpinner } from '../components/ui/FullPageSpinner.tsx'
 import { useAuth } from '../features/auth/AuthContext.ts'
+import { useAppConfig } from '../features/config/ConfigContext.ts'
 
-function FullPageSpinner() {
-  return (
-    <div className="flex min-h-screen items-center justify-center text-primary-600">
-      <Spinner />
-    </div>
-  )
+export function RequireSetup() {
+  const { setup_required: isSetupRequired } = useAppConfig()
+
+  if (isSetupRequired) {
+    return <Navigate to="/setup" replace />
+  }
+
+  return <Outlet />
+}
+
+export function RedirectIfSetupDone() {
+  const { setup_required: isSetupRequired } = useAppConfig()
+
+  if (!isSetupRequired) {
+    return <Navigate to="/login" replace />
+  }
+
+  return <Outlet />
 }
 
 export function RequireAuth() {

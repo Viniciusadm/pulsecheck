@@ -16,7 +16,6 @@ class RecentIncidentController extends Controller
         ]);
 
         $incidents = Incident::query()
-            ->whereIn('monitor_id', $request->user()->monitors()->select('id'))
             ->with('monitor:id,name')
             ->orderByDesc('started_at')
             ->orderByDesc('id')

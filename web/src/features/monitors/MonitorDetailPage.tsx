@@ -16,7 +16,7 @@ import { RelativeTime } from '../../components/ui/RelativeTime.tsx'
 import { Skeleton } from '../../components/ui/Skeleton.tsx'
 import { useToast } from '../../components/ui/toast.ts'
 import { t } from '../../i18n/index.ts'
-import { formatLatency, formatPercentage } from '../../lib/format.ts'
+import { formatDateTime, formatLatency, formatPercentage, formatTime } from '../../lib/format.ts'
 import { displayStatus } from '../../lib/monitor.ts'
 import { CheckHistory } from './CheckHistory.tsx'
 import { IncidentList } from './IncidentList.tsx'
@@ -119,6 +119,11 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
               <span>{t('monitors.detail.timeout', { seconds: monitor.timeout_seconds })}</span>
               {monitor.last_checked_at && (
                 <RelativeTime value={monitor.last_checked_at} format={(time) => t('monitors.detail.lastCheck', { time })} />
+              )}
+              {!monitor.is_paused && monitor.next_check_at && (
+                <time dateTime={monitor.next_check_at} title={formatDateTime(monitor.next_check_at)}>
+                  {t('monitors.detail.nextCheck', { time: formatTime(monitor.next_check_at) })}
+                </time>
               )}
             </p>
           </div>

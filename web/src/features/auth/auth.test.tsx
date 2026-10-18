@@ -3,41 +3,31 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as authApi from '../../api/auth.ts'
 import * as dashboardApi from '../../api/dashboard.ts'
-import type { User } from '../../api/types.ts'
 import { axiosError } from '../../test/axiosErrors.ts'
+import { ada } from '../../test/fixtures.ts'
 import { renderApp } from '../../test/renderApp.tsx'
 
 vi.mock('../../api/auth.ts')
 vi.mock('../../api/dashboard.ts')
 
-const ada: User = {
-  id: 1,
-  name: 'Ada Lovelace',
-  email: 'ada@example.com',
-  email_verified_at: null,
-  created_at: '2026-10-17T12:00:00Z',
-}
-
 describe('authentication', () => {
   beforeEach(() => {
     vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(null)
-    vi.mocked(dashboardApi.getAppConfig).mockResolvedValue({
-      registration_enabled: true,
-      monitors: { allowed_intervals: [1, 5, 10], default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10, max_per_user: 20 },
-      realtime: null,
-    })
+    vi.mocked(dashboardApi.getDashboardSummary).mockResolvedValue({ total: 0, up: 0, down: 0, pending: 0, paused: 0 })
+    vi.mocked(dashboardApi.listRecentIncidents).mockResolvedValue([])
   })
 
-  it('explains that registration is closed and hides the sign-up link', async () => {
-    vi.mocked(dashboardApi.getAppConfig).mockResolvedValue({
-      registration_enabled: false,
-      monitors: { allowed_intervals: [1, 5, 10], default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10, max_per_user: 20 },
-      realtime: null,
-    })
+  it('does not offer a way to create an account', async () => {
+    renderApp('/login')
+
+    expect(await screen.findByRole('heading', { name: 'Log in' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /create/i })).not.toBeInTheDocument()
+  })
+
+  it('treats the old registration address as an unknown page', async () => {
     renderApp('/register')
 
-    expect(await screen.findByText('Registration is closed on this PulseCheck instance. Ask its administrator for an account.')).toBeInTheDocument()
-    expect(screen.queryByLabelText('Password')).not.toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeInTheDocument()
   })
 
   it('redirects a guest from a protected route to the login page', async () => {

@@ -65,7 +65,7 @@ class NotificationChannelApiTest extends TestCase
             $this->assertStringNotContainsString(json_encode($config[$secret]), $response->getContent());
         }
 
-        $channel = $user->notificationChannels()->sole();
+        $channel = NotificationChannel::sole();
         $this->assertSame(NotificationChannelType::from($type), $channel->type);
         $this->assertSame($config, $channel->config);
     }
@@ -112,13 +112,12 @@ class NotificationChannelApiTest extends TestCase
         $this->assertDatabaseCount('notification_channels', 0);
     }
 
-    public function test_index_lists_only_the_users_channels_with_monitor_counts(): void
+    public function test_index_lists_channels_with_monitor_counts(): void
     {
         $user = User::factory()->create();
-        $channel = NotificationChannel::factory()->for($user)->email()->create(['name' => 'B']);
-        NotificationChannel::factory()->for($user)->slack()->create(['name' => 'A']);
-        NotificationChannel::factory()->create();
-        Monitor::factory()->for($user)->count(2)->create()->each(fn (Monitor $monitor) => $monitor->notificationChannels()->attach($channel));
+        $channel = NotificationChannel::factory()->email()->create(['name' => 'B']);
+        NotificationChannel::factory()->slack()->create(['name' => 'A']);
+        Monitor::factory()->count(2)->create()->each(fn (Monitor $monitor) => $monitor->notificationChannels()->attach($channel));
 
         $response = $this->actingAs($user)->fromSpa()->getJson('/api/notification-channels');
 
@@ -134,7 +133,7 @@ class NotificationChannelApiTest extends TestCase
     {
         $channel = NotificationChannel::factory()->telegram()->create(['config' => ['bot_token' => self::TOKEN, 'chat_id' => '1']]);
 
-        $this->actingAs($channel->user)->fromSpa()->putJson("/api/notification-channels/{$channel->id}", [
+        $this->actingAs(User::factory()->create())->fromSpa()->putJson("/api/notification-channels/{$channel->id}", [
             'name' => 'Renamed',
             'enabled' => false,
             'config' => ['bot_token' => '', 'chat_id' => '987654'],
@@ -149,12 +148,12 @@ class NotificationChannelApiTest extends TestCase
     {
         $channel = NotificationChannel::factory()->webhook()->create(['config' => ['url' => 'https://hooks.example.com/a', 'headers' => ['X-Old' => '1']]]);
 
-        $this->actingAs($channel->user)->fromSpa()->putJson("/api/notification-channels/{$channel->id}", [
+        $this->actingAs(User::factory()->create())->fromSpa()->putJson("/api/notification-channels/{$channel->id}", [
             'config' => ['url' => 'https://hooks.example.com/b'],
         ])->assertOk();
         $this->assertSame(['X-Old' => '1'], $channel->refresh()->config['headers']);
 
-        $this->actingAs($channel->user)->fromSpa()->putJson("/api/notification-channels/{$channel->id}", [
+        $this->actingAs(User::factory()->create())->fromSpa()->putJson("/api/notification-channels/{$channel->id}", [
             'config' => ['url' => 'https://hooks.example.com/b', 'headers' => []],
         ])->assertOk()->assertJsonPath('data.secrets_set', []);
         $this->assertSame(['url' => 'https://hooks.example.com/b', 'headers' => []], $channel->refresh()->config);
@@ -164,7 +163,7 @@ class NotificationChannelApiTest extends TestCase
     {
         $channel = NotificationChannel::factory()->email()->create();
 
-        $this->actingAs($channel->user)->fromSpa()->putJson("/api/notification-channels/{$channel->id}", [
+        $this->actingAs(User::factory()->create())->fromSpa()->putJson("/api/notification-channels/{$channel->id}", [
             'type' => 'webhook',
             'config' => ['url' => 'https://hooks.example.com/'],
         ])->assertUnprocessable()->assertJsonValidationErrors('config');
@@ -175,25 +174,36 @@ class NotificationChannelApiTest extends TestCase
     public function test_deleting_a_channel_detaches_it_from_monitors(): void
     {
         $channel = NotificationChannel::factory()->create();
-        $monitor = Monitor::factory()->for($channel->user)->create();
+        $monitor = Monitor::factory()->create();
         $monitor->notificationChannels()->attach($channel);
 
-        $this->actingAs($channel->user)->fromSpa()->deleteJson("/api/notification-channels/{$channel->id}")->assertNoContent();
+        $this->actingAs(User::factory()->create())->fromSpa()->deleteJson("/api/notification-channels/{$channel->id}")->assertNoContent();
 
         $this->assertModelMissing($channel);
         $this->assertModelExists($monitor);
         $this->assertDatabaseCount('monitor_notification_channel', 0);
     }
 
-    public function test_other_users_channels_are_not_found(): void
+    public function test_channels_are_shared_with_every_user(): void
     {
-        $channel = NotificationChannel::factory()->create();
-        $intruder = User::factory()->create();
+        $channel = NotificationChannel::factory()->create(['name' => 'Ops']);
+        $user = User::factory()->create();
 
-        $this->actingAs($intruder)->fromSpa()->putJson("/api/notification-channels/{$channel->id}", ['name' => 'x'])->assertNotFound();
-        $this->actingAs($intruder)->fromSpa()->deleteJson("/api/notification-channels/{$channel->id}")->assertNotFound();
-        $this->actingAs($intruder)->fromSpa()->postJson("/api/notification-channels/{$channel->id}/test")->assertNotFound();
+        $this->actingAs($user)->fromSpa()->getJson('/api/notification-channels')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $channel->id);
 
-        $this->assertModelExists($channel);
+        $this->actingAs($user)->fromSpa()->putJson("/api/notification-channels/{$channel->id}", ['name' => 'Renamed'])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Renamed');
+    }
+
+    public function test_unknown_channels_are_not_found(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->fromSpa()->putJson('/api/notification-channels/999999', ['name' => 'x'])->assertNotFound();
+        $this->actingAs($user)->fromSpa()->deleteJson('/api/notification-channels/999999')->assertNotFound();
+        $this->actingAs($user)->fromSpa()->postJson('/api/notification-channels/999999/test')->assertNotFound();
     }
 }

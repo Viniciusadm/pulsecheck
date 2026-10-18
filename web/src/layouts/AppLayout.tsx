@@ -4,6 +4,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router'
 import { logout } from '../api/auth.ts'
 import { CloseIcon, DashboardIcon, LogOutIcon, MenuIcon, MonitorsIcon, PulseIcon, SettingsIcon } from '../components/ui/icons.tsx'
 import { useAuth } from '../features/auth/AuthContext.ts'
+import { instanceName, useAppConfig } from '../features/config/ConfigContext.ts'
 import { useMonitorRealtime } from '../features/monitors/useMonitorRealtime.ts'
 import { t, type MessageKey } from '../i18n/index.ts'
 
@@ -64,10 +65,12 @@ export function AppLayout() {
 }
 
 function Logo() {
+  const config = useAppConfig()
+
   return (
-    <span className="inline-flex items-center gap-2 text-base font-bold text-primary-ink">
-      <PulseIcon className="size-5 text-primary-500" />
-      {t('app.name')}
+    <span className="inline-flex min-w-0 items-center gap-2 text-base font-bold text-primary-ink">
+      <PulseIcon className="size-5 shrink-0 text-primary-500" />
+      <span className="truncate">{instanceName(config, t('app.name'))}</span>
     </span>
   )
 }

@@ -3,6 +3,7 @@
 namespace Tests\Feature\History;
 
 use App\Models\Monitor;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesCheckResults;
@@ -28,7 +29,7 @@ class LatencyHistoryTest extends TestCase
         $this->checkAt($monitor, CarbonImmutable::parse('2026-10-17 11:50:00'), isSuccess: false, latencyMs: null);
         $this->checkAt($monitor, CarbonImmutable::parse('2026-10-17 12:00:00'), latencyMs: 50);
 
-        $response = $this->actingAs($monitor->user)->fromSpa()
+        $response = $this->actingAs(User::factory()->create())->fromSpa()
             ->getJson("/api/monitors/{$monitor->id}/latency?period=24h")
             ->assertOk()
             ->assertJsonPath('data.period', '24h')
@@ -46,7 +47,7 @@ class LatencyHistoryTest extends TestCase
     public function test_bucket_size_depends_on_the_period(): void
     {
         $monitor = Monitor::factory()->create();
-        $this->actingAs($monitor->user)->fromSpa();
+        $this->actingAs(User::factory()->create())->fromSpa();
 
         $this->getJson("/api/monitors/{$monitor->id}/latency?period=7d")->assertJsonPath('data.bucket_minutes', 60)->assertJsonCount(169, 'data.buckets');
         $this->getJson("/api/monitors/{$monitor->id}/latency?period=30d")->assertJsonPath('data.bucket_minutes', 360)->assertJsonCount(121, 'data.buckets');

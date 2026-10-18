@@ -11,7 +11,6 @@ return new class extends Migration
     {
         Schema::create('monitors', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->index()->constrained()->cascadeOnDelete();
             $table->string('name', 100);
             $table->string('url', 2048);
             $table->smallInteger('interval_minutes');

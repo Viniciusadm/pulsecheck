@@ -9,5 +9,5 @@
 **{{ $label }}:** {{ $value }}<br>
 @endforeach
 
-{{ config('app.name') }}
+{{ $instanceName }}
 </x-mail::message>

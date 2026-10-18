@@ -12,13 +12,12 @@ class RecentIncidentsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_lists_only_the_users_incidents_newest_first_with_their_monitor(): void
+    public function test_lists_incidents_newest_first_with_their_monitor(): void
     {
         $user = User::factory()->create();
-        $monitor = Monitor::factory()->for($user)->create(['name' => 'API']);
+        $monitor = Monitor::factory()->create(['name' => 'API']);
         $older = Incident::factory()->for($monitor)->create(['started_at' => now()->subDays(2), 'resolved_at' => now()->subDays(2)->addMinutes(5)]);
         $newer = Incident::factory()->for($monitor)->open()->create(['started_at' => now()->subHour()]);
-        Incident::factory()->count(2)->create();
 
         $response = $this->actingAs($user)->fromSpa()->getJson('/api/incidents');
 
@@ -34,7 +33,7 @@ class RecentIncidentsTest extends TestCase
     public function test_limit_defaults_to_ten_and_is_bounded(): void
     {
         $user = User::factory()->create();
-        $monitor = Monitor::factory()->for($user)->create();
+        $monitor = Monitor::factory()->create();
         Incident::factory()->for($monitor)->count(12)->create();
 
         $this->actingAs($user)->fromSpa();
@@ -51,7 +50,7 @@ class RecentIncidentsTest extends TestCase
         $monitor = Monitor::factory()->create();
         Incident::factory()->for($monitor)->open()->create(['started_at' => now()->subMinutes(2)]);
 
-        $this->actingAs($monitor->user)->fromSpa()->getJson("/api/monitors/{$monitor->id}/incidents")
+        $this->actingAs(User::factory()->create())->fromSpa()->getJson("/api/monitors/{$monitor->id}/incidents")
             ->assertOk()
             ->assertJsonPath('data.0.state', 'open')
             ->assertJsonPath('data.0.duration_seconds', 120)

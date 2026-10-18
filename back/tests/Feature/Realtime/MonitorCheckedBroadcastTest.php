@@ -28,7 +28,7 @@ class MonitorCheckedBroadcastTest extends TestCase
         ));
     }
 
-    public function test_recording_a_check_broadcasts_the_updated_monitor_to_its_owner(): void
+    public function test_recording_a_check_broadcasts_the_updated_monitor_to_every_user(): void
     {
         Event::fake([MonitorChecked::class]);
         $monitor = Monitor::factory()->create();
@@ -38,7 +38,7 @@ class MonitorCheckedBroadcastTest extends TestCase
         Event::assertDispatched(MonitorChecked::class, function (MonitorChecked $event) use ($monitor): bool {
             $payload = $event->broadcastWith();
 
-            return $event->broadcastOn()->name === "private-users.{$monitor->user_id}"
+            return $event->broadcastOn()->name === 'private-monitors'
                 && $event->broadcastAs() === 'monitor.checked'
                 && $payload['monitor']['id'] === $monitor->id
                 && $payload['monitor']['last_status_code'] === 200

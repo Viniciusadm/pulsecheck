@@ -1,17 +1,53 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as authApi from '../../api/auth.ts'
+import * as configApi from '../../api/config.ts'
 import * as monitorsApi from '../../api/monitors.ts'
-import { ada, makeMonitor } from '../../test/fixtures.ts'
+import * as channelsApi from '../../api/notificationChannels.ts'
+import { ada, makeMonitor, paginated } from '../../test/fixtures.ts'
 import { renderApp } from '../../test/renderApp.tsx'
 
 vi.mock('../../api/auth.ts')
+vi.mock('../../api/config.ts')
 vi.mock('../../api/monitors.ts')
+vi.mock('../../api/notificationChannels.ts')
 
 describe('MonitorsPage', () => {
   beforeEach(() => {
     vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(ada)
+    vi.mocked(channelsApi.listNotificationChannels).mockResolvedValue([])
+    vi.mocked(configApi.getAppConfig).mockResolvedValue({
+      setup_required: false,
+      setup_token_required: false,
+      instance: { name: 'PulseCheck', timezone: 'UTC', locale: 'en' },
+      available_locales: ['en'],
+      monitors: { allowed_intervals: [1, 5, 10], default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10 },
+      realtime: null,
+    })
+  })
+
+  it('edits a monitor straight from the list', async () => {
+    vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([makeMonitor()]))
+    vi.mocked(monitorsApi.updateMonitor).mockResolvedValue(makeMonitor({ name: 'Shop API v2' }))
+    const user = userEvent.setup()
+    const { router } = renderApp('/monitors')
+
+    const [editButton] = await screen.findAllByRole('button', { name: 'Edit Shop API' })
+    await user.click(editButton)
+
+    const dialog = await screen.findByRole('dialog', { name: 'Edit monitor' })
+    const nameField = within(dialog).getByLabelText('Name')
+    expect(nameField).toHaveValue('Shop API')
+
+    await user.clear(nameField)
+    await user.type(nameField, 'Shop API v2')
+    await user.click(within(dialog).getByRole('button', { name: 'Save changes' }))
+
+    await waitFor(() => expect(monitorsApi.updateMonitor).toHaveBeenCalledWith(7, expect.objectContaining({ name: 'Shop API v2' })))
+    expect(await screen.findByText('Changes saved.')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/monitors')
   })
 
   it('offers to go back when the page is past the last one', async () => {

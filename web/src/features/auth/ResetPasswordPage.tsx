@@ -66,7 +66,7 @@ export function ResetPasswordPage() {
           name="password"
           autoComplete="new-password"
           required
-          hint={t('auth.register.passwordHint')}
+          hint={t('auth.passwordHint')}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           error={errors.password}

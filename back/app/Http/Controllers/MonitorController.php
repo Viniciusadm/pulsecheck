@@ -18,7 +18,7 @@ class MonitorController extends Controller
     {
         $status = $request->validated('status');
 
-        $monitors = $request->user()->monitors()
+        $monitors = Monitor::query()
             ->with('notificationChannels:id')
             ->when($status === 'paused', fn ($query) => $query->where('is_paused', true))
             ->when($status !== null && $status !== 'paused', fn ($query) => $query->where('is_paused', false)->where('status', $status))
@@ -31,7 +31,7 @@ class MonitorController extends Controller
 
     public function store(StoreMonitorRequest $request, CreateMonitor $createMonitor): MonitorResource
     {
-        return new MonitorResource($createMonitor->handle($request->user(), $request->validated()));
+        return new MonitorResource($createMonitor->handle($request->validated()));
     }
 
     public function show(Monitor $monitor): MonitorResource

@@ -35,7 +35,7 @@ class NotificationDispatchTest extends TestCase
 
     private function monitorWithChannels(NotificationChannel ...$channels): Monitor
     {
-        $monitor = Monitor::factory()->for($channels[0]->user)->up()->create();
+        $monitor = Monitor::factory()->up()->create();
         $monitor->notificationChannels()->attach(collect($channels)->pluck('id'));
 
         return $monitor;
@@ -53,9 +53,9 @@ class NotificationDispatchTest extends TestCase
     {
         Queue::fake();
         $telegram = NotificationChannel::factory()->telegram()->create();
-        $slack = NotificationChannel::factory()->for($telegram->user)->slack()->create();
-        $disabled = NotificationChannel::factory()->for($telegram->user)->disabled()->create();
-        $unattached = NotificationChannel::factory()->for($telegram->user)->email()->create();
+        $slack = NotificationChannel::factory()->slack()->create();
+        $disabled = NotificationChannel::factory()->disabled()->create();
+        $unattached = NotificationChannel::factory()->email()->create();
         $monitor = $this->monitorWithChannels($telegram, $slack, $disabled);
 
         $this->record($monitor, false);
@@ -94,7 +94,7 @@ class NotificationDispatchTest extends TestCase
     {
         Queue::fake();
         $channel = NotificationChannel::factory()->create();
-        $monitor = Monitor::factory()->for($channel->user)->create();
+        $monitor = Monitor::factory()->create();
         $monitor->notificationChannels()->attach($channel);
 
         $this->record($monitor, true);
@@ -107,7 +107,7 @@ class NotificationDispatchTest extends TestCase
     {
         Queue::fake();
         $monitor = Monitor::factory()->up()->create();
-        NotificationChannel::factory()->for($monitor->user)->create();
+        NotificationChannel::factory()->create();
 
         $this->record($monitor, false);
         $this->record($monitor, false);

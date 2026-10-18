@@ -5,10 +5,12 @@ namespace App\Jobs;
 use App\Enums\NotificationType;
 use App\Exceptions\NotificationDeliveryException;
 use App\Models\Incident;
+use App\Models\InstanceSettings;
 use App\Notifications\AlertMessage;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
 
 class SendIncidentNotification implements ShouldBeUnique, ShouldQueue
@@ -47,6 +49,8 @@ class SendIncidentNotification implements ShouldBeUnique, ShouldQueue
         if ($this->type === NotificationType::Down && $incident->resolved_at !== null) {
             return;
         }
+
+        App::setLocale(InstanceSettings::currentLocale());
 
         try {
             $channel->type->driver()->send($channel, AlertMessage::fromIncident($incident, $this->type));

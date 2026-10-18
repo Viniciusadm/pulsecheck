@@ -27,35 +27,34 @@ class BroadcastChannelAuthorizationTest extends TestCase
         require base_path('routes/channels.php');
     }
 
-    private function authorize(int $userId): TestResponse
+    private function authorize(string $channel = 'private-monitors'): TestResponse
     {
         return $this->fromSpa()->postJson('/api/broadcasting/auth', [
             'socket_id' => '1234.5678',
-            'channel_name' => "private-users.{$userId}",
+            'channel_name' => $channel,
         ]);
     }
 
-    public function test_user_can_subscribe_to_their_own_channel(): void
+    public function test_any_authenticated_user_can_subscribe_to_the_monitors_channel(): void
     {
-        $user = User::factory()->create();
+        $this->actingAs(User::factory()->create())->authorize()
+            ->assertOk()
+            ->assertJsonStructure(['auth']);
 
-        $this->actingAs($user)->authorize($user->id)
+        $this->actingAs(User::factory()->admin()->create())->authorize()
             ->assertOk()
             ->assertJsonStructure(['auth']);
     }
 
-    public function test_user_cannot_subscribe_to_another_users_channel(): void
+    public function test_unknown_channels_are_forbidden(): void
     {
         $user = User::factory()->create();
-        $other = User::factory()->create();
 
-        $this->actingAs($user)->authorize($other->id)->assertForbidden();
+        $this->actingAs($user)->authorize("private-users.{$user->id}")->assertForbidden();
     }
 
     public function test_guest_cannot_subscribe(): void
     {
-        $user = User::factory()->create();
-
-        $this->authorize($user->id)->assertUnauthorized();
+        $this->authorize()->assertUnauthorized();
     }
 }

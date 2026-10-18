@@ -1,6 +1,8 @@
 import { Outlet } from 'react-router'
 import { PulseIcon } from '../components/ui/icons.tsx'
+import { instanceName, useAppConfig } from '../features/config/ConfigContext.ts'
 import { t } from '../i18n/index.ts'
+import { useLocale } from '../i18n/useLocale.ts'
 
 const TICK_COUNT = 36
 const FAILED_TICKS = new Set([23, 24])
@@ -20,6 +22,8 @@ function CheckTicks() {
 }
 
 export function AuthLayout() {
+  useLocale()
+
   return (
     <div className="grid min-h-screen lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
       <aside className="hidden flex-col justify-between bg-primary-ink px-12 py-12 text-white lg:flex">
@@ -40,10 +44,12 @@ export function AuthLayout() {
 }
 
 function Logo({ className = '' }: { className?: string }) {
+  const config = useAppConfig()
+
   return (
     <span className={`inline-flex items-center gap-2 text-lg font-bold ${className}`}>
       <PulseIcon className="size-6 text-primary-500" />
-      {t('app.name')}
+      {instanceName(config, t('app.name'))}
     </span>
   )
 }

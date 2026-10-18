@@ -14,11 +14,10 @@ class MonitorIndexTest extends TestCase
     public function test_monitors_can_be_filtered_by_status(): void
     {
         $user = User::factory()->create();
-        $up = Monitor::factory()->for($user)->up()->create();
-        $down = Monitor::factory()->for($user)->down()->create();
-        $pending = Monitor::factory()->for($user)->create();
-        $pausedDown = Monitor::factory()->for($user)->down()->paused()->create();
-        Monitor::factory()->up()->create();
+        $up = Monitor::factory()->up()->create();
+        $down = Monitor::factory()->down()->create();
+        $pending = Monitor::factory()->create();
+        $pausedDown = Monitor::factory()->down()->paused()->create();
 
         $this->actingAs($user)->fromSpa();
 

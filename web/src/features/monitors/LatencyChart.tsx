@@ -1,16 +1,16 @@
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { LatencySeries } from '../../api/types.ts'
 import { t } from '../../i18n/index.ts'
-import { formatDateTime, formatLatency } from '../../lib/format.ts'
+import { formatDate, formatDateTime, formatLatency } from '../../lib/format.ts'
 
 const PRIMARY = '#349ef4'
 
 function tickLabel(value: string, bucketMinutes: number): string {
-  const date = new Date(value)
+  if (bucketMinutes >= 360) {
+    return formatDate(value, { month: 'short', day: 'numeric' })
+  }
 
-  return bucketMinutes >= 360
-    ? new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(date)
-    : new Intl.DateTimeFormat('en', bucketMinutes >= 60 ? { weekday: 'short', hour: 'numeric' } : { hour: 'numeric', minute: '2-digit' }).format(date)
+  return formatDate(value, bucketMinutes >= 60 ? { weekday: 'short', hour: 'numeric' } : { hour: 'numeric', minute: '2-digit' })
 }
 
 export function LatencyChart({ series }: { series: LatencySeries }) {
