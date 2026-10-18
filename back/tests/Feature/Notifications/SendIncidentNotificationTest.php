@@ -120,6 +120,19 @@ class SendIncidentNotificationTest extends TestCase
             && str_contains($request['text'], 'Downtime: 1h 5m 30s'));
     }
 
+    public function test_closed_incident_message_explains_the_url_change(): void
+    {
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true])]);
+        $channel = NotificationChannel::factory()->telegram()->create();
+        $incident = $this->incident($channel, 'resolved', ['resolved_at' => CarbonImmutable::parse('2026-10-17 13:05:30')]);
+
+        Bus::dispatchSync(new SendIncidentNotification($incident->id, $channel->id, NotificationType::Closed));
+
+        Http::assertSent(fn (Request $request) => str_contains($request['text'], 'Shop <API> incident closed')
+            && str_contains($request['text'], 'The monitor URL was changed')
+            && str_contains($request['text'], 'Downtime: 1h 5m 30s'));
+    }
+
     public function test_webhook_receives_the_versioned_payload_and_custom_headers(): void
     {
         $this->fakeOutboundHttp(new Response(204));

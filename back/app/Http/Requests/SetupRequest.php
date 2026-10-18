@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\SetupToken;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -16,7 +17,7 @@ class SetupRequest extends FormRequest
 
     public function rules(): array
     {
-        $setupToken = config('pulsecheck.setup_token');
+        $setupToken = SetupToken::current();
 
         return [
             'instance_name' => ['required', 'string', 'max:100'],
@@ -26,7 +27,7 @@ class SetupRequest extends FormRequest
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'confirmed', Password::defaults()],
             'token' => filled($setupToken)
-                ? ['required', 'string', $this->matchesSetupToken((string) $setupToken)]
+                ? ['required', 'string', $this->matchesSetupToken($setupToken)]
                 : ['exclude'],
         ];
     }

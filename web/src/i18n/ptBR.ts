@@ -84,7 +84,7 @@ export const ptBR = {
       heading: 'Conta de administrador',
       description: 'O administrador pode convidar outras pessoas e alterar estas configurações depois.',
       token: 'Token de configuração',
-      tokenHint: 'O valor de PULSECHECK_SETUP_TOKEN definido no servidor.',
+      tokenHint: 'O valor de PULSECHECK_SETUP_TOKEN ou o token exibido nos logs do container app (docker compose logs app).',
       submit: 'Criar administrador',
       submitting: 'Criando…',
     },

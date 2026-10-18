@@ -91,7 +91,7 @@ curl -fsS http://localhost/up
 
 Open `APP_URL` in a browser: the setup wizard asks for the instance name, time zone, language and the administrator account, and lets you add a first notification channel. Then add a monitor and create teams and accounts under **Settings → Teams** and **Settings → Users**. The first check runs within a minute; after two successful checks the monitor shows **Up**.
 
-PulseCheck serves plain HTTP on `APP_PORT`. For HTTPS, put it behind a TLS-terminating proxy (Caddy, Traefik, your provider's proxy), then set `APP_URL` to the `https://` address, `SESSION_SECURE_COOKIE=true` and `TRUSTED_PROXIES` (see the table below). Until setup is done, anyone who reaches the instance can complete it and become the administrator. If the server is public before you finish setup, set `PULSECHECK_SETUP_TOKEN` and enter the same value in the wizard.
+PulseCheck serves plain HTTP on `APP_PORT`. For HTTPS, put it behind a TLS-terminating proxy (Caddy, Traefik, your provider's proxy), then set `APP_URL` to the `https://` address, `SESSION_SECURE_COOKIE=true` and `TRUSTED_PROXIES` (see the table below). Until setup is done, the wizard asks for a setup token so that nobody else can claim the instance: Docker Compose generates one and prints it in the app logs (`docker compose logs app | grep "Setup token"`, or `docker compose exec app php artisan pulsecheck:setup-token`). To choose the token yourself, set `PULSECHECK_SETUP_TOKEN`.
 
 ### Environment variables
 
@@ -114,7 +114,8 @@ All variables live in the `.env` file next to `docker-compose.yml` (template: [`
 | `MAIL_MAILER` | no | `log` | `smtp` to send password reset emails. With `log`, emails (including reset links, which are valid for 60 minutes) are written to the container logs: anyone who can read the logs could use them. Configure SMTP in production. |
 | `MAIL_SCHEME`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` | with SMTP | empty, `587` | SMTP connection (`MAIL_SCHEME=smtps` for port 465). |
 | `MAIL_FROM_ADDRESS` / `MAIL_FROM_NAME` | no | `no-reply@example.com` / `PulseCheck` | Sender of password reset emails. |
-| `PULSECHECK_SETUP_TOKEN` | no | empty | When set, the first-run setup requires this token. Use it when the instance is publicly reachable before setup. |
+| `PULSECHECK_SETUP_TOKEN` | no | empty | Token the first-run setup requires. When empty, one is generated and printed in the app logs. |
+| `PULSECHECK_GENERATE_SETUP_TOKEN` | no | `true` | Generate a setup token when `PULSECHECK_SETUP_TOKEN` is empty. Set to `false` only on a private network. |
 | `PULSECHECK_HISTORY_RETENTION_DAYS` | no | `30` | Check results older than this are deleted daily. Incidents are kept. |
 | `PULSECHECK_ALLOW_PRIVATE_TARGETS` | no | `false` | Allow private/internal targets. Read [Security](#security) first. |
 | `APP_IMAGE` / `WEB_IMAGE` | no | `pulsecheck-app:latest` / `pulsecheck-web:latest` | Image names; point them to prebuilt images to skip local builds. |
@@ -261,7 +262,7 @@ Administrators and managers add notification channels on the **Channels** page a
 
 Slack, Discord and webhook deliveries go through the same SSRF guard as checks: private and internal addresses are refused, the connection is pinned to the validated IP and redirects are not followed. Webhook headers can carry credentials such as `Authorization`; `Host`, `Content-Type`, `Content-Length`, `Transfer-Encoding`, `Connection` and `User-Agent` are reserved.
 
-Webhook payload (version 1). `event` is `monitor.down`, `monitor.recovered` or `test` (with `monitor` and `incident` set to `null`); `monitor.host` never contains the URL path or query string; `instance.name` is the name chosen at setup. Times in `text` use the instance time zone, while the ISO fields are always UTC. Any 2xx response counts as delivered.
+Webhook payload (version 1). `event` is `monitor.down`, `monitor.recovered`, `monitor.incident_closed` (the monitor URL changed while it was down, so the incident was closed without a recovery check) or `test` (with `monitor` and `incident` set to `null`); `monitor.host` never contains the URL path or query string; `instance.name` is the name chosen at setup. Times in `text` use the instance time zone, while the ISO fields are always UTC. Any 2xx response counts as delivered.
 
 ```json
 {
@@ -283,7 +284,7 @@ Webhook payload (version 1). `event` is `monitor.down`, `monitor.recovered` or `
 }
 ```
 
-`severity` is `critical` for `monitor.down`, `resolved` for `monitor.recovered` and `info` for `test`. On recovery, `resolved_at` and `duration_seconds` are filled.
+`severity` is `critical` for `monitor.down`, `resolved` for `monitor.recovered` and `monitor.incident_closed`, and `info` for `test`. On recovery or closing, `resolved_at` and `duration_seconds` are filled.
 
 ## Uptime
 
@@ -323,10 +324,10 @@ What is **not** guaranteed:
 
 ### Data and access
 
-- Monitors and notification channels are visible only to administrators, users with access to all monitors, and members of the teams they belong to; items without a team are hidden from everyone else, and anything outside a user's scope answers 404. Real-time updates go to a per-user channel (`users.{id}.monitors`) and reach only users who can see the monitor. Managers and administrators can change monitors and channels; members are read-only. Only administrators can manage teams, users and instance settings; the last administrator cannot be demoted or deleted, and nobody can delete their own account.
-- There is no public sign-up. The setup endpoint only works while the instance has not been set up, and can require `PULSECHECK_SETUP_TOKEN`.
+- Monitors and notification channels are visible only to administrators, users with access to all monitors, and members of the teams they belong to; items without a team are hidden from everyone else, and anything outside a user's scope answers 404. Real-time updates go to a per-user channel (`users.{id}.monitors`) and reach only users who can see the monitor. Managers and administrators can change monitors and channels; members are read-only and do not receive channel settings. Only administrators can manage teams, users and instance settings; the last administrator cannot be demoted or deleted, and nobody can delete their own account.
+- There is no public sign-up. The setup endpoint only works while the instance has not been set up, and requires a setup token (`PULSECHECK_SETUP_TOKEN` or a generated one).
 - Session cookies are `HttpOnly`, `SameSite=Lax` and `Secure` when `SESSION_SECURE_COOKIE=true`; state-changing requests require the CSRF token.
-- Notification channel settings are encrypted with `APP_KEY`. Secrets (Telegram bot token, Slack and Discord webhook URLs, webhook headers) are never returned by the API or logged, and delivery errors are reported with generic messages.
+- Notification channel settings are encrypted with `APP_KEY`. Secrets (Telegram bot token, Slack, Discord and generic webhook URLs, webhook headers) are never returned by the API or logged, and delivery errors are reported with generic messages.
 - Error messages stored for failed checks drop URL query strings and are truncated.
 - Rate limits (per minute): login 5 per email and IP; setup, forgot-password and reset-password 5 per IP; monitor and notification channel changes 30 per user; test notifications 5 per user.
 - Production passwords need at least 8 characters with mixed case and numbers, and are checked against known breaches.

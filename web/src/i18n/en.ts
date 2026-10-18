@@ -82,7 +82,7 @@ export const en = {
       heading: 'Administrator account',
       description: 'The administrator can invite other people and change these settings later.',
       token: 'Setup token',
-      tokenHint: 'The value of PULSECHECK_SETUP_TOKEN set on the server.',
+      tokenHint: 'The value of PULSECHECK_SETUP_TOKEN, or the token printed in the app container logs (docker compose logs app).',
       submit: 'Create administrator',
       submitting: 'Creating…',
     },

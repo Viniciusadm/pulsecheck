@@ -3,18 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\InstanceSettings;
+use App\Support\SetupToken;
 use Illuminate\Http\JsonResponse;
 
 class PublicConfigController extends Controller
 {
     public function __invoke(): JsonResponse
     {
-        $setupToken = config('pulsecheck.setup_token');
-
         return response()->json([
             'data' => [
                 'setup_required' => InstanceSettings::current() === null,
-                'setup_token_required' => filled($setupToken),
+                'setup_token_required' => SetupToken::current() !== null,
                 'instance' => [
                     'name' => InstanceSettings::currentName(),
                     'timezone' => InstanceSettings::currentTimezone(),

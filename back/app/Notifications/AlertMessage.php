@@ -53,6 +53,19 @@ final readonly class AlertMessage
                 occurredAt: $incident->resolved_at ?? now(),
                 incident: $incident,
             ),
+            NotificationType::Closed => new self(
+                event: 'monitor.incident_closed',
+                severity: AlertSeverity::Resolved,
+                title: '⚪ '.__(':monitor incident closed', ['monitor' => $monitor->name]),
+                summary: __('The monitor URL was changed, so the open incident was closed. The new URL is checked from scratch.'),
+                fields: [
+                    __('Host') => $host,
+                    __('Downtime') => self::formatDuration($incident->duration_seconds),
+                    __('Closed') => self::formatTime($incident->resolved_at ?? now()),
+                ],
+                occurredAt: $incident->resolved_at ?? now(),
+                incident: $incident,
+            ),
         };
     }
 

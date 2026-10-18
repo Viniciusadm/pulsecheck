@@ -3,15 +3,20 @@
 namespace App\Listeners;
 
 use App\Enums\NotificationType;
+use App\Events\MonitorIncidentClosed;
 use App\Events\MonitorRecovered;
 use App\Events\MonitorWentDown;
 use App\Jobs\SendIncidentNotification;
 
 class QueueIncidentNotifications
 {
-    public function handle(MonitorWentDown|MonitorRecovered $event): void
+    public function handle(MonitorWentDown|MonitorRecovered|MonitorIncidentClosed $event): void
     {
-        $type = $event instanceof MonitorWentDown ? NotificationType::Down : NotificationType::Recovered;
+        $type = match (true) {
+            $event instanceof MonitorWentDown => NotificationType::Down,
+            $event instanceof MonitorRecovered => NotificationType::Recovered,
+            $event instanceof MonitorIncidentClosed => NotificationType::Closed,
+        };
 
         $event->monitor->notificationChannels()
             ->where('enabled', true)

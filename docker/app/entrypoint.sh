@@ -31,4 +31,8 @@ php artisan config:cache --no-interaction > /dev/null
 php artisan route:cache --no-interaction > /dev/null
 php artisan event:cache --no-interaction > /dev/null
 
+if [ "${1:-}" = "php-fpm" ]; then
+    php artisan pulsecheck:setup-token --no-interaction || true
+fi
+
 exec "$@"

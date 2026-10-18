@@ -5,6 +5,7 @@ namespace Tests\Feature\Setup;
 use App\Enums\UserRole;
 use App\Models\InstanceSettings;
 use App\Models\User;
+use App\Support\SetupToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -135,6 +136,33 @@ class SetupTest extends TestCase
         $this->fromSpa()->getJson('/api/config')->assertJsonPath('data.setup_token_required', false);
 
         $this->fromSpa()->postJson('/api/setup', $this->validPayload(['token' => 'anything']))->assertCreated();
+    }
+
+    public function test_a_token_is_generated_when_enabled_and_none_is_configured(): void
+    {
+        config(['pulsecheck.generate_setup_token' => true]);
+        $token = SetupToken::current();
+
+        $this->assertIsString($token);
+        $this->assertSame(32, strlen($token));
+        $this->fromSpa()->getJson('/api/config')->assertJsonPath('data.setup_token_required', true);
+        $this->artisan('pulsecheck:setup-token')->expectsOutputToContain($token)->assertSuccessful();
+
+        $this->fromSpa()->postJson('/api/setup', $this->validPayload(['token' => 'wrong']))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('token');
+
+        $this->fromSpa()->postJson('/api/setup', $this->validPayload(['token' => $token]))->assertCreated();
+
+        $this->assertNull(SetupToken::current());
+        $this->artisan('pulsecheck:setup-token')->expectsOutputToContain('already complete')->assertSuccessful();
+    }
+
+    public function test_configured_token_takes_precedence_over_the_generated_one(): void
+    {
+        config(['pulsecheck.generate_setup_token' => true, 'pulsecheck.setup_token' => 'let-me-in']);
+
+        $this->assertSame('let-me-in', SetupToken::current());
     }
 
     public function test_config_reports_whether_setup_is_required(): void

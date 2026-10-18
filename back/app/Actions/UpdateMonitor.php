@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Enums\MonitorStatus;
+use App\Events\MonitorIncidentClosed;
 use App\Models\Monitor;
 use App\Models\NotificationChannel;
 use App\Models\User;
@@ -60,6 +61,14 @@ class UpdateMonitor
             'last_failed_at' => null,
         ]);
 
-        $monitor->incidents()->whereNull('resolved_at')->update(['resolved_at' => now()]);
+        $openIncident = $monitor->incidents()->whereNull('resolved_at')->first();
+
+        if ($openIncident === null) {
+            return;
+        }
+
+        $openIncident->update(['resolved_at' => now()]);
+
+        MonitorIncidentClosed::dispatch($monitor, $openIncident);
     }
 }

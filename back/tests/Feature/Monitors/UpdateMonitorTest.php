@@ -4,10 +4,14 @@ namespace Tests\Feature\Monitors;
 
 use App\Actions\UpdateMonitor;
 use App\Enums\MonitorStatus;
+use App\Enums\NotificationType;
+use App\Jobs\SendIncidentNotification;
 use App\Models\Incident;
 use App\Models\Monitor;
+use App\Models\NotificationChannel;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\Concerns\FakesDns;
 use Tests\TestCase;
 
@@ -62,6 +66,36 @@ class UpdateMonitorTest extends TestCase
         $this->assertNull($monitor->last_status_code);
         $this->assertTrue($monitor->next_check_at->equalTo(now()));
         $this->assertTrue($openIncident->fresh()->resolved_at->equalTo(now()));
+    }
+
+    public function test_changing_the_url_of_a_down_monitor_notifies_that_the_incident_was_closed(): void
+    {
+        Queue::fake();
+        $monitor = Monitor::factory()->down()->create(['url' => 'https://example.com']);
+        $channel = NotificationChannel::factory()->create();
+        $monitor->notificationChannels()->attach($channel);
+        $openIncident = Incident::factory()->for($monitor)->open()->create();
+
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
+            ->putJson("/api/monitors/{$monitor->id}", ['url' => 'https://new.example.com/'])
+            ->assertOk();
+
+        Queue::assertPushed(SendIncidentNotification::class, fn (SendIncidentNotification $job) => $job->incidentId === $openIncident->id
+            && $job->channelId === $channel->id
+            && $job->type === NotificationType::Closed);
+    }
+
+    public function test_changing_the_url_without_an_open_incident_sends_nothing(): void
+    {
+        Queue::fake();
+        $monitor = Monitor::factory()->up()->create(['url' => 'https://example.com']);
+        $monitor->notificationChannels()->attach(NotificationChannel::factory()->create());
+
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
+            ->putJson("/api/monitors/{$monitor->id}", ['url' => 'https://new.example.com/'])
+            ->assertOk();
+
+        Queue::assertNotPushed(SendIncidentNotification::class);
     }
 
     public function test_changing_the_url_uses_the_current_row_not_a_stale_copy(): void

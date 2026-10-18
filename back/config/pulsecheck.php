@@ -4,6 +4,8 @@ return [
 
     'setup_token' => env('PULSECHECK_SETUP_TOKEN'),
 
+    'generate_setup_token' => (bool) env('PULSECHECK_GENERATE_SETUP_TOKEN', false),
+
     'locales' => ['en', 'pt-BR'],
 
     'default_locale' => 'en',
