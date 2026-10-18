@@ -26,8 +26,9 @@ function fakeEcho() {
     },
   }))
   const disconnect = vi.fn()
+  const connector = { onConnectionChange: vi.fn(() => () => {}) }
 
-  vi.mocked(realtimeApi.createEcho).mockReturnValue({ private: privateChannel, disconnect } as unknown as ReturnType<typeof realtimeApi.createEcho>)
+  vi.mocked(realtimeApi.createEcho).mockReturnValue({ private: privateChannel, disconnect, connector } as unknown as ReturnType<typeof realtimeApi.createEcho>)
 
   return { listeners, privateChannel, disconnect }
 }

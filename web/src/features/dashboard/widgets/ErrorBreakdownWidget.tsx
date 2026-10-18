@@ -4,14 +4,15 @@ import { queryKeys } from '../../../api/queryKeys.ts'
 import { t } from '../../../i18n/index.ts'
 import { EmptyChart, QueryContent } from './QueryContent.tsx'
 import { RankedBars } from './RankedBars.tsx'
-import { REFRESH_INTERVAL_MS } from './refresh.ts'
+import { useRefreshInterval } from './refresh.ts'
 import type { WidgetProps } from './types.ts'
 
 export function ErrorBreakdownWidget({ period }: WidgetProps) {
+  const refetchInterval = useRefreshInterval()
   const breakdown = useQuery({
     queryKey: queryKeys.dashboardMetric('error-breakdown', period),
     queryFn: () => getErrorBreakdown(period),
-    refetchInterval: REFRESH_INTERVAL_MS,
+    refetchInterval,
   })
 
   return (

@@ -16,13 +16,19 @@ type AddWidgetDialogProps = {
   onAdd: (type: DashboardWidgetType, options: DashboardWidget['options']) => void
 }
 
+const MAX_PARALLEL_PAGE_REQUESTS = 4
+
 async function listAllMonitors(): Promise<Monitor[]> {
   const firstPage = await listMonitors({ page: 1 })
-  const remainingPages = await Promise.all(
-    Array.from({ length: firstPage.meta.last_page - 1 }, (_, index) => listMonitors({ page: index + 2 })),
-  )
+  const monitors = [...firstPage.data]
 
-  return [firstPage, ...remainingPages].flatMap((page) => page.data)
+  for (let page = 2; page <= firstPage.meta.last_page; page += MAX_PARALLEL_PAGE_REQUESTS) {
+    const lastPage = Math.min(page + MAX_PARALLEL_PAGE_REQUESTS - 1, firstPage.meta.last_page)
+    const batch = await Promise.all(Array.from({ length: lastPage - page + 1 }, (_, index) => listMonitors({ page: page + index })))
+    monitors.push(...batch.flatMap((result) => result.data))
+  }
+
+  return monitors
 }
 
 export function AddWidgetDialog({ isOpen, widgets, onClose, onAdd }: AddWidgetDialogProps) {

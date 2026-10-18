@@ -16,3 +16,7 @@ Schedule::command('monitors:dispatch-due')
 Schedule::command('model:prune')
     ->dailyAt('03:00')
     ->onOneServer();
+
+Schedule::command('queue:prune-failed', ['--hours' => 168])
+    ->dailyAt('03:15')
+    ->onOneServer();

@@ -17,18 +17,21 @@ import { useAuth } from '../auth/AuthContext.ts'
 import { MonitorFormDialog } from '../monitors/MonitorFormDialog.tsx'
 import { AddWidgetDialog } from './AddWidgetDialog.tsx'
 import { addWidget, MAX_WIDGETS, removeWidget } from './layout.ts'
-import { REFRESH_INTERVAL_MS } from './widgets/refresh.ts'
+import { useRefreshInterval } from './widgets/refresh.ts'
+
+const PERIOD_MUTATION_KEY = ['dashboard-layout', 'period']
 
 const WidgetGrid = lazy(() => import('./WidgetGrid.tsx').then((module) => ({ default: module.WidgetGrid })))
 
 const PERIODS: StatsPeriod[] = ['24h', '7d', '30d']
 
 export function DashboardPage() {
+  const refetchInterval = useRefreshInterval()
   const [isFormOpen, setIsFormOpen] = useState(false)
   const { user } = useAuth()
   const canManage = canManageResources(user)
   const navigate = useNavigate()
-  const summary = useQuery({ queryKey: queryKeys.summary, queryFn: getDashboardSummary, refetchInterval: REFRESH_INTERVAL_MS })
+  const summary = useQuery({ queryKey: queryKeys.summary, queryFn: getDashboardSummary, refetchInterval })
   const layout = useQuery({ queryKey: queryKeys.dashboardLayout, queryFn: getDashboardLayout })
 
   const title = <h1 className="text-2xl font-semibold text-neutral-900">{t('dashboard.title')}</h1>
@@ -106,18 +109,27 @@ function DashboardBoard({ layout, title, actions }: DashboardBoardProps) {
   const widgets = draft ?? layout.widgets
 
   const changePeriod = useMutation({
+    mutationKey: PERIOD_MUTATION_KEY,
     mutationFn: (period: StatsPeriod) => updateDashboardLayout({ period }),
-    onMutate: (period) => {
+    onMutate: async (period) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.dashboardLayout })
       const previous = queryClient.getQueryData<DashboardLayout>(queryKeys.dashboardLayout)
-      queryClient.setQueryData<DashboardLayout>(queryKeys.dashboardLayout, { ...layout, period })
+      queryClient.setQueryData<DashboardLayout>(queryKeys.dashboardLayout, (current) => (current ? { ...current, period } : current))
 
       return { previous }
     },
     onError: (_error, _period, context) => {
-      queryClient.setQueryData(queryKeys.dashboardLayout, context?.previous)
+      if (queryClient.isMutating({ mutationKey: PERIOD_MUTATION_KEY }) === 1) {
+        queryClient.setQueryData(queryKeys.dashboardLayout, context?.previous)
+      }
+
       showToast(t('dashboard.saveError'), 'error')
     },
-    onSuccess: (saved) => queryClient.setQueryData(queryKeys.dashboardLayout, saved),
+    onSuccess: (saved) => {
+      if (queryClient.isMutating({ mutationKey: PERIOD_MUTATION_KEY }) === 1) {
+        queryClient.setQueryData(queryKeys.dashboardLayout, saved)
+      }
+    },
   })
 
   const saveLayout = useMutation({

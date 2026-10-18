@@ -94,8 +94,22 @@ const relativeUnits: [Intl.RelativeTimeFormatUnit, number][] = [
   ['second', 1],
 ]
 
+const relativeTimeFormatters = new Map<string, Intl.RelativeTimeFormat>()
+
+function relativeTimeFormatter(): Intl.RelativeTimeFormat {
+  const locale = getLocale()
+  let formatter = relativeTimeFormatters.get(locale)
+
+  if (!formatter) {
+    formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
+    relativeTimeFormatters.set(locale, formatter)
+  }
+
+  return formatter
+}
+
 export function formatRelativeTime(value: string | Date, now: Date = new Date()): string {
-  const formatter = new Intl.RelativeTimeFormat(getLocale(), { numeric: 'auto' })
+  const formatter = relativeTimeFormatter()
   const elapsedSeconds = Math.round((toDate(value).getTime() - now.getTime()) / 1000)
 
   if (Math.abs(elapsedSeconds) < 10) {

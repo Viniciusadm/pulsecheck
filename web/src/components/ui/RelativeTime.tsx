@@ -1,22 +1,38 @@
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 import { formatDateTime, formatRelativeTime } from '../../lib/format.ts'
 
 const TICK_INTERVAL_MS = 15_000
 
-function useNow(intervalMs: number) {
-  const [now, setNow] = useState(() => new Date())
+const listeners = new Set<() => void>()
+let now = new Date()
+let timer: ReturnType<typeof setInterval> | undefined
 
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), intervalMs)
+function subscribe(listener: () => void) {
+  if (listeners.size === 0) {
+    now = new Date()
+    timer = setInterval(() => {
+      now = new Date()
+      listeners.forEach((notify) => notify())
+    }, TICK_INTERVAL_MS)
+  }
 
-    return () => clearInterval(timer)
-  }, [intervalMs])
+  listeners.add(listener)
 
-  return now
+  return () => {
+    listeners.delete(listener)
+
+    if (listeners.size === 0) {
+      clearInterval(timer)
+    }
+  }
+}
+
+function useNow() {
+  return useSyncExternalStore(subscribe, () => now)
 }
 
 export function RelativeTime({ value, format = (time) => time }: { value: string; format?: (time: string) => string }) {
-  const now = useNow(TICK_INTERVAL_MS)
+  const now = useNow()
 
   return (
     <time dateTime={value} title={formatDateTime(value)}>

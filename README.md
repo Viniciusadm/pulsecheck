@@ -106,7 +106,7 @@ All variables live in the `.env` file next to `docker-compose.yml` (template: [`
 | `SESSION_SECURE_COOKIE` | no | `false` | Set to `true` when served over HTTPS. |
 | `TRUSTED_PROXIES` | no | empty | Reverse proxies allowed to set `X-Forwarded-*`: comma-separated IPs/CIDRs (e.g. `172.16.0.0/12`). Needed behind a proxy for correct client IPs (rate limits) and HTTPS detection. Avoid `*`: clients could then fake their IP and bypass rate limits. |
 | `DB_DATABASE` / `DB_USERNAME` | no | `pulsecheck` | Database name and user. |
-| `QUEUE_WORKERS` | no | `2` | Number of queue worker containers. |
+| `QUEUE_WORKERS` | no | `2` | Number of queue worker containers. Each check holds a worker for up to its timeout, so add workers as you add monitors (roughly one per 30 monitors at a 1-minute interval). Alerts use a separate `notifications` queue that workers always serve first. |
 | `LOG_LEVEL` | no | `info` | Laravel log level; logs go to the container output. |
 | `QUEUE_CONNECTION` / `CACHE_STORE` / `SESSION_DRIVER` | no | `database` | Set all three to `redis` to use Redis (see below). |
 | `REDIS_PASSWORD` | only with Redis | empty | Password required by the `redis` service. |
@@ -138,7 +138,7 @@ The default `database` drivers are enough for a personal or small-team installat
 
 1. Drain pending jobs so none are left behind in the `jobs` table:
    ```sh
-   docker compose exec app php artisan queue:work --stop-when-empty
+   docker compose exec app php artisan queue:work --queue=notifications,default --stop-when-empty
    ```
 2. In `.env`, set `REDIS_PASSWORD` (for example `openssl rand -hex 24`) and change `QUEUE_CONNECTION`, `CACHE_STORE` and `SESSION_DRIVER` to `redis`.
 3. Start with the profile:
@@ -217,7 +217,7 @@ Run each of these in its own terminal:
 
 ```sh
 cd back && php artisan serve           # API on http://localhost:8000
-cd back && php artisan queue:work      # runs checks and notifications
+cd back && php artisan queue:work --queue=notifications,default   # runs checks and notifications
 cd back && php artisan schedule:work   # dispatches due checks every minute
 cd back && php artisan reverb:start    # WebSocket server on port 8080
 cd web && npm install && npm run dev   # SPA on http://localhost:5173

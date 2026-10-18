@@ -7,11 +7,12 @@ import { t } from '../../../i18n/index.ts'
 import { AXIS_LINE, AXIS_TICK, BUCKET_MINUTES, GRID_STROKE, PRIMARY, PRIMARY_DARK, TOOLTIP_STYLE, bucketTickLabel } from '../../../lib/chart.ts'
 import { formatDateTime, formatLatency } from '../../../lib/format.ts'
 import { EmptyChart, QueryContent } from './QueryContent.tsx'
-import { REFRESH_INTERVAL_MS } from './refresh.ts'
+import { useRefreshInterval } from './refresh.ts'
 import type { WidgetProps } from './types.ts'
 
 export function LatencyTrendWidget({ period }: WidgetProps) {
-  const trend = useQuery({ queryKey: queryKeys.dashboardMetric('latency-trend', period), queryFn: () => getLatencyTrend(period), refetchInterval: REFRESH_INTERVAL_MS })
+  const refetchInterval = useRefreshInterval()
+  const trend = useQuery({ queryKey: queryKeys.dashboardMetric('latency-trend', period), queryFn: () => getLatencyTrend(period), refetchInterval })
 
   return <QueryContent query={trend}>{(buckets) => <LatencyTrendChart buckets={buckets} bucketMinutes={BUCKET_MINUTES[period]} />}</QueryContent>
 }

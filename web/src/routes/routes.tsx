@@ -1,15 +1,18 @@
 import { Navigate, type RouteObject } from 'react-router'
-import { ChannelsPage } from '../features/channels/ChannelsPage.tsx'
-import { ForgotPasswordPage } from '../features/auth/ForgotPasswordPage.tsx'
-import { LoginPage } from '../features/auth/LoginPage.tsx'
-import { ResetPasswordPage } from '../features/auth/ResetPasswordPage.tsx'
 import { DashboardPage } from '../features/dashboard/DashboardPage.tsx'
 import { MonitorDetailPage } from '../features/monitors/MonitorDetailPage.tsx'
 import { MonitorsPage } from '../features/monitors/MonitorsPage.tsx'
-import { SettingsPage } from '../features/settings/SettingsPage.tsx'
-import { SetupPage } from '../features/setup/SetupPage.tsx'
 import { AppLayout } from '../layouts/AppLayout.tsx'
 import { AuthLayout } from '../layouts/AuthLayout.tsx'
+import {
+  ChannelsPage,
+  ForgotPasswordPage,
+  LazyPage,
+  LoginPage,
+  ResetPasswordPage,
+  SettingsPage,
+  SetupPage,
+} from './lazyPages.tsx'
 import { RedirectIfAuthenticated, RedirectIfSetupDone, RequireAuth, RequireSetup } from './guards.tsx'
 import { NotFoundPage } from './NotFoundPage.tsx'
 
@@ -19,7 +22,7 @@ export const routes: RouteObject[] = [
     children: [
       {
         element: <AuthLayout />,
-        children: [{ path: '/setup', element: <SetupPage /> }],
+        children: [{ path: '/setup', element: <LazyPage><SetupPage /></LazyPage> }],
       },
     ],
   },
@@ -32,11 +35,11 @@ export const routes: RouteObject[] = [
           {
             element: <RedirectIfAuthenticated />,
             children: [
-              { path: '/login', element: <LoginPage /> },
-              { path: '/forgot-password', element: <ForgotPasswordPage /> },
+              { path: '/login', element: <LazyPage><LoginPage /></LazyPage> },
+              { path: '/forgot-password', element: <LazyPage><ForgotPasswordPage /></LazyPage> },
             ],
           },
-          { path: '/reset-password', element: <ResetPasswordPage /> },
+          { path: '/reset-password', element: <LazyPage><ResetPasswordPage /></LazyPage> },
         ],
       },
       {
@@ -49,8 +52,8 @@ export const routes: RouteObject[] = [
               { path: '/dashboard', element: <DashboardPage /> },
               { path: '/monitors', element: <MonitorsPage /> },
               { path: '/monitors/:id', element: <MonitorDetailPage /> },
-              { path: '/channels', element: <ChannelsPage /> },
-              { path: '/settings', element: <SettingsPage /> },
+              { path: '/channels', element: <LazyPage><ChannelsPage /></LazyPage> },
+              { path: '/settings', element: <LazyPage><SettingsPage /></LazyPage> },
             ],
           },
         ],

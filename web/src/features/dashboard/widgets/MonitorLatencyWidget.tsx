@@ -6,17 +6,18 @@ import { queryKeys } from '../../../api/queryKeys.ts'
 import { t } from '../../../i18n/index.ts'
 import { LatencyChart } from '../../monitors/LatencyChart.tsx'
 import { EmptyChart, QueryContent } from './QueryContent.tsx'
-import { REFRESH_INTERVAL_MS } from './refresh.ts'
+import { useRefreshInterval } from './refresh.ts'
 import type { WidgetProps } from './types.ts'
 
 export function MonitorLatencyWidget({ widget, period }: WidgetProps) {
+  const refetchInterval = useRefreshInterval()
   const monitorId = widget.options.monitor_id ?? 0
   const monitor = useQuery({ queryKey: queryKeys.monitor(monitorId), queryFn: () => getMonitor(monitorId), enabled: monitorId > 0 })
   const latency = useQuery({
     queryKey: queryKeys.latency(monitorId, period),
     queryFn: () => getLatencySeries(monitorId, period),
     enabled: monitor.isSuccess,
-    refetchInterval: REFRESH_INTERVAL_MS,
+    refetchInterval,
   })
 
   const isUnavailable = isAxiosError(monitor.error) && monitor.error.response?.status === 404

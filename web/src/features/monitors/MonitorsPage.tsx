@@ -11,6 +11,7 @@ import { t } from '../../i18n/index.ts'
 import { canManageResources } from '../../lib/permissions.ts'
 import { useAuth } from '../auth/AuthContext.ts'
 import { MonitorFormDialog } from './MonitorFormDialog.tsx'
+import { usePollingInterval } from './realtimeConnection.ts'
 import { MonitorList } from './MonitorList.tsx'
 
 const STATUS_FILTERS: MonitorStatusFilter[] = ['up', 'down', 'pending', 'paused']
@@ -25,11 +26,12 @@ export function MonitorsPage() {
   const statusParam = searchParams.get('status')
   const status = STATUS_FILTERS.find((filter) => filter === statusParam)
 
+  const refetchInterval = usePollingInterval(60_000)
   const monitors = useQuery({
     queryKey: queryKeys.monitorList(page, status),
     queryFn: () => listMonitors({ page, status }),
     placeholderData: keepPreviousData,
-    refetchInterval: 60_000,
+    refetchInterval,
   })
 
   const updateParams = (next: { page?: number; status?: string }) => {

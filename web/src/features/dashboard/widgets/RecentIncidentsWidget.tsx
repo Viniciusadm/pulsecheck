@@ -4,10 +4,11 @@ import { queryKeys } from '../../../api/queryKeys.ts'
 import { t } from '../../../i18n/index.ts'
 import { IncidentList } from '../../monitors/IncidentList.tsx'
 import { QueryContent } from './QueryContent.tsx'
-import { REFRESH_INTERVAL_MS } from './refresh.ts'
+import { useRefreshInterval } from './refresh.ts'
 
 export function RecentIncidentsWidget() {
-  const incidents = useQuery({ queryKey: queryKeys.recentIncidents, queryFn: () => listRecentIncidents(5), refetchInterval: REFRESH_INTERVAL_MS })
+  const refetchInterval = useRefreshInterval()
+  const incidents = useQuery({ queryKey: queryKeys.recentIncidents, queryFn: () => listRecentIncidents(5), refetchInterval })
 
   return (
     <QueryContent query={incidents}>

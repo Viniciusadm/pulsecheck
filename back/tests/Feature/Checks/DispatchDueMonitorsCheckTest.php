@@ -7,6 +7,7 @@ use App\Models\Monitor;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
@@ -73,6 +74,20 @@ class DispatchDueMonitorsCheckTest extends TestCase
 
         Queue::assertPushed(RunMonitorCheck::class, 510);
         $this->assertSame(0, Monitor::where('next_check_at', '<=', now())->count());
+    }
+
+    public function test_logs_a_check_skipped_because_the_previous_one_is_still_pending(): void
+    {
+        Queue::fake();
+        Log::spy();
+        $monitor = Monitor::factory()->create(['interval_minutes' => 1, 'next_check_at' => now()->subMinute()]);
+        RunMonitorCheck::dispatch($monitor);
+        $monitor->update(['next_check_at' => now()->subSecond()]);
+
+        $this->artisan('monitors:dispatch-due')->assertSuccessful();
+
+        Queue::assertPushed(RunMonitorCheck::class, 1);
+        Log::shouldHaveReceived('warning')->once()->withArgs(fn (string $message, array $context) => $context === ['monitor_id' => $monitor->id]);
     }
 
     public function test_dispatcher_is_scheduled_every_minute_without_overlapping(): void

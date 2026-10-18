@@ -7,12 +7,13 @@ import { t } from '../../../i18n/index.ts'
 import { AXIS_LINE, AXIS_TICK, BUCKET_MINUTES, GRID_STROKE, PRIMARY, TOOLTIP_STYLE, bucketTickLabel } from '../../../lib/chart.ts'
 import { formatDateTime, formatPercentage } from '../../../lib/format.ts'
 import { EmptyChart, QueryContent } from './QueryContent.tsx'
-import { REFRESH_INTERVAL_MS } from './refresh.ts'
+import { useRefreshInterval } from './refresh.ts'
 import { overallUptime } from './uptime.ts'
 import type { WidgetProps } from './types.ts'
 
 export function UptimeTrendWidget({ period }: WidgetProps) {
-  const trend = useQuery({ queryKey: queryKeys.dashboardMetric('uptime-trend', period), queryFn: () => getUptimeTrend(period), refetchInterval: REFRESH_INTERVAL_MS })
+  const refetchInterval = useRefreshInterval()
+  const trend = useQuery({ queryKey: queryKeys.dashboardMetric('uptime-trend', period), queryFn: () => getUptimeTrend(period), refetchInterval })
 
   return <QueryContent query={trend}>{(buckets) => <UptimeChart buckets={buckets} bucketMinutes={BUCKET_MINUTES[period]} />}</QueryContent>
 }

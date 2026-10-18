@@ -6,14 +6,15 @@ import { t } from '../../../i18n/index.ts'
 import { formatLatency } from '../../../lib/format.ts'
 import { EmptyChart, QueryContent } from './QueryContent.tsx'
 import { RankedBars } from './RankedBars.tsx'
-import { REFRESH_INTERVAL_MS } from './refresh.ts'
+import { useRefreshInterval } from './refresh.ts'
 import type { WidgetProps } from './types.ts'
 
 export function SlowestMonitorsWidget({ period }: WidgetProps) {
+  const refetchInterval = useRefreshInterval()
   const slowest = useQuery({
     queryKey: queryKeys.dashboardMetric('slowest-monitors', period),
     queryFn: () => getSlowestMonitors(period),
-    refetchInterval: REFRESH_INTERVAL_MS,
+    refetchInterval,
   })
 
   return (

@@ -9,13 +9,14 @@ import { RelativeTime } from '../../../components/ui/RelativeTime.tsx'
 import { t } from '../../../i18n/index.ts'
 import { hostOf } from '../../../lib/monitor.ts'
 import { QueryContent } from './QueryContent.tsx'
-import { REFRESH_INTERVAL_MS } from './refresh.ts'
+import { useRefreshInterval } from './refresh.ts'
 
 export function DownMonitorsWidget() {
+  const refetchInterval = useRefreshInterval()
   const downMonitors = useQuery({
     queryKey: queryKeys.monitorList(1, 'down'),
     queryFn: () => listMonitors({ status: 'down' }),
-    refetchInterval: REFRESH_INTERVAL_MS,
+    refetchInterval,
   })
 
   return (

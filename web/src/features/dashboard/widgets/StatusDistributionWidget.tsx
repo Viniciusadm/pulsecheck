@@ -8,12 +8,13 @@ import { DownIcon, PausedIcon, PendingIcon, UpIcon } from '../../../components/u
 import { t } from '../../../i18n/index.ts'
 import { TOOLTIP_STYLE } from '../../../lib/chart.ts'
 import { EmptyChart, QueryContent } from './QueryContent.tsx'
-import { REFRESH_INTERVAL_MS } from './refresh.ts'
+import { useRefreshInterval } from './refresh.ts'
 
 type Slice = { key: string; label: string; value: number; color: string; icon: ReactNode; tone: string }
 
 export function StatusDistributionWidget() {
-  const summary = useQuery({ queryKey: queryKeys.summary, queryFn: getDashboardSummary, refetchInterval: REFRESH_INTERVAL_MS })
+  const refetchInterval = useRefreshInterval()
+  const summary = useQuery({ queryKey: queryKeys.summary, queryFn: getDashboardSummary, refetchInterval })
 
   return <QueryContent query={summary}>{(data) => <Distribution summary={data} />}</QueryContent>
 }

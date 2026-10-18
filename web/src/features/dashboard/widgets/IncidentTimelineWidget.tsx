@@ -7,14 +7,15 @@ import { t } from '../../../i18n/index.ts'
 import { AXIS_LINE, AXIS_TICK, BUCKET_MINUTES, GRID_STROKE, PRIMARY, TOOLTIP_STYLE, bucketTickLabel } from '../../../lib/chart.ts'
 import { formatDateTime } from '../../../lib/format.ts'
 import { EmptyChart, QueryContent } from './QueryContent.tsx'
-import { REFRESH_INTERVAL_MS } from './refresh.ts'
+import { useRefreshInterval } from './refresh.ts'
 import type { WidgetProps } from './types.ts'
 
 export function IncidentTimelineWidget({ period }: WidgetProps) {
+  const refetchInterval = useRefreshInterval()
   const timeline = useQuery({
     queryKey: queryKeys.dashboardMetric('incident-timeline', period),
     queryFn: () => getIncidentTimeline(period),
-    refetchInterval: REFRESH_INTERVAL_MS,
+    refetchInterval,
   })
 
   return <QueryContent query={timeline}>{(buckets) => <TimelineChart buckets={buckets} bucketMinutes={BUCKET_MINUTES[period]} />}</QueryContent>

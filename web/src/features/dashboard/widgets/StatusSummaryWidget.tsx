@@ -6,10 +6,11 @@ import type { DashboardSummary } from '../../../api/types.ts'
 import { DownIcon, PausedIcon, UpIcon } from '../../../components/ui/icons.tsx'
 import { t } from '../../../i18n/index.ts'
 import { QueryContent } from './QueryContent.tsx'
-import { REFRESH_INTERVAL_MS } from './refresh.ts'
+import { useRefreshInterval } from './refresh.ts'
 
 export function StatusSummaryWidget() {
-  const summary = useQuery({ queryKey: queryKeys.summary, queryFn: getDashboardSummary, refetchInterval: REFRESH_INTERVAL_MS })
+  const refetchInterval = useRefreshInterval()
+  const summary = useQuery({ queryKey: queryKeys.summary, queryFn: getDashboardSummary, refetchInterval })
 
   return <QueryContent query={summary}>{(data) => <SummaryCards summary={data} />}</QueryContent>
 }

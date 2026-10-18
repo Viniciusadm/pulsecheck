@@ -17,6 +17,8 @@ class SendIncidentNotification implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
+    public const QUEUE = 'notifications';
+
     public int $tries = 3;
 
     public int $uniqueFor = 3600;
@@ -25,7 +27,9 @@ class SendIncidentNotification implements ShouldBeUnique, ShouldQueue
         public int $incidentId,
         public int $channelId,
         public NotificationType $type,
-    ) {}
+    ) {
+        $this->onQueue(self::QUEUE);
+    }
 
     public function uniqueId(): string
     {

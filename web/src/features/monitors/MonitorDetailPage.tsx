@@ -23,6 +23,7 @@ import { useAuth } from '../auth/AuthContext.ts'
 import { CheckHistory } from './CheckHistory.tsx'
 import { IncidentList } from './IncidentList.tsx'
 import { MonitorFormDialog } from './MonitorFormDialog.tsx'
+import { usePollingInterval } from './realtimeConnection.ts'
 import { UptimeBar } from './UptimeBar.tsx'
 import { useDeleteMonitor, usePauseMonitor, useResumeMonitor } from './useMonitorMutations.ts'
 
@@ -34,10 +35,11 @@ const REFRESH_INTERVAL_MS = 60_000
 export function MonitorDetailPage() {
   const monitorId = Number(useParams().id)
   const isValidId = Number.isInteger(monitorId) && monitorId > 0
+  const refetchInterval = usePollingInterval(REFRESH_INTERVAL_MS)
   const monitor = useQuery({
     queryKey: queryKeys.monitor(monitorId),
     queryFn: () => getMonitor(monitorId),
-    refetchInterval: REFRESH_INTERVAL_MS,
+    refetchInterval,
     enabled: isValidId,
   })
 
@@ -81,11 +83,12 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
   const pauseMutation = usePauseMonitor(monitor.id)
   const resumeMutation = useResumeMonitor(monitor.id)
   const deleteMutation = useDeleteMonitor(monitor.id)
+  const refetchInterval = usePollingInterval(REFRESH_INTERVAL_MS)
 
-  const stats = useQuery({ queryKey: queryKeys.stats(monitor.id, period), queryFn: () => getMonitorStats(monitor.id, period), refetchInterval: REFRESH_INTERVAL_MS })
-  const latency = useQuery({ queryKey: queryKeys.latency(monitor.id, period), queryFn: () => getLatencySeries(monitor.id, period), refetchInterval: REFRESH_INTERVAL_MS })
+  const stats = useQuery({ queryKey: queryKeys.stats(monitor.id, period), queryFn: () => getMonitorStats(monitor.id, period), refetchInterval })
+  const latency = useQuery({ queryKey: queryKeys.latency(monitor.id, period), queryFn: () => getLatencySeries(monitor.id, period), refetchInterval })
   const uptimeHistory = useQuery({ queryKey: queryKeys.uptimeHistory(monitor.id), queryFn: () => getUptimeHistory(monitor.id, 30) })
-  const incidents = useQuery({ queryKey: queryKeys.monitorIncidents(monitor.id, 1), queryFn: () => listMonitorIncidents(monitor.id, 1), refetchInterval: REFRESH_INTERVAL_MS })
+  const incidents = useQuery({ queryKey: queryKeys.monitorIncidents(monitor.id, 1), queryFn: () => listMonitorIncidents(monitor.id, 1), refetchInterval })
 
   const showError = (error: unknown) => showToast(generalErrorMessage(error) ?? t('common.genericError'), 'error')
 

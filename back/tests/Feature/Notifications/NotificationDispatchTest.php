@@ -67,6 +67,7 @@ class NotificationDispatchTest extends TestCase
 
         $incident = $monitor->incidents()->sole();
         Queue::assertPushed(SendIncidentNotification::class, 2);
+        Queue::assertPushedOn(SendIncidentNotification::QUEUE, SendIncidentNotification::class);
 
         foreach ([$telegram, $slack] as $channel) {
             Queue::assertPushed(SendIncidentNotification::class, fn (SendIncidentNotification $job) => $job->incidentId === $incident->id
