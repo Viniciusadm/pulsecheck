@@ -36,7 +36,7 @@ CMD ["php-fpm"]
 HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
     CMD SCRIPT_NAME=/ping SCRIPT_FILENAME=/ping REQUEST_METHOD=GET cgi-fcgi -bind -connect 127.0.0.1:9000 | grep -q pong
 
-FROM nginx:1.30-alpine AS web
+FROM nginx:1.31-alpine AS web
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY --from=frontend /web/dist /usr/share/nginx/html
 HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
