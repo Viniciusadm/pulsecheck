@@ -13,6 +13,10 @@ Schedule::command('monitors:dispatch-due')
     ->withoutOverlapping()
     ->onOneServer();
 
+Schedule::call(fn () => touch(storage_path('framework/scheduler-heartbeat')))
+    ->name('scheduler-heartbeat')
+    ->everyMinute();
+
 Schedule::command('model:prune')
     ->dailyAt('03:00')
     ->onOneServer();

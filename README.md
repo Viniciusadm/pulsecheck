@@ -194,7 +194,7 @@ Before deploying, set these three variables in the Docker Manager (everything el
 - `APP_URL`: the address users will open, e.g. `http://YOUR_SERVER_IP` or your domain.
 - `DB_PASSWORD`: a long random string.
 
-The images are published by the release workflow when a `v*.*.*` tag is pushed; `PULSECHECK_VERSION` selects the image tag (default `1.1.0`; real-time updates need 1.1.0 or newer). You can also deploy on any Hostinger VPS (or other server) with the regular [Quick start](#quick-start-docker-compose).
+The images are published by the release workflow when a `v*.*.*` tag is pushed; `PULSECHECK_VERSION` selects the image tag (default `1.0.0`; real-time updates need 1.1.0 or newer, together with the Compose file from that release). You can also deploy on any Hostinger VPS (or other server) with the regular [Quick start](#quick-start-docker-compose).
 
 ## Local development
 

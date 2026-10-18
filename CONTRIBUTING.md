@@ -12,6 +12,6 @@ Thanks for your interest in PulseCheck.
    ```
 
 4. Write code, comments and UI text in English; UI strings go in `web/src/i18n/en.ts`.
-5. Record notable design decisions in [`docs/decisions.md`](docs/decisions.md).
+5. Explain notable design decisions in the pull request description.
 
 Security problems should be reported privately; see [SECURITY.md](SECURITY.md).

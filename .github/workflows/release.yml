@@ -9,8 +9,13 @@ permissions:
   packages: write
 
 jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
   images:
     name: Publish ${{ matrix.target }} image
+    needs: ci
     runs-on: ubuntu-24.04
     strategy:
       matrix:

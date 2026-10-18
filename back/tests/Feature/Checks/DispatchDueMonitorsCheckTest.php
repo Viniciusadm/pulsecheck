@@ -100,4 +100,21 @@ class DispatchDueMonitorsCheckTest extends TestCase
         $this->assertTrue($event->withoutOverlapping);
         $this->assertTrue($event->onOneServer);
     }
+
+    public function test_scheduler_writes_a_heartbeat_every_minute(): void
+    {
+        $heartbeat = storage_path('framework/scheduler-heartbeat');
+        @unlink($heartbeat);
+
+        $event = collect($this->app->make(Schedule::class)->events())
+            ->first(fn ($event) => $event->description === 'scheduler-heartbeat');
+
+        $this->assertNotNull($event);
+        $this->assertSame('* * * * *', $event->expression);
+
+        $event->run($this->app);
+
+        $this->assertFileExists($heartbeat);
+        @unlink($heartbeat);
+    }
 }
