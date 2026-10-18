@@ -18,6 +18,7 @@
     "pusher-js": "^8.6.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-grid-layout": "^2.3.0",
     "react-router": "^8.4.0",
     "recharts": "^3.10.1"
   },

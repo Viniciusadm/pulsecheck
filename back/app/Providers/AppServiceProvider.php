@@ -90,5 +90,7 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('notification-channel-writes', fn (Request $request): Limit => Limit::perMinute(30)->by((string) $request->user()?->id ?: $request->ip()));
 
         RateLimiter::for('monitor-writes', fn (Request $request): Limit => Limit::perMinute(30)->by((string) $request->user()?->id ?: $request->ip()));
+
+        RateLimiter::for('dashboard-writes', fn (Request $request): Limit => Limit::perMinute(60)->by((string) $request->user()?->id ?: $request->ip()));
     }
 }

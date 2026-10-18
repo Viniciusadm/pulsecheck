@@ -7,6 +7,7 @@ import * as monitorsApi from '../../api/monitors.ts'
 import * as realtimeApi from '../../api/realtime.ts'
 import type { Monitor } from '../../api/types.ts'
 import { queryKeys } from '../../api/queryKeys.ts'
+import { mockDashboardApi } from '../../test/dashboardMocks.ts'
 import { ada, makeConfig, makeMonitor, paginated } from '../../test/fixtures.ts'
 import { renderApp } from '../../test/renderApp.tsx'
 
@@ -35,7 +36,7 @@ describe('useMonitorRealtime', () => {
   beforeEach(() => {
     vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(ada)
     vi.mocked(dashboardApi.getDashboardSummary).mockResolvedValue({ total: 1, up: 1, down: 0, pending: 0, paused: 0 })
-    vi.mocked(dashboardApi.listRecentIncidents).mockResolvedValue([])
+    mockDashboardApi()
     vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([makeMonitor()]))
   })
 

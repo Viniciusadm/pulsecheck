@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\StatsPeriod;
 use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -37,6 +38,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => UserRole::class,
             'can_view_all_monitors' => 'boolean',
+            'dashboard_layout' => 'array',
+            'dashboard_period' => StatsPeriod::class,
         ];
     }
 

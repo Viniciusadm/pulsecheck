@@ -26,7 +26,7 @@ class UptimeCalculator
         return [
             'total_checks' => $totalChecks,
             'successful_checks' => $successfulChecks,
-            'uptime_percentage' => $this->percentage($successfulChecks, $totalChecks),
+            'uptime_percentage' => self::percentage($successfulChecks, $totalChecks),
             'average_latency_ms' => $row->average_latency_ms === null ? null : (int) round((float) $row->average_latency_ms),
             'p95_latency_ms' => $row->p95_latency_ms === null ? null : (int) round((float) $row->p95_latency_ms),
         ];
@@ -56,13 +56,13 @@ class UptimeCalculator
                     'date' => $day,
                     'total_checks' => $totalChecks,
                     'successful_checks' => $successfulChecks,
-                    'uptime_percentage' => $this->percentage($successfulChecks, $totalChecks),
+                    'uptime_percentage' => self::percentage($successfulChecks, $totalChecks),
                 ];
             })
             ->all();
     }
 
-    private function percentage(int $successfulChecks, int $totalChecks): ?float
+    public static function percentage(int $successfulChecks, int $totalChecks): ?float
     {
         if ($totalChecks === 0) {
             return null;

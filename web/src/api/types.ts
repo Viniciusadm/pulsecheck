@@ -140,6 +140,68 @@ export type DashboardSummary = {
   paused: number
 }
 
+export type DashboardWidgetType =
+  | 'status_summary'
+  | 'status_distribution'
+  | 'down_monitors'
+  | 'recent_incidents'
+  | 'uptime_trend'
+  | 'latency_trend'
+  | 'slowest_monitors'
+  | 'incident_timeline'
+  | 'error_breakdown'
+  | 'monitor_latency'
+
+export type DashboardWidget = {
+  id: string
+  type: DashboardWidgetType
+  x: number
+  y: number
+  w: number
+  h: number
+  options: { monitor_id?: number }
+}
+
+export type DashboardLayout = {
+  period: StatsPeriod
+  widgets: DashboardWidget[]
+  is_default: boolean
+}
+
+export type DashboardLayoutInput = {
+  period: StatsPeriod
+  widgets?: DashboardWidget[]
+}
+
+export type UptimeTrendBucket = {
+  bucket_start: string
+  checks: number
+  failed_checks: number
+  uptime_percentage: number | null
+}
+
+export type LatencyTrendBucket = {
+  bucket_start: string
+  average_latency_ms: number | null
+  p95_latency_ms: number | null
+}
+
+export type SlowMonitor = {
+  monitor_id: number
+  name: string
+  average_latency_ms: number
+}
+
+export type IncidentTimelineBucket = {
+  bucket_start: string
+  incidents: number
+}
+
+export type ErrorBreakdownItem = {
+  error_type: CheckErrorType
+  failed_checks: number
+}
+
 export type InstanceSettings = {
   name: string
   timezone: string

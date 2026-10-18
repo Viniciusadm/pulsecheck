@@ -142,3 +142,19 @@ export function EyeOffIcon(props: IconProps) {
     </Icon>
   )
 }
+
+export function GripIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M7.5 5h.01M12.5 5h.01M7.5 10h.01M12.5 10h.01M7.5 15h.01M12.5 15h.01" strokeWidth={3} />
+    </Icon>
+  )
+}
+
+export function PlusIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M10 4v12M4 10h12" />
+    </Icon>
+  )
+}

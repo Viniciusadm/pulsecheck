@@ -4,7 +4,13 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\CurrentUserController;
+use App\Http\Controllers\DashboardErrorBreakdownController;
+use App\Http\Controllers\DashboardIncidentTimelineController;
+use App\Http\Controllers\DashboardLatencyTrendController;
+use App\Http\Controllers\DashboardLayoutController;
+use App\Http\Controllers\DashboardSlowestMonitorsController;
 use App\Http\Controllers\DashboardSummaryController;
+use App\Http\Controllers\DashboardUptimeTrendController;
 use App\Http\Controllers\InstanceSettingsController;
 use App\Http\Controllers\MonitorCheckResultController;
 use App\Http\Controllers\MonitorController;
@@ -53,7 +59,21 @@ Route::get('user', CurrentUserController::class)
     ->name('user');
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('dashboard/summary', DashboardSummaryController::class)->name('dashboard.summary');
+    Route::prefix('dashboard')->name('dashboard.')->group(function () {
+        Route::get('summary', DashboardSummaryController::class)->name('summary');
+        Route::get('uptime-trend', DashboardUptimeTrendController::class)->name('uptime-trend');
+        Route::get('latency-trend', DashboardLatencyTrendController::class)->name('latency-trend');
+        Route::get('slowest-monitors', DashboardSlowestMonitorsController::class)->name('slowest-monitors');
+        Route::get('incident-timeline', DashboardIncidentTimelineController::class)->name('incident-timeline');
+        Route::get('error-breakdown', DashboardErrorBreakdownController::class)->name('error-breakdown');
+    });
+
+    Route::prefix('me/dashboard')->name('me.dashboard.')->controller(DashboardLayoutController::class)->group(function () {
+        Route::get('/', 'show')->name('show');
+        Route::put('/', 'update')->middleware('throttle:dashboard-writes')->name('update');
+        Route::delete('/', 'destroy')->middleware('throttle:dashboard-writes')->name('destroy');
+    });
+
     Route::get('incidents', RecentIncidentController::class)->name('incidents.recent');
 
     Route::get('teams', [TeamController::class, 'index'])->name('teams.index');

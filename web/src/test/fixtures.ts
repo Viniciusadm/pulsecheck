@@ -1,4 +1,16 @@
-import type { AppConfig, Incident, LatencySeries, Monitor, MonitorStats, NotificationChannel, PaginatedResponse, Team, UptimeDay, User } from '../api/types.ts'
+import type {
+  AppConfig,
+  DashboardLayout,
+  Incident,
+  LatencySeries,
+  Monitor,
+  MonitorStats,
+  NotificationChannel,
+  PaginatedResponse,
+  Team,
+  UptimeDay,
+  User,
+} from '../api/types.ts'
 
 export const ada: User = {
   id: 1,
@@ -119,6 +131,23 @@ export function makeChannel(overrides: Partial<NotificationChannel> = {}): Notif
     team_ids: [],
     created_at: '2026-10-01T12:00:00Z',
     updated_at: '2026-10-01T12:00:00Z',
+    ...overrides,
+  }
+}
+
+export function makeDashboardLayout(overrides: Partial<DashboardLayout> = {}): DashboardLayout {
+  return {
+    period: '24h',
+    is_default: true,
+    widgets: [
+      { id: 'status-summary', type: 'status_summary', x: 0, y: 0, w: 12, h: 2, options: {} },
+      { id: 'uptime-trend', type: 'uptime_trend', x: 0, y: 2, w: 8, h: 4, options: {} },
+      { id: 'status-distribution', type: 'status_distribution', x: 8, y: 2, w: 4, h: 4, options: {} },
+      { id: 'latency-trend', type: 'latency_trend', x: 0, y: 6, w: 6, h: 4, options: {} },
+      { id: 'slowest-monitors', type: 'slowest_monitors', x: 6, y: 6, w: 6, h: 4, options: {} },
+      { id: 'down-monitors', type: 'down_monitors', x: 0, y: 10, w: 6, h: 4, options: {} },
+      { id: 'recent-incidents', type: 'recent_incidents', x: 6, y: 10, w: 6, h: 4, options: {} },
+    ],
     ...overrides,
   }
 }
