@@ -24,6 +24,7 @@ describe('authentication', () => {
     vi.mocked(dashboardApi.getAppConfig).mockResolvedValue({
       registration_enabled: true,
       monitors: { allowed_intervals: [1, 5, 10], default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10, max_per_user: 20 },
+      realtime: null,
     })
   })
 
@@ -31,6 +32,7 @@ describe('authentication', () => {
     vi.mocked(dashboardApi.getAppConfig).mockResolvedValue({
       registration_enabled: false,
       monitors: { allowed_intervals: [1, 5, 10], default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10, max_per_user: 20 },
+      realtime: null,
     })
     renderApp('/register')
 

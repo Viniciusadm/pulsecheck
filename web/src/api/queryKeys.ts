@@ -12,5 +12,5 @@ export const queryKeys = {
   uptimeHistory: (id: number) => ['monitors', id, 'uptime-history'] as const,
   checks: (id: number, from: string, to: string) => ['monitors', id, 'checks', from, to] as const,
   monitorIncidents: (id: number, page: number) => ['monitors', id, 'incidents', page] as const,
-  notificationSettings: ['settings', 'notifications'] as const,
+  notificationChannels: ['notification-channels'] as const,
 }

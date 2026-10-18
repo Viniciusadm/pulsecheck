@@ -4,6 +4,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router'
 import { logout } from '../api/auth.ts'
 import { CloseIcon, DashboardIcon, LogOutIcon, MenuIcon, MonitorsIcon, PulseIcon, SettingsIcon } from '../components/ui/icons.tsx'
 import { useAuth } from '../features/auth/AuthContext.ts'
+import { useMonitorRealtime } from '../features/monitors/useMonitorRealtime.ts'
 import { t, type MessageKey } from '../i18n/index.ts'
 
 type NavigationItem = {
@@ -20,9 +21,10 @@ const navigation: NavigationItem[] = [
 
 export function AppLayout() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  useMonitorRealtime()
 
   return (
-    <div className="min-h-screen lg:pl-60">
+    <div className="min-h-screen lg:pl-72">
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-surface px-4 lg:hidden">
         <Logo />
         <button
@@ -44,7 +46,7 @@ export function AppLayout() {
         </div>
       )}
 
-      <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col border-r border-border bg-surface px-3 py-5 lg:flex">
+      <aside className="fixed inset-y-0 left-0 hidden w-72 flex-col border-r border-border bg-surface px-3 py-5 lg:flex">
         <div className="mb-8 px-3">
           <Logo />
         </div>
@@ -112,7 +114,7 @@ function AccountPanel() {
     <div className="mt-3 flex items-center justify-between gap-2 border-t border-border px-3 pt-3">
       <div className="min-w-0">
         <p className="truncate font-medium text-neutral-900">{user?.name}</p>
-        <p className="truncate text-xs text-neutral-500">{user?.email}</p>
+        <p className="truncate text-xs text-neutral-500" title={user?.email}>{user?.email}</p>
       </div>
       <button
         type="button"

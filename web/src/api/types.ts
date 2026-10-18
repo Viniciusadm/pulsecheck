@@ -49,6 +49,7 @@ export type Monitor = {
   last_checked_at: string | null
   last_failed_at: string | null
   next_check_at: string | null
+  notification_channel_ids: number[]
   created_at: string
   updated_at: string
 }
@@ -58,6 +59,7 @@ export type MonitorInput = {
   url: string
   interval_minutes: number
   timeout_seconds: number
+  notification_channel_ids?: number[]
 }
 
 export type CheckErrorType =
@@ -141,16 +143,28 @@ export type AppConfig = {
     timeout_default: number
     max_per_user: number
   }
+  realtime: { key: string } | null
 }
 
-export type NotificationSettings = {
-  telegram_enabled: boolean
-  telegram_chat_id: string | null
-  has_telegram_token: boolean
+export type NotificationChannelType = 'telegram' | 'webhook' | 'slack' | 'discord' | 'email'
+
+export type NotificationChannel = {
+  id: number
+  type: NotificationChannelType
+  name: string
+  enabled: boolean
+  is_default: boolean
+  config: Record<string, string>
+  secrets_set: string[]
+  monitors_count: number
+  created_at: string
+  updated_at: string
 }
 
-export type NotificationSettingsInput = {
-  telegram_bot_token?: string
-  telegram_chat_id?: string
-  telegram_enabled: boolean
+export type NotificationChannelInput = {
+  type?: NotificationChannelType
+  name: string
+  enabled: boolean
+  is_default: boolean
+  config: Record<string, string | Record<string, string>>
 }

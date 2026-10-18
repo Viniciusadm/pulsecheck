@@ -1,4 +1,4 @@
-import type { Incident, LatencySeries, Monitor, MonitorStats, PaginatedResponse, UptimeDay, User } from '../api/types.ts'
+import type { Incident, LatencySeries, Monitor, MonitorStats, NotificationChannel, PaginatedResponse, UptimeDay, User } from '../api/types.ts'
 
 export const ada: User = {
   id: 1,
@@ -22,6 +22,7 @@ export function makeMonitor(overrides: Partial<Monitor> = {}): Monitor {
     last_checked_at: new Date(Date.now() - 120_000).toISOString(),
     last_failed_at: null,
     next_check_at: null,
+    notification_channel_ids: [],
     created_at: '2026-10-01T12:00:00Z',
     updated_at: '2026-10-01T12:00:00Z',
     ...overrides,
@@ -62,3 +63,19 @@ export const emptyUptimeDays: UptimeDay[] = [
   { date: '2026-10-16', total_checks: 0, successful_checks: 0, uptime_percentage: null },
   { date: '2026-10-17', total_checks: 0, successful_checks: 0, uptime_percentage: null },
 ]
+
+export function makeChannel(overrides: Partial<NotificationChannel> = {}): NotificationChannel {
+  return {
+    id: 1,
+    type: 'telegram',
+    name: 'My phone',
+    enabled: true,
+    is_default: true,
+    config: { chat_id: '123456789' },
+    secrets_set: ['bot_token'],
+    monitors_count: 2,
+    created_at: '2026-10-01T12:00:00Z',
+    updated_at: '2026-10-01T12:00:00Z',
+    ...overrides,
+  }
+}

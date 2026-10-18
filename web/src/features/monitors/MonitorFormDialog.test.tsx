@@ -4,21 +4,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as authApi from '../../api/auth.ts'
 import * as dashboardApi from '../../api/dashboard.ts'
 import * as monitorsApi from '../../api/monitors.ts'
+import * as channelsApi from '../../api/notificationChannels.ts'
 import { axiosError } from '../../test/axiosErrors.ts'
-import { ada, makeMonitor, paginated } from '../../test/fixtures.ts'
+import { ada, makeChannel, makeMonitor, paginated } from '../../test/fixtures.ts'
 import { renderApp } from '../../test/renderApp.tsx'
 
 vi.mock('../../api/auth.ts')
 vi.mock('../../api/dashboard.ts')
 vi.mock('../../api/monitors.ts')
+vi.mock('../../api/notificationChannels.ts')
 
 describe('MonitorFormDialog', () => {
   beforeEach(() => {
     vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(ada)
     vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([makeMonitor()]))
+    vi.mocked(channelsApi.listNotificationChannels).mockResolvedValue([])
     vi.mocked(dashboardApi.getAppConfig).mockResolvedValue({
       registration_enabled: true,
       monitors: { allowed_intervals: [1, 5, 10], default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10, max_per_user: 20 },
+      realtime: null,
     })
   })
 
@@ -87,5 +91,35 @@ describe('MonitorFormDialog', () => {
     expect(monitorsApi.createMonitor).toHaveBeenCalledWith(
       { name: 'Docs', url: 'https://docs.example.com', interval_minutes: 5, timeout_seconds: 10 },
     )
+  })
+
+  it('pre-selects the default channels and sends only an explicit choice', async () => {
+    vi.mocked(channelsApi.listNotificationChannels).mockResolvedValue([
+      makeChannel({ id: 1, name: 'My phone', is_default: true }),
+      makeChannel({ id: 2, name: 'Team Slack', type: 'slack', is_default: false }),
+    ])
+    vi.mocked(monitorsApi.createMonitor).mockResolvedValue(makeMonitor({ id: 42 }))
+    vi.mocked(monitorsApi.getMonitor).mockReturnValue(new Promise(() => {}))
+    const { user, dialog } = await openForm()
+
+    const phone = await within(dialog).findByRole('checkbox', { name: /My phone/ })
+    const slack = within(dialog).getByRole('checkbox', { name: /Team Slack/ })
+    expect(phone).toBeChecked()
+    expect(slack).not.toBeChecked()
+
+    await user.click(slack)
+    await user.type(within(dialog).getByLabelText('Name'), 'Docs')
+    await user.type(within(dialog).getByLabelText('URL'), 'https://docs.example.com')
+    await user.click(within(dialog).getByRole('button', { name: 'Add monitor' }))
+
+    await screen.findByText('Monitor added. The first check runs within a minute.')
+    expect(monitorsApi.createMonitor).toHaveBeenCalledWith(expect.objectContaining({ notification_channel_ids: [1, 2] }))
+  })
+
+  it('links to settings when there are no channels', async () => {
+    const { dialog } = await openForm()
+
+    expect(await within(dialog).findByText('No notification channels yet.')).toBeInTheDocument()
+    expect(within(dialog).getByRole('link', { name: 'Manage channels' })).toHaveAttribute('href', '/settings')
   })
 })

@@ -1,8 +1,9 @@
 import { Link } from 'react-router'
 import type { Monitor } from '../../api/types.ts'
 import { StatusBadge } from '../../components/ui/Badge.tsx'
+import { RelativeTime } from '../../components/ui/RelativeTime.tsx'
 import { t } from '../../i18n/index.ts'
-import { formatDateTime, formatLatency, formatRelativeTime } from '../../lib/format.ts'
+import { formatLatency } from '../../lib/format.ts'
 import { displayStatus, hostOf } from '../../lib/monitor.ts'
 
 function LastCheck({ value }: { value: string | null }) {
@@ -10,11 +11,7 @@ function LastCheck({ value }: { value: string | null }) {
     return <span className="text-neutral-500">{t('monitors.neverChecked')}</span>
   }
 
-  return (
-    <time dateTime={value} title={formatDateTime(value)}>
-      {formatRelativeTime(value)}
-    </time>
-  )
+  return <RelativeTime value={value} />
 }
 
 export function MonitorList({ monitors }: { monitors: Monitor[] }) {

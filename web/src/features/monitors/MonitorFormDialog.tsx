@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router'
 import { getAppConfig } from '../../api/dashboard.ts'
 import { fieldErrors, generalErrorMessage } from '../../api/errors.ts'
+import { listNotificationChannels } from '../../api/notificationChannels.ts'
 import { queryKeys } from '../../api/queryKeys.ts'
-import type { AppConfig, Monitor, MonitorInput } from '../../api/types.ts'
+import type { AppConfig, Monitor, MonitorInput, NotificationChannel } from '../../api/types.ts'
 import { Alert } from '../../components/ui/Alert.tsx'
 import { Button } from '../../components/ui/Button.tsx'
 import { Dialog } from '../../components/ui/Dialog.tsx'
@@ -51,6 +53,15 @@ function MonitorForm({ isOpen, onClose, onSaved, monitor, config }: MonitorFormD
     timeout_seconds: monitor?.timeout_seconds ?? config?.monitors.timeout_default ?? 10,
   })
 
+  const channels = useQuery({ queryKey: queryKeys.notificationChannels, queryFn: listNotificationChannels })
+  const [selectedChannelIds, setSelectedChannelIds] = useState<number[] | null>(null)
+  const channelIds = selectedChannelIds
+    ?? monitor?.notification_channel_ids
+    ?? (channels.data ?? []).filter((channel) => channel.is_default).map((channel) => channel.id)
+
+  const toggleChannel = (id: number, isChecked: boolean) =>
+    setSelectedChannelIds(isChecked ? [...channelIds, id] : channelIds.filter((current) => current !== id))
+
   const errors = fieldErrors(mutation.error)
   const generalError = mutation.isError ? (errors.monitors ?? generalErrorMessage(mutation.error)) : null
   const intervals = config?.monitors.allowed_intervals ?? [1, 5, 10]
@@ -65,6 +76,10 @@ function MonitorForm({ isOpen, onClose, onSaved, monitor, config }: MonitorFormD
     }
 
     const input: MonitorInput = { ...form, name: form.name.trim(), url: form.url.trim() }
+
+    if (selectedChannelIds !== null) {
+      input.notification_channel_ids = selectedChannelIds
+    }
     const onSuccess = (saved: Monitor) => {
       showToast(monitor ? t('monitors.form.saved') : t('monitors.form.created'))
       onSaved?.(saved)
@@ -137,6 +152,12 @@ function MonitorForm({ isOpen, onClose, onSaved, monitor, config }: MonitorFormD
             error={errors.timeout_seconds}
           />
         </div>
+        <ChannelPicker
+          channels={channels.data}
+          selectedIds={channelIds}
+          onToggle={toggleChannel}
+          error={Object.entries(errors).find(([field]) => field.startsWith('notification_channel_ids'))?.[1]}
+        />
         <div className="mt-2 flex flex-wrap justify-end gap-2">
           <Button variant="secondary" onClick={onClose} disabled={mutation.isPending}>
             {t('common.cancel')}
@@ -151,5 +172,52 @@ function MonitorForm({ isOpen, onClose, onSaved, monitor, config }: MonitorFormD
         </div>
       </form>
     </Dialog>
+  )
+}
+
+type ChannelPickerProps = {
+  channels?: NotificationChannel[]
+  selectedIds: number[]
+  onToggle: (id: number, isChecked: boolean) => void
+  error?: string
+}
+
+function ChannelPicker({ channels, selectedIds, onToggle, error }: ChannelPickerProps) {
+  if (!channels) {
+    return null
+  }
+
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="text-sm font-medium text-neutral-800">{t('monitors.form.notifications')}</legend>
+      <p className="text-xs text-neutral-500">{t('monitors.form.notificationsHint')}</p>
+      {channels.length === 0 ? (
+        <p className="text-sm text-neutral-600">
+          {t('monitors.form.noChannels')}{' '}
+          <Link to="/settings" className="font-medium text-primary-700 hover:underline">
+            {t('monitors.form.manageChannels')}
+          </Link>
+        </p>
+      ) : (
+        channels.map((channel) => (
+          <label key={channel.id} className="inline-flex items-center gap-2 text-sm text-neutral-800">
+            <input
+              type="checkbox"
+              name="notification_channel_ids"
+              value={channel.id}
+              checked={selectedIds.includes(channel.id)}
+              onChange={(event) => onToggle(channel.id, event.target.checked)}
+              className="size-4 accent-primary-600"
+            />
+            <span className="font-medium">{channel.name}</span>
+            <span className="text-neutral-500">
+              {t(`settings.channels.types.${channel.type}`)}
+              {!channel.enabled && ` ${t('monitors.form.channelDisabled')}`}
+            </span>
+          </label>
+        ))
+      )}
+      {error && <p className="text-xs font-medium text-status-down">{error}</p>}
+    </fieldset>
   )
 }

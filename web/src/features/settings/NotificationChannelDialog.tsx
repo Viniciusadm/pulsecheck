@@ -1,0 +1,233 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState, type FormEvent } from 'react'
+import { fieldErrors, generalErrorMessage } from '../../api/errors.ts'
+import { createNotificationChannel, updateNotificationChannel } from '../../api/notificationChannels.ts'
+import { queryKeys } from '../../api/queryKeys.ts'
+import type { NotificationChannel, NotificationChannelInput, NotificationChannelType } from '../../api/types.ts'
+import { Alert } from '../../components/ui/Alert.tsx'
+import { Button } from '../../components/ui/Button.tsx'
+import { Dialog } from '../../components/ui/Dialog.tsx'
+import { TextField } from '../../components/ui/TextField.tsx'
+import { useToast } from '../../components/ui/toast.ts'
+import { t } from '../../i18n/index.ts'
+import { channelTypeOrder, channelTypes } from './channelTypes.ts'
+
+type HeaderRow = { name: string; value: string }
+
+type NotificationChannelDialogProps = {
+  channel?: NotificationChannel
+  onClose: () => void
+}
+
+export function NotificationChannelDialog({ channel, onClose }: NotificationChannelDialogProps) {
+  const queryClient = useQueryClient()
+  const { showToast } = useToast()
+  const [type, setType] = useState<NotificationChannelType>(channel?.type ?? 'telegram')
+  const [name, setName] = useState(channel?.name ?? '')
+  const [config, setConfig] = useState<Record<string, string>>(channel?.config ?? {})
+  const [enabled, setEnabled] = useState(channel?.enabled ?? true)
+  const [isDefault, setIsDefault] = useState(channel?.is_default ?? true)
+  const hasSavedHeaders = channel?.secrets_set.includes('headers') ?? false
+  const [isReplacingHeaders, setIsReplacingHeaders] = useState(!hasSavedHeaders)
+  const [headers, setHeaders] = useState<HeaderRow[]>([])
+
+  const mutation = useMutation({
+    mutationFn: (input: NotificationChannelInput) =>
+      channel ? updateNotificationChannel(channel.id, input) : createNotificationChannel(input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notificationChannels })
+      showToast(channel ? t('settings.channels.form.saved') : t('settings.channels.form.created'))
+      onClose()
+    },
+  })
+
+  const definition = channelTypes[type]
+  const errors = fieldErrors(mutation.error)
+  const generalError = mutation.isError ? generalErrorMessage(mutation.error) : null
+  const headerError = Object.entries(errors).find(([field]) => field.startsWith('config.headers'))?.[1]
+  const isSecretSaved = (key: string) => channel?.secrets_set.includes(key) ?? false
+
+  const changeType = (next: NotificationChannelType) => {
+    setType(next)
+    setConfig({})
+    setHeaders([])
+  }
+
+  const updateHeader = (index: number, row: Partial<HeaderRow>) =>
+    setHeaders(headers.map((header, current) => (current === index ? { ...header, ...row } : header)))
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault()
+
+    if (mutation.isPending) {
+      return
+    }
+
+    const payload: NotificationChannelInput['config'] = {}
+
+    for (const field of definition.fields) {
+      const value = (config[field.key] ?? '').trim()
+
+      if (value !== '' || !(field.isSecret && isSecretSaved(field.key))) {
+        payload[field.key] = value
+      }
+    }
+
+    if (definition.hasHeaders && isReplacingHeaders) {
+      payload.headers = Object.fromEntries(
+        headers.filter((header) => header.name.trim() !== '').map((header) => [header.name.trim(), header.value]),
+      )
+    }
+
+    mutation.mutate({
+      ...(channel ? {} : { type }),
+      name: name.trim(),
+      enabled,
+      is_default: isDefault,
+      config: payload,
+    })
+  }
+
+  return (
+    <Dialog
+      isOpen
+      title={channel ? t('settings.channels.form.editTitle', { name: channel.name }) : t('settings.channels.form.createTitle')}
+      onClose={onClose}
+    >
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+        {generalError && <Alert tone="error">{generalError}</Alert>}
+        {!channel && (
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="channel-type" className="text-sm font-medium text-neutral-800">
+              {t('settings.channels.form.type')}
+            </label>
+            <select
+              id="channel-type"
+              name="type"
+              value={type}
+              onChange={(event) => changeType(event.target.value as NotificationChannelType)}
+              className="min-h-10 rounded-md border border-neutral-300 bg-surface px-3 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+            >
+              {channelTypeOrder.map((option) => (
+                <option key={option} value={option}>
+                  {t(`settings.channels.types.${option}`)}
+                </option>
+              ))}
+            </select>
+            {errors.type && <p className="text-xs font-medium text-status-down">{errors.type}</p>}
+          </div>
+        )}
+
+        <details className="rounded-md border border-border bg-neutral-50 px-4 py-3 text-sm">
+          <summary className="cursor-pointer font-medium text-neutral-800">{t('settings.channels.form.howTo')}</summary>
+          <ol className="mt-3 flex list-decimal flex-col gap-2 pl-5 text-neutral-700">
+            {definition.help.map((step) => (
+              <li key={step}>{t(step)}</li>
+            ))}
+          </ol>
+        </details>
+
+        <TextField
+          label={t('settings.channels.form.name')}
+          name="name"
+          required
+          maxLength={100}
+          placeholder={t('settings.channels.form.namePlaceholder')}
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          error={errors.name}
+        />
+
+        {definition.fields.map((field) => (
+          <TextField
+            key={`${type}-${field.key}`}
+            label={t(field.label)}
+            name={field.key}
+            type={field.inputType}
+            autoComplete="off"
+            placeholder={field.isSecret && isSecretSaved(field.key) ? t('settings.channels.form.secretSaved') : field.placeholder}
+            hint={field.hint ? t(field.hint) : undefined}
+            value={config[field.key] ?? ''}
+            onChange={(event) => setConfig({ ...config, [field.key]: event.target.value })}
+            error={errors[`config.${field.key}`] ?? errors.config}
+          />
+        ))}
+
+        {definition.hasHeaders && (
+          <fieldset className="flex flex-col gap-2">
+            <legend className="text-sm font-medium text-neutral-800">{t('settings.channels.headers.label')}</legend>
+            <p className="text-xs text-neutral-500">{t('settings.channels.headers.hint')}</p>
+            {!isReplacingHeaders ? (
+              <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-700">
+                <span>{t('settings.channels.headers.saved')}</span>
+                <Button variant="secondary" onClick={() => setIsReplacingHeaders(true)}>
+                  {t('settings.channels.headers.replace')}
+                </Button>
+              </div>
+            ) : (
+              <>
+                {headers.map((header, index) => (
+                  <div key={index} className="flex items-end gap-2">
+                    <TextField
+                      className="flex-1"
+                      label={t('settings.channels.headers.name')}
+                      autoComplete="off"
+                      placeholder="Authorization"
+                      value={header.name}
+                      onChange={(event) => updateHeader(index, { name: event.target.value })}
+                    />
+                    <TextField
+                      className="flex-1"
+                      label={t('settings.channels.headers.value')}
+                      type="password"
+                      autoComplete="off"
+                      value={header.value}
+                      onChange={(event) => updateHeader(index, { value: event.target.value })}
+                    />
+                    <Button
+                      variant="ghost"
+                      aria-label={t('settings.channels.headers.remove')}
+                      onClick={() => setHeaders(headers.filter((_, current) => current !== index))}
+                    >
+                      ×
+                    </Button>
+                  </div>
+                ))}
+                <div>
+                  <Button variant="secondary" onClick={() => setHeaders([...headers, { name: '', value: '' }])}>
+                    {t('settings.channels.headers.add')}
+                  </Button>
+                </div>
+              </>
+            )}
+            {headerError && <p className="text-xs font-medium text-status-down">{headerError}</p>}
+          </fieldset>
+        )}
+
+        <div className="flex flex-col gap-2">
+          <label className="inline-flex items-center gap-2 text-sm font-medium text-neutral-800">
+            <input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} className="size-4 accent-primary-600" />
+            {t('settings.channels.form.enabled')}
+          </label>
+          <label className="inline-flex items-center gap-2 text-sm font-medium text-neutral-800">
+            <input type="checkbox" checked={isDefault} onChange={(event) => setIsDefault(event.target.checked)} className="size-4 accent-primary-600" />
+            {t('settings.channels.form.isDefault')}
+          </label>
+        </div>
+
+        <div className="mt-2 flex flex-wrap justify-end gap-2">
+          <Button variant="secondary" onClick={onClose} disabled={mutation.isPending}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            type="submit"
+            isLoading={mutation.isPending}
+            loadingLabel={channel ? t('settings.channels.form.saving') : t('settings.channels.form.creating')}
+          >
+            {channel ? t('settings.channels.form.save') : t('settings.channels.form.create')}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
+  )
+}

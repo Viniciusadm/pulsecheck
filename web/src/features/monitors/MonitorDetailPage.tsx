@@ -12,10 +12,11 @@ import { Card } from '../../components/ui/Card.tsx'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog.tsx'
 import { EmptyState } from '../../components/ui/EmptyState.tsx'
 import { ErrorState } from '../../components/ui/ErrorState.tsx'
+import { RelativeTime } from '../../components/ui/RelativeTime.tsx'
 import { Skeleton } from '../../components/ui/Skeleton.tsx'
 import { useToast } from '../../components/ui/toast.ts'
 import { t } from '../../i18n/index.ts'
-import { formatDateTime, formatLatency, formatPercentage, formatRelativeTime } from '../../lib/format.ts'
+import { formatLatency, formatPercentage } from '../../lib/format.ts'
 import { displayStatus } from '../../lib/monitor.ts'
 import { CheckHistory } from './CheckHistory.tsx'
 import { IncidentList } from './IncidentList.tsx'
@@ -117,9 +118,7 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
               <span>{t('monitors.detail.interval', { minutes: monitor.interval_minutes })}</span>
               <span>{t('monitors.detail.timeout', { seconds: monitor.timeout_seconds })}</span>
               {monitor.last_checked_at && (
-                <span title={formatDateTime(monitor.last_checked_at)}>
-                  {t('monitors.detail.lastCheck', { time: formatRelativeTime(monitor.last_checked_at) })}
-                </span>
+                <RelativeTime value={monitor.last_checked_at} format={(time) => t('monitors.detail.lastCheck', { time })} />
               )}
             </p>
           </div>
@@ -149,7 +148,7 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
                 type="button"
                 aria-pressed={period === option}
                 onClick={() => setPeriod(option)}
-                className={`rounded px-3 py-1.5 text-sm font-medium ${period === option ? 'bg-primary-500 text-primary-ink' : 'text-neutral-700 hover:bg-neutral-100'}`}
+                className={`rounded px-3 py-1.5 text-sm font-medium ${period === option ? 'bg-primary-700 text-white' : 'text-neutral-700 hover:bg-neutral-100'}`}
               >
                 {t(`monitors.detail.periods.${option}`)}
               </button>
