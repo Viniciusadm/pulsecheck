@@ -19,6 +19,9 @@ class PublicConfigController extends Controller
                     'timeout_default' => config('pulsecheck.timeout_default'),
                     'max_per_user' => config('pulsecheck.max_monitors_per_user'),
                 ],
+                'realtime' => config('broadcasting.default') === 'reverb'
+                    ? ['key' => config('broadcasting.connections.reverb.key')]
+                    : null,
             ],
         ]);
     }

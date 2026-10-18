@@ -30,7 +30,20 @@ class MonitorConfigTest extends TestCase
                         'timeout_default' => 10,
                         'max_per_user' => 20,
                     ],
+                    'realtime' => null,
                 ],
             ]);
+    }
+
+    public function test_public_config_exposes_the_realtime_key_when_reverb_is_enabled(): void
+    {
+        config([
+            'broadcasting.default' => 'reverb',
+            'broadcasting.connections.reverb.key' => 'public-key',
+        ]);
+
+        $this->fromSpa()->getJson('/api/config')
+            ->assertOk()
+            ->assertJsonPath('data.realtime', ['key' => 'public-key']);
     }
 }

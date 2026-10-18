@@ -39,6 +39,13 @@ x-app-environment: &app-environment
   MAIL_PASSWORD: ${MAIL_PASSWORD:-}
   MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-no-reply@example.com}
   MAIL_FROM_NAME: ${MAIL_FROM_NAME:-PulseCheck}
+  BROADCAST_CONNECTION: reverb
+  REVERB_APP_ID: pulsecheck
+  REVERB_APP_KEY: ${REVERB_APP_KEY:-pulsecheck}
+  REVERB_APP_SECRET: ${REVERB_APP_SECRET:-}
+  REVERB_HOST: reverb
+  REVERB_PORT: "8080"
+  REVERB_SCHEME: http
   PULSECHECK_REGISTRATION_ENABLED: ${PULSECHECK_REGISTRATION_ENABLED:-true}
   PULSECHECK_MAX_MONITORS: ${PULSECHECK_MAX_MONITORS:-20}
   PULSECHECK_HISTORY_RETENTION_DAYS: ${PULSECHECK_HISTORY_RETENTION_DAYS:-30}
@@ -80,6 +87,16 @@ services:
       disable: true
     deploy:
       replicas: ${QUEUE_WORKERS:-2}
+    restart: unless-stopped
+    networks: [internal]
+
+  reverb:
+    <<: *app-image
+    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+    environment: *app-environment
+    depends_on: *app-dependencies
+    healthcheck:
+      disable: true
     restart: unless-stopped
     networks: [internal]
 

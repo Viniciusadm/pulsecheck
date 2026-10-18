@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Enums\Transition;
+use App\Events\MonitorChecked;
 use App\Events\MonitorRecovered;
 use App\Events\MonitorWentDown;
 use App\Models\CheckResult;
@@ -23,7 +24,7 @@ class RecordCheckResult
     {
         $checkedUrl = $monitor->url;
 
-        return DB::transaction(function () use ($monitor, $outcome, $checkedUrl): ?CheckResult {
+        $checkResult = DB::transaction(function () use ($monitor, $outcome, $checkedUrl): ?CheckResult {
             $monitor = Monitor::query()->lockForUpdate()->find($monitor->id);
 
             if ($monitor === null || $monitor->url !== $checkedUrl) {
@@ -60,8 +61,14 @@ class RecordCheckResult
                 default => null,
             };
 
-            return $checkResult;
+            return $checkResult->setRelation('monitor', $monitor);
         });
+
+        if ($checkResult !== null) {
+            rescue(fn () => MonitorChecked::dispatch($checkResult->monitor));
+        }
+
+        return $checkResult;
     }
 
     private function openIncident(Monitor $monitor, CheckOutcome $outcome): void
