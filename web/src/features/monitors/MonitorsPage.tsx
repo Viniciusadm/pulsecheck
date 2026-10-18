@@ -6,6 +6,7 @@ import { queryKeys } from '../../api/queryKeys.ts'
 import { Button } from '../../components/ui/Button.tsx'
 import { EmptyState } from '../../components/ui/EmptyState.tsx'
 import { ErrorState } from '../../components/ui/ErrorState.tsx'
+import { SelectField } from '../../components/ui/SelectField.tsx'
 import { Skeleton } from '../../components/ui/Skeleton.tsx'
 import { t } from '../../i18n/index.ts'
 import { canManageResources } from '../../lib/permissions.ts'
@@ -56,24 +57,20 @@ export function MonitorsPage() {
         {canManage && <Button onClick={() => setIsFormOpen(true)}>{t('monitors.add')}</Button>}
       </div>
 
-      <div className="flex items-center gap-2">
-        <label htmlFor="status-filter" className="text-sm font-medium text-neutral-700">
-          {t('monitors.filter.label')}
-        </label>
-        <select
-          id="status-filter"
-          value={status ?? ''}
-          onChange={(event) => updateParams({ status: event.target.value || undefined, page: 1 })}
-          className="min-h-10 rounded-md border border-neutral-300 bg-surface px-3 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
-        >
-          <option value="">{t('monitors.filter.all')}</option>
-          {STATUS_FILTERS.map((filter) => (
-            <option key={filter} value={filter}>
-              {t(`status.${filter}`)}
-            </option>
-          ))}
-        </select>
-      </div>
+      <SelectField
+        id="status-filter"
+        label={t('monitors.filter.label')}
+        value={status ?? ''}
+        onChange={(event) => updateParams({ status: event.target.value || undefined, page: 1 })}
+        className="flex-row! items-center gap-2! self-start"
+      >
+        <option value="">{t('monitors.filter.all')}</option>
+        {STATUS_FILTERS.map((filter) => (
+          <option key={filter} value={filter}>
+            {t(`status.${filter}`)}
+          </option>
+        ))}
+      </SelectField>
 
       {monitors.isPending && <Skeleton className="h-64" />}
       {monitors.isError && <ErrorState onRetry={() => void monitors.refetch()} />}
