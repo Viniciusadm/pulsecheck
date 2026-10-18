@@ -21,6 +21,8 @@ class StoreMonitorRequest extends FormRequest
             'url' => ['required', 'string', new SafeUrl],
             'interval_minutes' => ['sometimes', 'integer', Rule::in(config('pulsecheck.allowed_intervals'))],
             'timeout_seconds' => ['sometimes', 'integer', 'between:'.config('pulsecheck.timeout_min').','.config('pulsecheck.timeout_max')],
+            'notification_channel_ids' => ['sometimes', 'array'],
+            'notification_channel_ids.*' => ['integer', 'distinct', Rule::exists('notification_channels', 'id')->where('user_id', $this->user()->id)],
         ];
     }
 

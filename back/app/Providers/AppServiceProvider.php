@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Monitor;
+use App\Models\NotificationChannel;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -42,6 +43,12 @@ class AppServiceProvider extends ServiceProvider
         Route::bind('monitor', fn (string $value): Monitor => Monitor::query()
             ->where('user_id', Auth::id())
             ->findOrFail($value));
+
+        Route::pattern('notificationChannel', '[0-9]+');
+
+        Route::bind('notificationChannel', fn (string $value): NotificationChannel => NotificationChannel::query()
+            ->where('user_id', Auth::id())
+            ->findOrFail($value));
     }
 
     private function configurePasswordRules(): void
@@ -79,7 +86,9 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('reset-password', fn (Request $request): Limit => Limit::perMinute(5)->by($request->ip()));
 
-        RateLimiter::for('telegram-test', fn (Request $request): Limit => Limit::perMinute(5)->by((string) $request->user()?->id ?: $request->ip()));
+        RateLimiter::for('notification-test', fn (Request $request): Limit => Limit::perMinute(5)->by((string) $request->user()?->id ?: $request->ip()));
+
+        RateLimiter::for('notification-channel-writes', fn (Request $request): Limit => Limit::perMinute(30)->by((string) $request->user()?->id ?: $request->ip()));
 
         RateLimiter::for('monitor-writes', fn (Request $request): Limit => Limit::perMinute(30)->by((string) $request->user()?->id ?: $request->ip()));
     }

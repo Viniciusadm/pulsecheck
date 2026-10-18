@@ -8,10 +8,11 @@ class UpdateMonitorRequest extends StoreMonitorRequest
 {
     public function rules(): array
     {
-        return array_map(
-            fn (array $rules) => ['sometimes', ...array_filter($rules, fn (mixed $rule) => $rule !== 'sometimes')],
-            parent::rules(),
-        );
+        return collect(parent::rules())
+            ->map(fn (array $rules, string $key) => str_contains($key, '.')
+                ? $rules
+                : ['sometimes', ...array_filter($rules, fn (mixed $rule) => $rule !== 'sometimes')])
+            ->all();
     }
 
     protected function currentIntervalMinutes(): int

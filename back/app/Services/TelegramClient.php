@@ -2,15 +2,13 @@
 
 namespace App\Services;
 
-use App\Exceptions\TelegramDeliveryException;
+use App\Exceptions\NotificationDeliveryException;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
 class TelegramClient
 {
     private const API_URL = 'https://api.telegram.org';
-
-    private const REJECTION_STATUSES = [400, 401, 403, 404];
 
     public function sendMessage(string $botToken, string $chatId, string $text): void
     {
@@ -24,15 +22,13 @@ class TelegramClient
                     'disable_web_page_preview' => 'true',
                 ]);
         } catch (Throwable) {
-            throw TelegramDeliveryException::unavailable();
+            throw NotificationDeliveryException::unavailable();
         }
 
         if ($response->successful() && $response->json('ok') === true) {
             return;
         }
 
-        throw in_array($response->status(), self::REJECTION_STATUSES, true)
-            ? TelegramDeliveryException::rejected()
-            : TelegramDeliveryException::unavailable();
+        throw NotificationDeliveryException::forStatus($response->status());
     }
 }

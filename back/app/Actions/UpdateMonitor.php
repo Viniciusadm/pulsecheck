@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Enums\MonitorStatus;
 use App\Models\Monitor;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class UpdateMonitor
@@ -12,7 +13,7 @@ class UpdateMonitor
     {
         return DB::transaction(function () use ($monitor, $attributes): Monitor {
             $monitor = Monitor::query()->lockForUpdate()->findOrFail($monitor->id);
-            $monitor->fill($attributes);
+            $monitor->fill(Arr::except($attributes, 'notification_channel_ids'));
 
             $urlChanged = $monitor->isDirty('url');
             $intervalChanged = $monitor->isDirty('interval_minutes');
@@ -26,6 +27,10 @@ class UpdateMonitor
             }
 
             $monitor->save();
+
+            if (array_key_exists('notification_channel_ids', $attributes)) {
+                $monitor->notificationChannels()->sync($attributes['notification_channel_ids']);
+            }
 
             return $monitor;
         });

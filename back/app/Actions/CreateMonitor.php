@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Models\Monitor;
 use App\Models\User;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -22,13 +23,17 @@ class CreateMonitor
                 ]);
             }
 
+            $channelIds = $attributes['notification_channel_ids']
+                ?? $user->notificationChannels()->where('is_default', true)->pluck('id')->all();
+
             $monitor = $user->monitors()->make([
                 'interval_minutes' => config('pulsecheck.default_interval'),
                 'timeout_seconds' => config('pulsecheck.timeout_default'),
-                ...$attributes,
+                ...Arr::except($attributes, 'notification_channel_ids'),
             ]);
             $monitor->next_check_at = now();
             $monitor->save();
+            $monitor->notificationChannels()->sync($channelIds);
 
             return $monitor;
         });

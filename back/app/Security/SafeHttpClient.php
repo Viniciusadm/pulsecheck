@@ -59,7 +59,23 @@ class SafeHttpClient
         }
     }
 
-    private function requestOptions(ValidatedTarget $target, float $timeout, float $connectTimeout): array
+    public function post(string $url, array $json, array $headers = [], float $timeout = 10, float $connectTimeout = 5): SafeHttpResponse
+    {
+        $target = $this->guard->inspect($url);
+
+        $options = $this->requestOptions($target, $timeout, $connectTimeout, [
+            ...$headers,
+            'Content-Type' => 'application/json',
+        ]);
+        $options['body'] = json_encode($json, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        $response = $this->client->request('POST', $target->url, $options);
+        $response->getBody()->close();
+
+        return new SafeHttpResponse($response->getStatusCode(), $target->url, 0);
+    }
+
+    private function requestOptions(ValidatedTarget $target, float $timeout, float $connectTimeout, array $headers = []): array
     {
         $curlOptions = [];
 
@@ -78,8 +94,9 @@ class SafeHttpClient
             'timeout' => $timeout,
             'connect_timeout' => $connectTimeout,
             'headers' => [
-                'User-Agent' => self::USER_AGENT,
                 'Accept' => '*/*',
+                ...$headers,
+                'User-Agent' => self::USER_AGENT,
             ],
             'curl' => $curlOptions,
         ];

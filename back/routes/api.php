@@ -14,10 +14,10 @@ use App\Http\Controllers\MonitorPauseController;
 use App\Http\Controllers\MonitorResumeController;
 use App\Http\Controllers\MonitorStatsController;
 use App\Http\Controllers\MonitorUptimeHistoryController;
-use App\Http\Controllers\NotificationSettingsController;
+use App\Http\Controllers\NotificationChannelController;
+use App\Http\Controllers\NotificationChannelTestController;
 use App\Http\Controllers\PublicConfigController;
 use App\Http\Controllers\RecentIncidentController;
-use App\Http\Controllers\TelegramTestMessageController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->name('auth.')->group(function () {
@@ -52,11 +52,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('dashboard/summary', DashboardSummaryController::class)->name('dashboard.summary');
     Route::get('incidents', RecentIncidentController::class)->name('incidents.recent');
 
-    Route::prefix('settings/notifications')->name('settings.notifications.')->group(function () {
-        Route::get('/', [NotificationSettingsController::class, 'show'])->name('show');
-        Route::put('/', [NotificationSettingsController::class, 'update'])->name('update');
-        Route::delete('telegram', [NotificationSettingsController::class, 'destroyTelegram'])->name('telegram.destroy');
-        Route::post('telegram/test', TelegramTestMessageController::class)->middleware('throttle:telegram-test')->name('telegram.test');
+    Route::get('notification-channels', [NotificationChannelController::class, 'index'])->name('notification-channels.index');
+    Route::post('notification-channels', [NotificationChannelController::class, 'store'])->middleware('throttle:notification-channel-writes')->name('notification-channels.store');
+
+    Route::prefix('notification-channels/{notificationChannel}')->name('notification-channels.')->group(function () {
+        Route::match(['put', 'patch'], '/', [NotificationChannelController::class, 'update'])->can('update', 'notificationChannel')->middleware('throttle:notification-channel-writes')->name('update');
+        Route::delete('/', [NotificationChannelController::class, 'destroy'])->can('delete', 'notificationChannel')->middleware('throttle:notification-channel-writes')->name('destroy');
+        Route::post('test', NotificationChannelTestController::class)->can('test', 'notificationChannel')->middleware('throttle:notification-test')->name('test');
     });
 
     Route::get('monitors', [MonitorController::class, 'index'])->name('monitors.index');

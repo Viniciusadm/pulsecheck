@@ -5,18 +5,17 @@ namespace App\Listeners;
 use App\Enums\NotificationType;
 use App\Events\MonitorRecovered;
 use App\Events\MonitorWentDown;
-use App\Jobs\SendTelegramNotification;
+use App\Jobs\SendIncidentNotification;
 
-class QueueTelegramNotification
+class QueueIncidentNotifications
 {
     public function handle(MonitorWentDown|MonitorRecovered $event): void
     {
-        if (! $event->monitor->user->notificationSetting?->isTelegramReady()) {
-            return;
-        }
-
         $type = $event instanceof MonitorWentDown ? NotificationType::Down : NotificationType::Recovered;
 
-        SendTelegramNotification::dispatch($event->incident->id, $type);
+        $event->monitor->notificationChannels()
+            ->where('enabled', true)
+            ->pluck('notification_channels.id')
+            ->each(fn (int $channelId) => SendIncidentNotification::dispatch($event->incident->id, $channelId, $type));
     }
 }

@@ -5,7 +5,7 @@ namespace Tests\Feature\Models;
 use App\Models\CheckResult;
 use App\Models\Incident;
 use App\Models\Monitor;
-use App\Models\NotificationSetting;
+use App\Models\NotificationChannel;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -21,14 +21,14 @@ class UserDeletionTest extends TestCase
         CheckResult::factory()->for($monitor)->count(3)->create();
         Incident::factory()->for($monitor)->resolved()->create();
         Incident::factory()->for($monitor)->open()->create();
-        NotificationSetting::factory()->for($user)->create();
+        NotificationChannel::factory()->for($user)->create();
 
         $user->delete();
 
         $this->assertDatabaseCount('monitors', 0);
         $this->assertDatabaseCount('check_results', 0);
         $this->assertDatabaseCount('incidents', 0);
-        $this->assertDatabaseCount('notification_settings', 0);
+        $this->assertDatabaseCount('notification_channels', 0);
     }
 
     public function test_deleting_a_user_keeps_other_users_data(): void

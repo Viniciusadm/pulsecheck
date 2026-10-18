@@ -19,6 +19,7 @@ class MonitorController extends Controller
         $status = $request->validated('status');
 
         $monitors = $request->user()->monitors()
+            ->with('notificationChannels:id')
             ->when($status === 'paused', fn ($query) => $query->where('is_paused', true))
             ->when($status !== null && $status !== 'paused', fn ($query) => $query->where('is_paused', false)->where('status', $status))
             ->orderByDesc('id')
