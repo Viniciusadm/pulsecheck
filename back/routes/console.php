@@ -17,6 +17,11 @@ Schedule::call(fn () => touch(storage_path('framework/scheduler-heartbeat')))
     ->name('scheduler-heartbeat')
     ->everyMinute();
 
+Schedule::command('uptime:rollup')
+    ->hourly()
+    ->withoutOverlapping()
+    ->onOneServer();
+
 Schedule::command('model:prune')
     ->dailyAt('03:00')
     ->onOneServer();

@@ -117,6 +117,7 @@ All variables live in the `.env` file next to `docker-compose.yml` (template: [`
 | `PULSECHECK_SETUP_TOKEN` | no | empty | Token the first-run setup requires. When empty, one is generated and printed in the app logs. |
 | `PULSECHECK_GENERATE_SETUP_TOKEN` | no | `true` | Generate a setup token when `PULSECHECK_SETUP_TOKEN` is empty. Set to `false` only on a private network. |
 | `PULSECHECK_HISTORY_RETENTION_DAYS` | no | `30` | Check results older than this are deleted daily. Incidents are kept. |
+| `PULSECHECK_UPTIME_ROLLUP_RETENTION_DAYS` | no | `400` | Daily uptime totals older than this are deleted. They keep the daily uptime bar filled after check results are deleted. |
 | `PULSECHECK_ALLOW_PRIVATE_TARGETS` | no | `false` | Allow private/internal targets. Read [Security](#security) first. |
 | `APP_IMAGE` / `WEB_IMAGE` | no | `pulsecheck-app:latest` / `pulsecheck-web:latest` | Image names; point them to prebuilt images to skip local builds. |
 
@@ -297,7 +298,7 @@ uptime % = successful_checks / total_checks × 100   (within the period)
 - Every value comes with `total_checks` and `successful_checks`, so it can be verified.
 - A check succeeds when the final response (after redirects) has a status from 200 to 399.
 - Average and 95th percentile response times only use successful checks.
-- Daily values use UTC days. Results older than `PULSECHECK_HISTORY_RETENTION_DAYS` are deleted, so older days show no data.
+- Daily values use UTC days. Each closed day is aggregated hourly into a daily total, so the daily bar keeps its history after results older than `PULSECHECK_HISTORY_RETENTION_DAYS` are deleted. Daily totals are kept for `PULSECHECK_UPTIME_ROLLUP_RETENTION_DAYS`.
 
 **Results reflect checks made from the server running PulseCheck.** They are not a guarantee that a site was reachable for everyone.
 

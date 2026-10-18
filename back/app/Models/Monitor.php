@@ -46,6 +46,11 @@ class Monitor extends Model
         return $this->hasMany(CheckResult::class);
     }
 
+    public function dailyUptimes(): HasMany
+    {
+        return $this->hasMany(MonitorDailyUptime::class);
+    }
+
     public function incidents(): HasMany
     {
         return $this->hasMany(Incident::class);

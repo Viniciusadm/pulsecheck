@@ -34,10 +34,21 @@ class UptimeCalculator
 
     public function daily(Monitor $monitor, int $days): array
     {
-        $firstDay = CarbonImmutable::now('UTC')->startOfDay()->subDays($days - 1);
+        $today = CarbonImmutable::now('UTC')->startOfDay();
+        $firstDay = $today->subDays($days - 1);
+        $rolledUp = $monitor->dailyUptimes()
+            ->where('date', '>=', $firstDay->toDateString())
+            ->toBase()
+            ->selectRaw("to_char(date, 'YYYY-MM-DD') as day")
+            ->addSelect(['total_checks', 'successful_checks'])
+            ->orderBy('date')
+            ->get()
+            ->keyBy('day');
 
-        $rows = $monitor->checkResults()
-            ->where('started_at', '>=', $firstDay)
+        $rawFrom = $rolledUp->isEmpty() ? $firstDay : CarbonImmutable::parse($rolledUp->keys()->last(), 'UTC')->addDay();
+
+        $raw = $monitor->checkResults()
+            ->where('started_at', '>=', $rawFrom)
             ->toBase()
             ->selectRaw("to_char(started_at at time zone 'UTC', 'YYYY-MM-DD') as day")
             ->selectRaw('count(*) as total_checks')
@@ -45,6 +56,8 @@ class UptimeCalculator
             ->groupBy('day')
             ->get()
             ->keyBy('day');
+
+        $rows = $rolledUp->union($raw);
 
         return collect(range(0, $days - 1))
             ->map(function (int $offset) use ($firstDay, $rows): array {

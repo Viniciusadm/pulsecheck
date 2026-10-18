@@ -22,6 +22,8 @@ return [
 
     'history_retention_days' => (int) env('PULSECHECK_HISTORY_RETENTION_DAYS', 30),
 
+    'uptime_rollup_retention_days' => (int) env('PULSECHECK_UPTIME_ROLLUP_RETENTION_DAYS', 400),
+
     'failures_to_down' => (int) env('PULSECHECK_FAILURES_TO_DOWN', 2),
 
     'successes_to_up' => (int) env('PULSECHECK_SUCCESSES_TO_UP', 2),
