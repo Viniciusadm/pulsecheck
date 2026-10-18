@@ -1,0 +1,339 @@
+# PulseCheck
+
+Self-hosted uptime monitoring: PulseCheck checks your websites and APIs every few minutes, records response times and incidents, and tells you on Telegram when something goes down and when it comes back.
+
+![Dashboard with five monitors, one of them down, and recent incidents](screenshots/dashboard.png)
+
+<sub>Screenshots show the real application running locally with demo data from `DevelopmentSeeder`.</sub>
+
+## Features
+
+- **HTTP(S) monitors** checked every 1, 5 or 10 minutes with a configurable timeout (1–30 s).
+- **Stable status**: a monitor goes `down` after 2 consecutive failures and back `up` after 2 consecutive successes, so a single blip does not raise an alert.
+- **Incidents** with cause, start, end and duration; one incident per outage.
+- **Metrics**: uptime per period (24 h, 7 d, 30 d), average and 95th percentile response time, latency chart and a 30-day availability bar that tells "no data" apart from "100%".
+- **Check history** with date filters and pagination.
+- **Telegram notifications** on down and recovery, with a test button; the bot token is stored encrypted and never shown again.
+- **Accounts** with registration, login and password reset; every user only sees their own monitors.
+- **SSRF protection**: monitors cannot reach private networks, cloud metadata endpoints or other internal addresses, including through redirects or DNS tricks.
+- **Single `docker compose up`** on any Linux server; Redis is optional.
+
+| Monitor detail | Mobile |
+|---|---|
+| ![Monitor detail with uptime, latency chart, daily availability and incidents](screenshots/monitor-detail.png) | ![Dashboard on a phone](screenshots/mobile-dashboard.png) |
+
+More screenshots: [login](screenshots/login.png), [settings](screenshots/settings.png).
+
+## Architecture
+
+```mermaid
+flowchart LR
+    browser[Browser] -->|HTTP| web[web: Nginx<br/>SPA + reverse proxy]
+    web -->|/api, /sanctum, /up<br/>FastCGI| app[app: PHP-FPM<br/>Laravel API]
+    app --> db[(db: PostgreSQL)]
+    scheduler[scheduler:<br/>schedule:work] -->|every minute:<br/>dispatch due monitors| queue[(queue:<br/>jobs table or Redis)]
+    queue --> workers[queue: workers<br/>queue:work × N]
+    workers -->|pinned IP, no proxy,<br/>revalidated redirects| targets([Monitored sites])
+    workers --> db
+    workers -->|down / recovered| telegram([Telegram Bot API])
+    migrate[migrate:<br/>one-shot] -.->|before app, queue,<br/>scheduler start| db
+```
+
+| Service | Responsibility |
+|---|---|
+| `web` | Nginx: serves the React build, proxies `/api`, `/sanctum` and `/up` to PHP-FPM, adds security headers. The only published port. |
+| `app` | PHP-FPM running the Laravel API (authentication, monitors, metrics, settings). |
+| `queue` | Workers (`QUEUE_WORKERS`, default 2) that run checks and send Telegram notifications. |
+| `scheduler` | Runs `monitors:dispatch-due` every minute and prunes old check results daily. |
+| `migrate` | Applies database migrations once, before the other PHP services start. |
+| `db` | PostgreSQL 17. Not reachable from outside the Compose network. |
+| `redis` | Optional (profile `redis`): queues, cache and sessions. |
+
+**Life of a check**
+
+1. Every minute the scheduler selects active monitors whose `next_check_at` has passed, moves `next_check_at` forward by the monitor's interval and queues one `RunMonitorCheck` job each (jobs are unique per monitor).
+2. A worker validates the URL again, resolves the host, rejects forbidden addresses and connects to the validated IP (`CURLOPT_RESOLVE`), following redirects manually and revalidating every hop, within the monitor's total timeout.
+3. In one database transaction with the monitor row locked, the result is stored and the state machine updates counters and status, opening or resolving an incident when the threshold is crossed.
+4. After the transaction commits, a down or recovery event queues a Telegram notification if the user enabled it.
+
+## Tech stack
+
+| Area | Technology |
+|---|---|
+| Backend | PHP 8.3, Laravel 13.37, Laravel Sanctum 4.3 (SPA cookie auth), Guzzle 8.2 |
+| Database | PostgreSQL 17 |
+| Queue / cache | Laravel database drivers by default; Redis 7 (phpredis) optional |
+| Frontend | React 19.3, TypeScript 6.0, Vite 8.3, React Router 8.4, TanStack Query 5, Tailwind CSS 4.3, Recharts 3.10, axios 1.20 |
+| Tests and quality | PHPUnit 12.5, Laravel Pint 1.32, Vitest 5.0, Testing Library, oxlint 1.88 |
+| Runtime | Docker Compose: Nginx 1.30, PHP-FPM 8.3 (Alpine), Node 24 LTS for the build |
+
+## Quick start (Docker Compose)
+
+Requirements: a Linux server with Docker Engine and the Compose plugin. No PHP, Node or database is needed on the host.
+
+```sh
+git clone <repository-url> pulsecheck && cd pulsecheck
+cp .env.example .env
+```
+
+Edit `.env` and set the three required values: `APP_KEY` (see [Generating `APP_KEY`](#generating-app_key)), `APP_URL` and `DB_PASSWORD` (for example `openssl rand -hex 24`). Then:
+
+```sh
+docker compose config -q     # validates the file and fails if a required variable is missing
+docker compose up -d --build
+docker compose ps -a         # app and web "healthy", migrate "Exited (0)"
+curl -fsS http://localhost/up
+```
+
+Open `APP_URL` in a browser, create an account and add a monitor. The first check runs within a minute; after two successful checks the monitor shows **Up**.
+
+PulseCheck serves plain HTTP on `APP_PORT`. For HTTPS, put it behind a TLS-terminating proxy (Caddy, Traefik, your provider's proxy), then set `APP_URL` to the `https://` address, `SESSION_SECURE_COOKIE=true` and `TRUSTED_PROXIES` (see the table below). On a public server, set `PULSECHECK_REGISTRATION_ENABLED=false` once your account exists, so strangers cannot use your instance to send requests.
+
+### Environment variables
+
+All variables live in the `.env` file next to `docker-compose.yml` (template: [`.env.example`](.env.example)).
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `APP_KEY` | **yes** | — | Encryption key for sessions and the stored Telegram token. Keep it secret and do not change it: stored tokens become unreadable. |
+| `APP_URL` | **yes** | — | Public address without trailing slash, e.g. `https://status.example.com`. Used for links in emails and to accept the SPA's session cookies. |
+| `DB_PASSWORD` | **yes** | — | PostgreSQL password, used by both the database and the application. |
+| `APP_PORT` | no | `80` | Host port published by the `web` container. |
+| `SESSION_SECURE_COOKIE` | no | `false` | Set to `true` when served over HTTPS. |
+| `TRUSTED_PROXIES` | no | empty | Reverse proxies allowed to set `X-Forwarded-*`: comma-separated IPs/CIDRs (e.g. `172.16.0.0/12`). Needed behind a proxy for correct client IPs (rate limits) and HTTPS detection. Avoid `*`: clients could then fake their IP and bypass rate limits. |
+| `DB_DATABASE` / `DB_USERNAME` | no | `pulsecheck` | Database name and user. |
+| `QUEUE_WORKERS` | no | `2` | Number of queue worker containers. |
+| `LOG_LEVEL` | no | `info` | Laravel log level; logs go to the container output. |
+| `QUEUE_CONNECTION` / `CACHE_STORE` / `SESSION_DRIVER` | no | `database` | Set all three to `redis` to use Redis (see below). |
+| `REDIS_PASSWORD` | only with Redis | empty | Password required by the `redis` service. |
+| `MAIL_MAILER` | no | `log` | `smtp` to send password reset emails. With `log`, emails (including reset links, which are valid for 60 minutes) are written to the container logs: anyone who can read the logs could use them. Configure SMTP in production. |
+| `MAIL_SCHEME`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` | with SMTP | empty, `587` | SMTP connection (`MAIL_SCHEME=smtps` for port 465). |
+| `MAIL_FROM_ADDRESS` / `MAIL_FROM_NAME` | no | `no-reply@example.com` / `PulseCheck` | Sender of password reset emails. |
+| `PULSECHECK_REGISTRATION_ENABLED` | no | `true` | Set to `false` after creating your account(s) to stop new sign-ups. |
+| `PULSECHECK_MAX_MONITORS` | no | `20` | Monitors per user. |
+| `PULSECHECK_HISTORY_RETENTION_DAYS` | no | `30` | Check results older than this are deleted daily. Incidents are kept. |
+| `PULSECHECK_ALLOW_PRIVATE_TARGETS` | no | `false` | Allow private/internal targets. Read [Security](#security) first. |
+| `APP_IMAGE` / `WEB_IMAGE` | no | `pulsecheck-app:latest` / `pulsecheck-web:latest` | Image names; point them to prebuilt images to skip local builds. |
+
+### Generating `APP_KEY`
+
+Either of these prints a valid key; paste the whole value, including `base64:`, into `.env`:
+
+```sh
+echo "base64:$(openssl rand -base64 32)"
+```
+
+```sh
+docker compose build app
+docker run --rm pulsecheck-app:latest php artisan key:generate --show
+```
+
+### Optional Redis
+
+The default `database` drivers are enough for a personal or small-team installation. Consider Redis when you run many monitors at a 1-minute interval or several queue workers: workers then wait on Redis instead of polling the `jobs` table, and unique-job locks and cache hits stop touching PostgreSQL.
+
+1. Drain pending jobs so none are left behind in the `jobs` table:
+   ```sh
+   docker compose exec app php artisan queue:work --stop-when-empty
+   ```
+2. In `.env`, set `REDIS_PASSWORD` (for example `openssl rand -hex 24`) and change `QUEUE_CONNECTION`, `CACHE_STORE` and `SESSION_DRIVER` to `redis`.
+3. Start with the profile:
+   ```sh
+   docker compose --profile redis up -d
+   ```
+
+Sessions are not migrated, so everyone logs in again. Redis has no published port, requires the password and persists to the `redisdata` volume (append-only file). If a driver is set to `redis` while Redis is not running, the PHP containers refuse to start and print how to fix it. To go back, drain the Redis queue the same way, set the drivers to `database`, run `docker compose up -d` and stop Redis with `docker compose --profile redis stop redis`.
+
+### Updating without data loss
+
+```sh
+docker compose exec -T db pg_dump -U pulsecheck -d pulsecheck -Fc > pulsecheck-before-update.dump
+git pull
+docker compose up -d --build
+```
+
+The `migrate` service applies new migrations before `app`, `queue` and `scheduler` start again. Data lives in the `pgdata` volume, so `docker compose down` and `up` keep it; only `docker compose down -v` deletes it.
+
+### Backup and restore
+
+Back up to a compressed custom-format dump:
+
+```sh
+docker compose exec -T db pg_dump -U pulsecheck -d pulsecheck -Fc > pulsecheck.dump
+```
+
+Restore it (stop the services that write to the database first):
+
+```sh
+docker compose stop app queue scheduler
+docker compose exec -T db pg_restore -U pulsecheck -d pulsecheck --clean --if-exists < pulsecheck.dump
+docker compose start app queue scheduler
+```
+
+Daily backup at 03:30 with cron (`crontab -e`, adjust the path; `%` must be escaped in crontab):
+
+```cron
+30 3 * * * cd /opt/pulsecheck && mkdir -p backups && docker compose exec -T db pg_dump -U pulsecheck -d pulsecheck -Fc > backups/pulsecheck-$(date +\%F).dump
+```
+
+Keep `.env` (especially `APP_KEY`) with your backups: without the same key, stored Telegram tokens cannot be decrypted.
+
+## Deploy on Hostinger
+
+<!-- HOSTINGER DEPLOY BUTTON: insert the official button and referral code here after the project is approved. See docs/hostinger.md. -->
+
+PulseCheck ships a Compose file for Hostinger's "Deploy on Hostinger" flow, [`docker-compose.hostinger.yml`](docker-compose.hostinger.yml). It works from its URL alone: it uses prebuilt images from GitHub Container Registry, needs no other file from the repository, and uses the `database` drivers (no Redis).
+
+The one-click button is **not available yet**: it needs the published images and a confirmed setup on Hostinger. Until then you can deploy on any Hostinger VPS (or other server) with the regular [Quick start](#quick-start-docker-compose).
+
+When the deploy runs, set these three variables (everything else has safe defaults):
+
+- `APP_KEY`: `base64:` plus 32 random bytes, e.g. `echo "base64:$(openssl rand -base64 32)"`.
+- `APP_URL`: the address users will open, e.g. `http://YOUR_SERVER_IP` or your domain.
+- `DB_PASSWORD`: a long random string.
+
+**Updating the button.** When Hostinger provides the final link, replace the comment above with the official Markdown snippet from their [button documentation](https://www.hostinger.com/support/deploy-on-hostinger-button/), using the raw URL of `docker-compose.hostinger.yml` as `compose_url` and a real referral code, if any. The research notes, what was validated and what is still pending confirmation from Hostinger are in [docs/hostinger.md](docs/hostinger.md).
+
+## Local development
+
+Requirements: PHP 8.3 with the `pdo_pgsql` extension, Composer 2, Node 24, Docker.
+
+`docker-compose.dev.yml` is for **development only**: it runs PostgreSQL (and optionally Redis) bound to `127.0.0.1` with fixed local credentials, while PHP and Node run on your machine. Never use it in production.
+
+```sh
+docker compose -f docker-compose.dev.yml up -d
+
+cd back
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan db:seed --class=DevelopmentSeeder
+```
+
+Run each of these in its own terminal:
+
+```sh
+cd back && php artisan serve           # API on http://localhost:8000
+cd back && php artisan queue:work      # runs checks and notifications
+cd back && php artisan schedule:work   # dispatches due checks every minute
+cd web && npm install && npm run dev   # SPA on http://localhost:5173
+```
+
+Open http://localhost:5173 and log in as `demo@example.com` / `password`. The Vite dev server proxies `/api` and `/sanctum` to port 8000, so the SPA and the API share one origin, as in production.
+
+> **`DevelopmentSeeder` is for development only.** It creates the demo user and a week of generated check history. It is not called by `DatabaseSeeder` and refuses to run when `APP_ENV=production`.
+
+With `MAIL_MAILER=log`, password reset emails (with the reset link) are written to `back/storage/logs/laravel.log`.
+
+## Running tests
+
+```sh
+cd back && php artisan test        # PHPUnit, against the PostgreSQL database pulsecheck_test
+cd back && vendor/bin/pint --test  # code style
+cd web && npm run lint && npm run test && npm run build
+```
+
+The development container creates `pulsecheck_test` automatically. Tests never call real external services: HTTP checks use a mocked Guzzle handler and fake DNS, Telegram uses `Http::fake()`.
+
+Redis integration tests (queue, unique-job locks and cache on a real Redis) are in the `redis` group and are excluded from the default run. With the development Redis running (`docker compose -f docker-compose.dev.yml --profile redis up -d`):
+
+```sh
+cd back && php artisan test --group=redis
+```
+
+They use Redis databases 15 and 14, so data in the default databases is never touched. GitHub Actions (`.github/workflows/ci.yml`) runs the backend suite with Pint, the Redis group, the frontend checks and the Docker build on pushes to `master` and on pull requests. Pushing a `vX.Y.Z` tag runs `.github/workflows/release.yml`, which publishes the `app` and `web` images to GitHub Container Registry.
+
+## Uptime
+
+```
+uptime % = successful_checks / total_checks × 100   (within the period)
+```
+
+- With no checks in the period, uptime is shown as **No data**, never 100%.
+- Time without checks (monitor paused, PulseCheck itself down) is not counted as available; it has no data.
+- Every value comes with `total_checks` and `successful_checks`, so it can be verified.
+- A check succeeds when the final response (after redirects) has a status from 200 to 399.
+- Average and 95th percentile response times only use successful checks.
+- Daily values use UTC days. Results older than `PULSECHECK_HISTORY_RETENTION_DAYS` are deleted, so older days show no data.
+
+**Results reflect checks made from the server running PulseCheck.** They are not a guarantee that a site was reachable for everyone.
+
+## Security
+
+### Outbound requests (SSRF)
+
+Monitors make the server request user-supplied URLs, so every request goes through `App\Security\UrlGuard` and `App\Security\SafeHttpClient`:
+
+- Only `http`/`https`, no credentials in the URL, any port, at most 2048 characters.
+- Obfuscated IP hosts (`2130706433`, `0x7f.1`, `0177.0.0.1`, `127.1`), single-label hosts (`intranet`), `localhost`/`*.localhost` and cloud metadata hostnames are rejected.
+- The host is resolved (A and AAAA) and the request is refused if **any** address is loopback, private, link-local (`169.254.0.0/16`, which includes most cloud metadata endpoints), carrier-grade NAT, documentation, benchmarking, multicast, reserved, or an IPv6 form that embeds IPv4 (mapped, translated, compatible, NAT64, 6to4, Teredo).
+- The connection is pinned to the validated IP with `CURLOPT_RESOLVE`, so the address that was checked is the address that is connected to; TLS SNI and the `Host` header keep the original name.
+- Redirects are followed manually (at most 5), and each hop is validated and pinned again. Environment proxy variables are ignored. The monitor timeout covers the whole redirect chain.
+- Validation runs both when a monitor is saved and on every check.
+
+What is **not** guaranteed:
+
+- Saving a monitor and each check are separate DNS lookups; a host can change its records in between. Every check revalidates, and the pin closes the gap between validation and connection within a check.
+- Only the first validated address is used. If it is IPv6 and the server has no IPv6 connectivity, the check fails as a connection error; there is no fallback to other addresses.
+- Name resolution uses the DNS resolver (`dns_get_record`), not `/etc/hosts`.
+
+`PULSECHECK_ALLOW_PRIVATE_TARGETS=true` lets self-hosters monitor private ranges, loopback and `localhost`. **Risk:** every user of the instance can then probe your internal network through check results. Enable it only on instances where every account is trusted, with `PULSECHECK_REGISTRATION_ENABLED=false`. Link-local addresses (`169.254.0.0/16`), the metadata addresses `100.100.100.200`, `192.0.0.192` and `fd00:ec2::254`, metadata hostnames, unspecified/multicast/broadcast addresses, IPv4-embedding IPv6 forms and obfuscated IPs stay blocked even then.
+
+### Data and access
+
+- Users only see their own data: monitor routes resolve only the signed-in user's monitors and are also checked by a policy; another user's IDs return 404.
+- Session cookies are `HttpOnly`, `SameSite=Lax` and `Secure` when `SESSION_SECURE_COOKIE=true`; state-changing requests require the CSRF token.
+- The Telegram bot token is encrypted with `APP_KEY`, never returned by the API, never logged, and Telegram errors are reported with generic messages.
+- Error messages stored for failed checks drop URL query strings and are truncated.
+- Rate limits (per minute): login 5 per email and IP; registration, forgot-password and reset-password 5 per IP; monitor changes 30 per user; Telegram test messages 5 per user.
+- Production passwords need at least 8 characters with mixed case and numbers, and are checked against known breaches.
+- Registration can be closed with `PULSECHECK_REGISTRATION_ENABLED=false`.
+- Password reset links contain a token: Nginx does not write `/reset-password` requests to its access log, but the `log` mailer writes the emails to the container logs, so use SMTP in production.
+
+To report a vulnerability, see [SECURITY.md](SECURITY.md).
+
+## Troubleshooting
+
+**Checks are not running / last check keeps getting older.** Both the scheduler and the workers must be running:
+
+```sh
+docker compose ps scheduler queue
+docker compose exec app php artisan schedule:list
+docker compose logs --tail=100 scheduler queue
+docker compose restart scheduler queue
+```
+
+**`migrate` failed and the other services do not start.** Read the error and run it again once fixed (usually a wrong `DB_PASSWORD`, or a `db` volume created with a different password):
+
+```sh
+docker compose logs migrate
+docker compose run --rm migrate
+docker compose up -d
+```
+
+**Permission errors in `storage`.** The PHP containers run as `www-data`; only `storage/` and `bootstrap/cache` are writable, and they live inside the image. If you mounted a host directory over them, give it to UID 82 (`www-data` in Alpine). Check with:
+
+```sh
+docker compose exec app ls -ld storage bootstrap/cache
+```
+
+**"CSRF token mismatch" (HTTP 419) or being logged out right after logging in.** Usually a proxy or cookie mismatch: `APP_URL` must be exactly the address in the browser (scheme, host and port); behind HTTPS set `SESSION_SECURE_COOKIE=true`; behind a proxy set `TRUSTED_PROXIES`. Then recreate the PHP containers so the configuration cache is rebuilt: `docker compose up -d`.
+
+**Telegram notifications do not arrive.** Use *Send test message* in Settings: "rejected the token or chat ID" means the token or chat ID is wrong or the bot cannot write to that chat (send the bot a message first, or add it to the group or channel). Notifications are only sent on state changes (down and recovery), not on every failed check. Failed deliveries are logged without secrets:
+
+```sh
+docker compose logs queue | grep -i telegram
+```
+
+**Every monitor fails with "Blocked destination".** The server's DNS resolver is returning private addresses (split-horizon DNS, a filtering resolver, or monitoring internal hosts). Check what the container resolves:
+
+```sh
+docker compose exec app getent ahosts example.com
+```
+
+Use a public DNS resolver for Docker, or, only for internal monitoring on a trusted instance, set `PULSECHECK_ALLOW_PRIVATE_TARGETS=true`.
+
+## License
+
+[MIT](LICENSE). Production dependencies are MIT, ISC, BSD or Apache-2.0 licensed (`nette/utils` and `nette/schema` are used under their BSD-3-Clause option).

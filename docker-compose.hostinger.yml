@@ -1,0 +1,118 @@
+name: pulsecheck
+
+x-app-image: &app-image
+  image: ghcr.io/viniciusadm/pulsecheck-app:${PULSECHECK_VERSION:-1.0.0}
+
+x-app-environment: &app-environment
+  APP_NAME: ${APP_NAME:-PulseCheck}
+  APP_ENV: production
+  APP_DEBUG: "false"
+  APP_KEY: ${APP_KEY:?Set the APP_KEY environment variable (see docs/hostinger.md)}
+  APP_URL: ${APP_URL:?Set the APP_URL environment variable, e.g. http://YOUR_SERVER_IP}
+  FRONTEND_URL: ${APP_URL}
+  LOG_CHANNEL: stderr
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  DB_CONNECTION: pgsql
+  DB_HOST: db
+  DB_PORT: "5432"
+  DB_DATABASE: ${DB_DATABASE:-pulsecheck}
+  DB_USERNAME: ${DB_USERNAME:-pulsecheck}
+  DB_PASSWORD: ${DB_PASSWORD:?Set the DB_PASSWORD environment variable}
+  SESSION_DRIVER: database
+  SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-false}
+  SESSION_LIFETIME: ${SESSION_LIFETIME:-120}
+  CACHE_STORE: database
+  QUEUE_CONNECTION: database
+  TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
+  MAIL_MAILER: ${MAIL_MAILER:-log}
+  MAIL_SCHEME: ${MAIL_SCHEME:-}
+  MAIL_HOST: ${MAIL_HOST:-}
+  MAIL_PORT: ${MAIL_PORT:-587}
+  MAIL_USERNAME: ${MAIL_USERNAME:-}
+  MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+  MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-no-reply@example.com}
+  MAIL_FROM_NAME: ${MAIL_FROM_NAME:-PulseCheck}
+  PULSECHECK_REGISTRATION_ENABLED: ${PULSECHECK_REGISTRATION_ENABLED:-true}
+  PULSECHECK_MAX_MONITORS: ${PULSECHECK_MAX_MONITORS:-20}
+  PULSECHECK_HISTORY_RETENTION_DAYS: ${PULSECHECK_HISTORY_RETENTION_DAYS:-30}
+  PULSECHECK_ALLOW_PRIVATE_TARGETS: ${PULSECHECK_ALLOW_PRIVATE_TARGETS:-false}
+
+x-app-dependencies: &app-dependencies
+  db:
+    condition: service_healthy
+  migrate:
+    condition: service_completed_successfully
+
+services:
+  web:
+    image: ghcr.io/viniciusadm/pulsecheck-web:${PULSECHECK_VERSION:-1.0.0}
+    ports:
+      - "${APP_PORT:-80}:80"
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [internal]
+
+  app:
+    <<: *app-image
+    environment: *app-environment
+    depends_on: *app-dependencies
+    restart: unless-stopped
+    networks: [internal]
+
+  queue:
+    <<: *app-image
+    command: ["php", "artisan", "queue:work", "--tries=1", "--max-time=3600", "--sleep=1"]
+    environment: *app-environment
+    depends_on: *app-dependencies
+    healthcheck:
+      disable: true
+    deploy:
+      replicas: ${QUEUE_WORKERS:-2}
+    restart: unless-stopped
+    networks: [internal]
+
+  scheduler:
+    <<: *app-image
+    command: ["php", "artisan", "schedule:work"]
+    environment: *app-environment
+    depends_on: *app-dependencies
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+    networks: [internal]
+
+  migrate:
+    <<: *app-image
+    command: ["php", "artisan", "migrate", "--force", "--no-interaction"]
+    environment: *app-environment
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+    restart: "no"
+    networks: [internal]
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-pulsecheck}
+      POSTGRES_USER: ${DB_USERNAME:-pulsecheck}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set the DB_PASSWORD environment variable}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks: [internal]
+
+networks:
+  internal:
+
+volumes:
+  pgdata:

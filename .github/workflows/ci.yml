@@ -1,0 +1,179 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PHP_VERSION: "8.3"
+  NODE_VERSION: "24"
+
+jobs:
+  backend:
+    name: Backend (PHPUnit + Pint)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: back
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: pulsecheck_test
+          POSTGRES_USER: pulsecheck
+          POSTGRES_PASSWORD: pulsecheck
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pulsecheck -d pulsecheck_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: shivammathur/setup-php@2.40.0
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: pdo_pgsql, intl, pcntl, redis
+          coverage: none
+          tools: composer:v2
+
+      - name: Locate Composer cache
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('back/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+
+      - name: Check code style
+        run: vendor/bin/pint --test
+
+      - name: Run tests
+        run: php artisan test
+
+  backend-redis:
+    name: Backend (Redis drivers)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: back
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: pulsecheck_test
+          POSTGRES_USER: pulsecheck
+          POSTGRES_PASSWORD: pulsecheck
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pulsecheck -d pulsecheck_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      REDIS_HOST: 127.0.0.1
+      CI_REQUIRE_REDIS: "true"
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: shivammathur/setup-php@2.40.0
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: pdo_pgsql, intl, pcntl, redis
+          coverage: none
+          tools: composer:v2
+
+      - name: Locate Composer cache
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('back/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+
+      - name: Run Redis integration tests
+        run: php artisan test --group=redis
+
+  frontend:
+    name: Frontend (lint, test, build)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run build
+
+  docker:
+    name: Docker (compose config + image build)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Create CI-only .env with fake values
+        run: |
+          cp .env.example .env
+          sed -i "s|^APP_KEY=.*|APP_KEY=base64:$(openssl rand -base64 32)|" .env
+          sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=ci-only-password|" .env
+          sed -i "s|^REDIS_PASSWORD=.*|REDIS_PASSWORD=ci-only-redis-password|" .env
+
+      - name: Validate Compose files
+        run: |
+          docker compose config -q
+          docker compose --profile redis config -q
+          docker compose -f docker-compose.hostinger.yml config -q
+
+      - name: Build images
+        run: docker compose build

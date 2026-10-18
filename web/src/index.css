@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-50: #eef7ff;
+  --color-primary-100: #d9edff;
+  --color-primary-200: #bce0ff;
+  --color-primary-300: #8ecdff;
+  --color-primary-400: #59b1fb;
+  --color-primary-500: #349ef4;
+  --color-primary-600: #1e7ee0;
+  --color-primary-700: #1866bb;
+  --color-primary-800: #195698;
+  --color-primary-900: #1a497d;
+  --color-primary: var(--color-primary-500);
+  --color-primary-ink: #0a2540;
+
+  --color-background: #f4f6f8;
+  --color-surface: #ffffff;
+  --color-border: #e1e5ea;
+
+  --color-neutral-50: #f7f8fa;
+  --color-neutral-100: #eef0f3;
+  --color-neutral-200: #e1e5ea;
+  --color-neutral-300: #cdd2da;
+  --color-neutral-400: #9aa3b0;
+  --color-neutral-500: #5f6876;
+  --color-neutral-600: #4f5763;
+  --color-neutral-700: #3a414b;
+  --color-neutral-800: #252a31;
+  --color-neutral-900: #15181d;
+
+  --color-status-up: #15803d;
+  --color-status-up-soft: #e8f6ed;
+  --color-status-down: #dc2626;
+  --color-status-down-soft: #fdecec;
+  --color-status-paused: #5f6876;
+  --color-status-paused-soft: #eef0f3;
+  --color-status-pending: #b45309;
+  --color-status-pending-soft: #fdf3e3;
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.25rem;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.6rem;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 2rem;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background font-sans text-sm text-neutral-900 antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@keyframes tick-in {
+  from {
+    transform: scaleY(0.2);
+    opacity: 0;
+  }
+
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
