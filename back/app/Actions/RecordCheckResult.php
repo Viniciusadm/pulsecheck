@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Enums\MonitorStatus;
 use App\Enums\Transition;
 use App\Events\MonitorChecked;
 use App\Events\MonitorRecovered;
@@ -17,6 +18,8 @@ use Illuminate\Support\Str;
 class RecordCheckResult
 {
     private const MAX_TEXT_LENGTH = 500;
+
+    private const MIN_CONFIRMATION_DELAY_SECONDS = 60;
 
     public function __construct(private MonitorStateMachine $stateMachine) {}
 
@@ -51,6 +54,10 @@ class RecordCheckResult
 
             if (! $outcome->isSuccess) {
                 $monitor->last_failed_at = $outcome->finishedAt;
+            }
+
+            if (! $monitor->is_paused && $this->awaitsConfirmation($monitor, $outcome)) {
+                $this->scheduleConfirmationCheck($monitor);
             }
 
             $monitor->save();
@@ -92,6 +99,22 @@ class RecordCheckResult
         $incident->update(['resolved_at' => $this->streakStartedAt($monitor, $this->stateMachine->successesToUp())]);
 
         MonitorRecovered::dispatch($monitor, $incident);
+    }
+
+    private function awaitsConfirmation(Monitor $monitor, CheckOutcome $outcome): bool
+    {
+        return $outcome->isSuccess
+            ? $monitor->status !== MonitorStatus::Up
+            : $monitor->status !== MonitorStatus::Down;
+    }
+
+    private function scheduleConfirmationCheck(Monitor $monitor): void
+    {
+        $confirmationCheckAt = now()->startOfMinute()->addSeconds(max(self::MIN_CONFIRMATION_DELAY_SECONDS, $monitor->interval_minutes * 30));
+
+        if ($monitor->next_check_at === null || $monitor->next_check_at->greaterThan($confirmationCheckAt)) {
+            $monitor->next_check_at = $confirmationCheckAt;
+        }
     }
 
     private function streakStartedAt(Monitor $monitor, int $streakLength): CarbonInterface

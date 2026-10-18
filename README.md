@@ -9,7 +9,7 @@ Self-hosted uptime monitoring for one team or organization per deploy: PulseChec
 ## Features
 
 - **HTTP(S) monitors** checked every 1, 5 or 10 minutes with a configurable timeout (1–30 s).
-- **Stable status**: a monitor goes `down` after 2 consecutive failures and back `up` after 2 consecutive successes, so a single blip does not raise an alert.
+- **Stable status**: a monitor goes `down` after 2 consecutive failures and back `up` after 2 consecutive successes, so a single blip does not raise an alert. A result that contradicts the current status is confirmed after half the check interval (at least 1 minute) instead of a full one.
 - **Incidents** with cause, start, end and duration; one incident per outage.
 - **Metrics**: uptime per period (24 h, 7 d, 30 d), average and 95th percentile response time, latency chart and a 30-day availability bar that tells "no data" apart from "100%".
 - **Check history** with date filters and pagination.
