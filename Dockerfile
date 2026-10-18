@@ -12,7 +12,7 @@ RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-in
 COPY back/ ./
 RUN composer dump-autoload --optimize --classmap-authoritative --no-dev
 
-FROM php:8.3-fpm-alpine AS app
+FROM php:8.5-fpm-alpine AS app
 RUN apk add --no-cache icu-libs libpq fcgi \
     && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev postgresql-dev linux-headers \
     && docker-php-ext-install -j"$(nproc)" pdo_pgsql pcntl opcache intl \
