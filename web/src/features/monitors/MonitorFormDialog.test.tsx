@@ -91,6 +91,19 @@ describe('MonitorFormDialog', () => {
     )
   })
 
+  it('omits the timeout when the field is cleared', async () => {
+    vi.mocked(monitorsApi.createMonitor).mockResolvedValue(makeMonitor({ id: 42 }))
+    vi.mocked(monitorsApi.getMonitor).mockReturnValue(new Promise(() => {}))
+    const { user, dialog } = await openForm()
+
+    await user.type(within(dialog).getByLabelText('Name'), 'Docs')
+    await user.type(within(dialog).getByLabelText('URL'), 'https://docs.example.com')
+    await user.clear(within(dialog).getByLabelText('Timeout (seconds)'))
+    await user.click(within(dialog).getByRole('button', { name: 'Add monitor' }))
+
+    expect(monitorsApi.createMonitor).toHaveBeenCalledWith({ name: 'Docs', url: 'https://docs.example.com', interval_minutes: 5, team_ids: [] })
+  })
+
   it('pre-selects the default channels and sends only an explicit choice', async () => {
     vi.mocked(channelsApi.listNotificationChannels).mockResolvedValue([
       makeChannel({ id: 1, name: 'My phone', is_default: true }),

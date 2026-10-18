@@ -64,7 +64,7 @@ export type MonitorInput = {
   name: string
   url: string
   interval_minutes: number
-  timeout_seconds: number
+  timeout_seconds?: number
   notification_channel_ids?: number[]
   team_ids?: number[]
 }

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { fieldErrors, generalErrorMessage } from '../../api/errors.ts'
 import { createNotificationChannel, updateNotificationChannel } from '../../api/notificationChannels.ts'
 import { queryKeys } from '../../api/queryKeys.ts'
@@ -7,6 +7,7 @@ import { listTeams } from '../../api/teams.ts'
 import type { NotificationChannel, NotificationChannelInput, NotificationChannelType } from '../../api/types.ts'
 import { Alert } from '../../components/ui/Alert.tsx'
 import { Button } from '../../components/ui/Button.tsx'
+import { SelectField } from '../../components/ui/SelectField.tsx'
 import { TextField } from '../../components/ui/TextField.tsx'
 import { useToast } from '../../components/ui/toast.ts'
 import { t } from '../../i18n/index.ts'
@@ -14,7 +15,7 @@ import { TeamPicker } from '../teams/TeamPicker.tsx'
 import { initialTeamIds, teamIdsError } from '../teams/teamSelection.ts'
 import { channelTypeOrder, channelTypes } from './channelTypes.ts'
 
-type HeaderRow = { name: string; value: string }
+type HeaderRow = { id: number; name: string; value: string }
 
 type NotificationChannelFormProps = {
   channel?: NotificationChannel
@@ -43,6 +44,7 @@ export function NotificationChannelForm({
   const hasSavedHeaders = channel?.secrets_set.includes('headers') ?? false
   const [isReplacingHeaders, setIsReplacingHeaders] = useState(!hasSavedHeaders)
   const [headers, setHeaders] = useState<HeaderRow[]>([])
+  const nextHeaderId = useRef(0)
   const teams = useQuery({ queryKey: queryKeys.teams, queryFn: listTeams })
   const [selectedTeamIds, setSelectedTeamIds] = useState<number[] | null>(null)
   const teamIds = selectedTeamIds ?? initialTeamIds(teams.data, channel?.team_ids)
@@ -70,8 +72,10 @@ export function NotificationChannelForm({
     setHeaders([])
   }
 
-  const updateHeader = (index: number, row: Partial<HeaderRow>) =>
-    setHeaders(headers.map((header, current) => (current === index ? { ...header, ...row } : header)))
+  const updateHeader = (id: number, row: Partial<HeaderRow>) =>
+    setHeaders(headers.map((header) => (header.id === id ? { ...header, ...row } : header)))
+
+  const addHeader = () => setHeaders([...headers, { id: nextHeaderId.current++, name: '', value: '' }])
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
@@ -110,25 +114,20 @@ export function NotificationChannelForm({
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
       {generalError && <Alert tone="error">{generalError}</Alert>}
       {!channel && (
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="channel-type" className="text-sm font-medium text-neutral-800">
-            {t('settings.channels.form.type')}
-          </label>
-          <select
-            id="channel-type"
-            name="type"
-            value={type}
-            onChange={(event) => changeType(event.target.value as NotificationChannelType)}
-            className="min-h-10 rounded-md border border-neutral-300 bg-surface px-3 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
-          >
-            {channelTypeOrder.map((option) => (
-              <option key={option} value={option}>
-                {t(`settings.channels.types.${option}`)}
-              </option>
-            ))}
-          </select>
-          {errors.type && <p className="text-xs font-medium text-status-down">{errors.type}</p>}
-        </div>
+        <SelectField
+          id="channel-type"
+          label={t('settings.channels.form.type')}
+          name="type"
+          value={type}
+          onChange={(event) => changeType(channelTypeOrder.find((option) => option === event.target.value) ?? type)}
+          error={errors.type}
+        >
+          {channelTypeOrder.map((option) => (
+            <option key={option} value={option}>
+              {t(`settings.channels.types.${option}`)}
+            </option>
+          ))}
+        </SelectField>
       )}
 
       <details className="rounded-md border border-border bg-neutral-50 px-4 py-3 text-sm">
@@ -180,14 +179,14 @@ export function NotificationChannelForm({
           ) : (
             <>
               {headers.map((header, index) => (
-                <div key={index} className="flex items-end gap-2">
+                <div key={header.id} className="flex items-end gap-2">
                   <TextField
                     className="flex-1"
                     label={t('settings.channels.headers.name')}
                     autoComplete="off"
                     placeholder="Authorization"
                     value={header.name}
-                    onChange={(event) => updateHeader(index, { name: event.target.value })}
+                    onChange={(event) => updateHeader(header.id, { name: event.target.value })}
                   />
                   <TextField
                     className="flex-1"
@@ -195,19 +194,19 @@ export function NotificationChannelForm({
                     type="password"
                     autoComplete="off"
                     value={header.value}
-                    onChange={(event) => updateHeader(index, { value: event.target.value })}
+                    onChange={(event) => updateHeader(header.id, { value: event.target.value })}
                   />
                   <Button
                     variant="ghost"
-                    aria-label={t('settings.channels.headers.remove')}
-                    onClick={() => setHeaders(headers.filter((_, current) => current !== index))}
+                    aria-label={t('settings.channels.headers.remove', { position: index + 1 })}
+                    onClick={() => setHeaders(headers.filter((current) => current.id !== header.id))}
                   >
                     ×
                   </Button>
                 </div>
               ))}
               <div>
-                <Button variant="secondary" onClick={() => setHeaders([...headers, { name: '', value: '' }])}>
+                <Button variant="secondary" onClick={addHeader}>
                   {t('settings.channels.headers.add')}
                 </Button>
               </div>

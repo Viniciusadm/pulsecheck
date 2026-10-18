@@ -3,9 +3,9 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { Dialog } from './Dialog.tsx'
 
-function renderDialog(onClose: () => void) {
+function renderDialog(onClose: () => void, isBusy = false) {
   return (
-    <Dialog isOpen title="Edit" onClose={onClose}>
+    <Dialog isOpen title="Edit" onClose={onClose} isBusy={isBusy}>
       <input aria-label="Name" />
     </Dialog>
   )
@@ -30,5 +30,35 @@ describe('Dialog', () => {
     await userEvent.keyboard('{Escape}')
 
     expect(latestOnClose).toHaveBeenCalledOnce()
+  })
+
+  it('keeps keyboard focus inside the dialog', async () => {
+    render(
+      <>
+        <button type="button">Outside</button>
+        {renderDialog(() => {})}
+      </>,
+    )
+    const close = screen.getByRole('button', { name: 'Close' })
+    const input = screen.getByRole('textbox', { name: 'Name' })
+
+    await userEvent.tab()
+    expect(close).toHaveFocus()
+    await userEvent.tab()
+    expect(input).toHaveFocus()
+    await userEvent.tab()
+    expect(close).toHaveFocus()
+    await userEvent.tab({ shift: true })
+    expect(input).toHaveFocus()
+  })
+
+  it('does not close while busy', async () => {
+    const onClose = vi.fn()
+    render(renderDialog(onClose, true))
+
+    await userEvent.keyboard('{Escape}')
+
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Close' })).toBeDisabled()
   })
 })

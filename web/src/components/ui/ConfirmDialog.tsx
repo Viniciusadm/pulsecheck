@@ -19,6 +19,7 @@ export function ConfirmDialog({ isOpen, title, description, confirmLabel, pendin
       isOpen={isOpen}
       title={title}
       onClose={onClose}
+      isBusy={isPending}
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={isPending}>

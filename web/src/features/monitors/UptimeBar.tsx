@@ -50,6 +50,10 @@ export function UptimeBar({ days }: { days: UptimeDay[] }) {
           {t('monitors.detail.legendPartial')}
         </span>
         <span className="inline-flex items-center gap-1.5">
+          <span className="size-3 rounded-sm bg-status-down" aria-hidden="true" />
+          {t('monitors.detail.legendLow')}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
           <span className="size-3 rounded-sm" style={{ backgroundImage: NO_DATA_PATTERN }} aria-hidden="true" />
           {t('monitors.detail.legendNoData')}
         </span>

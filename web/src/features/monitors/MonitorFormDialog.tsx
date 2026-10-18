@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState, type FormEvent } from 'react'
+import { useId, useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { getAppConfig } from '../../api/config.ts'
 import { fieldErrors, generalErrorMessage } from '../../api/errors.ts'
@@ -10,6 +10,7 @@ import type { AppConfig, Monitor, MonitorInput, NotificationChannel } from '../.
 import { Alert } from '../../components/ui/Alert.tsx'
 import { Button } from '../../components/ui/Button.tsx'
 import { Dialog } from '../../components/ui/Dialog.tsx'
+import { SelectField } from '../../components/ui/SelectField.tsx'
 import { Spinner } from '../../components/ui/Spinner.tsx'
 import { TextField } from '../../components/ui/TextField.tsx'
 import { useToast } from '../../components/ui/toast.ts'
@@ -53,7 +54,7 @@ function MonitorForm({ isOpen, onClose, onSaved, monitor, config }: MonitorFormD
     name: monitor?.name ?? '',
     url: monitor?.url ?? '',
     interval_minutes: monitor?.interval_minutes ?? config?.monitors.default_interval ?? 5,
-    timeout_seconds: monitor?.timeout_seconds ?? config?.monitors.timeout_default ?? 10,
+    timeout_seconds: String(monitor?.timeout_seconds ?? config?.monitors.timeout_default ?? 10),
   })
 
   const channels = useQuery({ queryKey: queryKeys.notificationChannels, queryFn: listNotificationChannels })
@@ -82,7 +83,12 @@ function MonitorForm({ isOpen, onClose, onSaved, monitor, config }: MonitorFormD
       return
     }
 
-    const input: MonitorInput = { ...form, name: form.name.trim(), url: form.url.trim() }
+    const input: MonitorInput = {
+      name: form.name.trim(),
+      url: form.url.trim(),
+      interval_minutes: form.interval_minutes,
+      ...(form.timeout_seconds.trim() === '' ? {} : { timeout_seconds: Number(form.timeout_seconds) }),
+    }
 
     if (selectedChannelIds !== null) {
       input.notification_channel_ids = selectedChannelIds
@@ -106,7 +112,7 @@ function MonitorForm({ isOpen, onClose, onSaved, monitor, config }: MonitorFormD
   }
 
   return (
-    <Dialog isOpen={isOpen} title={monitor ? t('monitors.form.editTitle') : t('monitors.form.createTitle')} onClose={onClose}>
+    <Dialog isOpen={isOpen} title={monitor ? t('monitors.form.editTitle') : t('monitors.form.createTitle')} onClose={onClose} isBusy={mutation.isPending}>
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
         {generalError && <Alert tone="error">{generalError}</Alert>}
         <TextField
@@ -132,26 +138,20 @@ function MonitorForm({ isOpen, onClose, onSaved, monitor, config }: MonitorFormD
           error={errors.url}
         />
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="monitor-interval" className="text-sm font-medium text-neutral-800">
-              {t('monitors.form.interval')}
-            </label>
-            <select
-              id="monitor-interval"
-              name="interval_minutes"
-              value={form.interval_minutes}
-              onChange={(event) => setForm({ ...form, interval_minutes: Number(event.target.value) })}
-              aria-invalid={errors.interval_minutes ? true : undefined}
-              className="min-h-10 rounded-md border border-neutral-300 bg-surface px-3 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
-            >
-              {intervals.map((minutes) => (
-                <option key={minutes} value={minutes}>
-                  {t('monitors.form.intervalOption', { minutes })}
-                </option>
-              ))}
-            </select>
-            {errors.interval_minutes && <p className="text-xs font-medium text-status-down">{errors.interval_minutes}</p>}
-          </div>
+          <SelectField
+            id="monitor-interval"
+            label={t('monitors.form.interval')}
+            name="interval_minutes"
+            value={form.interval_minutes}
+            onChange={(event) => setForm({ ...form, interval_minutes: Number(event.target.value) })}
+            error={errors.interval_minutes}
+          >
+            {intervals.map((minutes) => (
+              <option key={minutes} value={minutes}>
+                {t('monitors.form.intervalOption', { minutes })}
+              </option>
+            ))}
+          </SelectField>
           <TextField
             label={t('monitors.form.timeout')}
             name="timeout_seconds"
@@ -160,7 +160,7 @@ function MonitorForm({ isOpen, onClose, onSaved, monitor, config }: MonitorFormD
             max={timeoutMax}
             hint={t('monitors.form.timeoutHint', { min: timeoutMin, max: timeoutMax })}
             value={form.timeout_seconds}
-            onChange={(event) => setForm({ ...form, timeout_seconds: Number(event.target.value) })}
+            onChange={(event) => setForm({ ...form, timeout_seconds: event.target.value })}
             error={errors.timeout_seconds}
           />
         </div>
@@ -196,14 +196,19 @@ type ChannelPickerProps = {
 }
 
 function ChannelPicker({ channels, selectedIds, onToggle, error }: ChannelPickerProps) {
+  const hintId = useId()
+  const errorId = useId()
+
   if (!channels) {
     return null
   }
 
   return (
-    <fieldset className="flex flex-col gap-2">
+    <fieldset className="flex flex-col gap-2" aria-describedby={error ? `${hintId} ${errorId}` : hintId}>
       <legend className="text-sm font-medium text-neutral-800">{t('monitors.form.notifications')}</legend>
-      <p className="text-xs text-neutral-500">{t('monitors.form.notificationsHint')}</p>
+      <p id={hintId} className="text-xs text-neutral-500">
+        {t('monitors.form.notificationsHint')}
+      </p>
       {channels.length === 0 ? (
         <p className="text-sm text-neutral-600">
           {t('monitors.form.noChannels')}{' '}
@@ -220,6 +225,7 @@ function ChannelPicker({ channels, selectedIds, onToggle, error }: ChannelPicker
               value={channel.id}
               checked={selectedIds.includes(channel.id)}
               onChange={(event) => onToggle(channel.id, event.target.checked)}
+              aria-invalid={error ? true : undefined}
               className="size-4 accent-primary-600"
             />
             <span className="font-medium">{channel.name}</span>
@@ -230,7 +236,11 @@ function ChannelPicker({ channels, selectedIds, onToggle, error }: ChannelPicker
           </label>
         ))
       )}
-      {error && <p className="text-xs font-medium text-status-down">{error}</p>}
+      {error && (
+        <p id={errorId} className="text-xs font-medium text-status-down">
+          {error}
+        </p>
+      )}
     </fieldset>
   )
 }

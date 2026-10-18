@@ -13,6 +13,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog.tsx'
 import { EmptyState } from '../../components/ui/EmptyState.tsx'
 import { ErrorState } from '../../components/ui/ErrorState.tsx'
 import { RelativeTime } from '../../components/ui/RelativeTime.tsx'
+import { PeriodSelector } from '../../components/ui/PeriodSelector.tsx'
 import { Skeleton } from '../../components/ui/Skeleton.tsx'
 import { useToast } from '../../components/ui/toast.ts'
 import { t } from '../../i18n/index.ts'
@@ -29,7 +30,6 @@ import { useDeleteMonitor, usePauseMonitor, useResumeMonitor } from './useMonito
 
 const LatencyChart = lazy(() => import('./LatencyChart.tsx').then((module) => ({ default: module.LatencyChart })))
 
-const PERIODS: StatsPeriod[] = ['24h', '7d', '30d']
 const REFRESH_INTERVAL_MS = 60_000
 
 export function MonitorDetailPage() {
@@ -161,19 +161,12 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
           <h2 id="monitor-metrics" className="text-lg font-semibold text-neutral-900">
             {t('monitors.detail.latencyChart')}
           </h2>
-          <div role="group" aria-label={t('monitors.detail.period')} className="inline-flex rounded-md border border-neutral-300 bg-surface p-0.5">
-            {PERIODS.map((option) => (
-              <button
-                key={option}
-                type="button"
-                aria-pressed={period === option}
-                onClick={() => setPeriod(option)}
-                className={`rounded px-3 py-1.5 text-sm font-medium ${period === option ? 'bg-primary-700 text-white' : 'text-neutral-700 hover:bg-neutral-100'}`}
-              >
-                {t(`monitors.detail.periods.${option}`)}
-              </button>
-            ))}
-          </div>
+          <PeriodSelector
+            value={period}
+            label={t('monitors.detail.period')}
+            optionLabel={(option) => t(`monitors.detail.periods.${option}`)}
+            onChange={setPeriod}
+          />
         </div>
 
         {stats.isPending && <Skeleton className="h-24" />}

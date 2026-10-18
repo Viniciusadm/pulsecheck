@@ -5,6 +5,7 @@ import { login } from '../../api/auth.ts'
 import { fieldErrors, generalErrorMessage } from '../../api/errors.ts'
 import { Alert } from '../../components/ui/Alert.tsx'
 import { Button } from '../../components/ui/Button.tsx'
+import { PasswordField } from '../../components/ui/PasswordField.tsx'
 import { TextField } from '../../components/ui/TextField.tsx'
 import { t } from '../../i18n/index.ts'
 import { useAuth } from './AuthContext.ts'
@@ -51,9 +52,8 @@ export function LoginPage() {
           onChange={(event) => setEmail(event.target.value)}
           error={errors.email}
         />
-        <TextField
+        <PasswordField
           label={t('auth.password')}
-          type="password"
           name="password"
           autoComplete="current-password"
           required

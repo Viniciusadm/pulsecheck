@@ -48,6 +48,7 @@ export function TeamDialog({ team, onClose }: TeamDialogProps) {
       isOpen
       title={team ? t('settings.teams.form.editTitle', { name: team.name }) : t('settings.teams.form.createTitle')}
       onClose={onClose}
+      isBusy={mutation.isPending}
     >
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
         {generalError && <Alert tone="error">{generalError}</Alert>}

@@ -9,6 +9,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog.tsx'
 import { EmptyState } from '../../components/ui/EmptyState.tsx'
 import { ErrorState } from '../../components/ui/ErrorState.tsx'
 import { PlusIcon } from '../../components/ui/icons.tsx'
+import { PeriodSelector } from '../../components/ui/PeriodSelector.tsx'
 import { Skeleton } from '../../components/ui/Skeleton.tsx'
 import { useToast } from '../../components/ui/toast.ts'
 import { t } from '../../i18n/index.ts'
@@ -23,7 +24,6 @@ const PERIOD_MUTATION_KEY = ['dashboard-layout', 'period']
 
 const WidgetGrid = lazy(() => import('./WidgetGrid.tsx').then((module) => ({ default: module.WidgetGrid })))
 
-const PERIODS: StatsPeriod[] = ['24h', '7d', '30d']
 
 export function DashboardPage() {
   const refetchInterval = useRefreshInterval()
@@ -158,7 +158,12 @@ function DashboardBoard({ layout, title, actions }: DashboardBoardProps) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         {title}
         <div className="flex flex-wrap items-center gap-2">
-          <PeriodSelector value={layout.period} onChange={(period) => changePeriod.mutate(period)} />
+          <PeriodSelector
+            value={layout.period}
+            label={t('dashboard.period')}
+            optionLabel={(option) => t(`dashboard.periods.${option}`)}
+            onChange={(period) => changePeriod.mutate(period)}
+          />
           {isEditing ? (
             <>
               <Button variant="secondary" onClick={() => setIsAddOpen(true)} disabled={widgets.length >= MAX_WIDGETS}>
@@ -231,24 +236,6 @@ function DashboardBoard({ layout, title, actions }: DashboardBoardProps) {
         onConfirm={() => restoreDefault.mutate()}
         onClose={() => setIsRestoreOpen(false)}
       />
-    </div>
-  )
-}
-
-function PeriodSelector({ value, onChange }: { value: StatsPeriod; onChange: (period: StatsPeriod) => void }) {
-  return (
-    <div role="group" aria-label={t('dashboard.period')} className="inline-flex rounded-md border border-neutral-300 bg-surface p-0.5">
-      {PERIODS.map((option) => (
-        <button
-          key={option}
-          type="button"
-          aria-pressed={value === option}
-          onClick={() => onChange(option)}
-          className={`rounded px-3 py-1.5 text-sm font-medium ${value === option ? 'bg-primary-700 text-white' : 'text-neutral-700 hover:bg-neutral-100'}`}
-        >
-          {t(`dashboard.periods.${option}`)}
-        </button>
-      ))}
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import type { Team } from '../../api/types.ts'
 import { t } from '../../i18n/index.ts'
 
@@ -20,6 +21,9 @@ export function TeamPicker({
   isDisabled = false,
   error,
 }: TeamPickerProps) {
+  const hintId = useId()
+  const errorId = useId()
+
   if (!teams) {
     return null
   }
@@ -28,9 +32,17 @@ export function TeamPicker({
     onChange(isChecked ? [...selectedIds, id] : selectedIds.filter((current) => current !== id))
 
   return (
-    <fieldset className="flex flex-col gap-2" disabled={isDisabled}>
+    <fieldset
+      className="flex flex-col gap-2"
+      disabled={isDisabled}
+      aria-describedby={[hint ? hintId : undefined, error ? errorId : undefined].filter(Boolean).join(' ') || undefined}
+    >
       <legend className="text-sm font-medium text-neutral-800">{legend}</legend>
-      {hint && <p className="text-xs text-neutral-500">{hint}</p>}
+      {hint && (
+        <p id={hintId} className="text-xs text-neutral-500">
+          {hint}
+        </p>
+      )}
       {teams.length === 0 ? (
         <p className="text-sm text-neutral-600">{t('settings.teams.picker.empty')}</p>
       ) : (
@@ -43,6 +55,7 @@ export function TeamPicker({
                 value={team.id}
                 checked={isDisabled || selectedIds.includes(team.id)}
                 onChange={(event) => toggle(team.id, event.target.checked)}
+                aria-invalid={error ? true : undefined}
                 className="size-4 accent-primary-600"
               />
               <span className="font-medium">{team.name}</span>
@@ -50,7 +63,11 @@ export function TeamPicker({
           ))}
         </div>
       )}
-      {error && <p className="text-xs font-medium text-status-down">{error}</p>}
+      {error && (
+        <p id={errorId} className="text-xs font-medium text-status-down">
+          {error}
+        </p>
+      )}
     </fieldset>
   )
 }

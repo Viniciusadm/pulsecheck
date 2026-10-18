@@ -5,6 +5,7 @@ import { resetPassword } from '../../api/auth.ts'
 import { fieldErrors, generalErrorMessage } from '../../api/errors.ts'
 import { Alert } from '../../components/ui/Alert.tsx'
 import { Button } from '../../components/ui/Button.tsx'
+import { PasswordField } from '../../components/ui/PasswordField.tsx'
 import { TextField } from '../../components/ui/TextField.tsx'
 import { t } from '../../i18n/index.ts'
 
@@ -60,9 +61,8 @@ export function ResetPasswordPage() {
 
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
         <TextField label={t('auth.email')} type="email" name="email" autoComplete="username" value={email} readOnly />
-        <TextField
+        <PasswordField
           label={t('auth.password')}
-          type="password"
           name="password"
           autoComplete="new-password"
           required
@@ -71,9 +71,8 @@ export function ResetPasswordPage() {
           onChange={(event) => setPassword(event.target.value)}
           error={errors.password}
         />
-        <TextField
+        <PasswordField
           label={t('auth.passwordConfirmation')}
-          type="password"
           name="password_confirmation"
           autoComplete="new-password"
           required

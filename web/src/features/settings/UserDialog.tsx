@@ -9,6 +9,7 @@ import { Alert } from '../../components/ui/Alert.tsx'
 import { Button } from '../../components/ui/Button.tsx'
 import { Dialog } from '../../components/ui/Dialog.tsx'
 import { SelectField } from '../../components/ui/SelectField.tsx'
+import { PasswordField } from '../../components/ui/PasswordField.tsx'
 import { TextField } from '../../components/ui/TextField.tsx'
 import { useToast } from '../../components/ui/toast.ts'
 import { t } from '../../i18n/index.ts'
@@ -83,6 +84,7 @@ export function UserDialog({ user, onClose }: UserDialogProps) {
       isOpen
       title={user ? t('settings.users.form.editTitle', { name: user.name }) : t('settings.users.form.createTitle')}
       onClose={onClose}
+      isBusy={mutation.isPending}
     >
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
         {generalError && <Alert tone="error">{generalError}</Alert>}
@@ -140,9 +142,8 @@ export function UserDialog({ user, onClose }: UserDialogProps) {
             </>
           )}
         </fieldset>
-        <TextField
+        <PasswordField
           label={t('settings.users.form.password')}
-          type="password"
           name="password"
           autoComplete="new-password"
           required={!user}
@@ -151,9 +152,8 @@ export function UserDialog({ user, onClose }: UserDialogProps) {
           onChange={update('password')}
           error={errors.password}
         />
-        <TextField
+        <PasswordField
           label={t('settings.users.form.passwordConfirmation')}
-          type="password"
           name="password_confirmation"
           autoComplete="new-password"
           required={!user}
