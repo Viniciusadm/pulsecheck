@@ -6,8 +6,11 @@ use App\Actions\RecordCheckResult;
 use App\Enums\CheckErrorType;
 use App\Events\MonitorChecked;
 use App\Models\Monitor;
+use App\Models\Team;
+use App\Models\User;
 use App\Services\CheckOutcome;
 use Carbon\CarbonImmutable;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Event;
@@ -28,17 +31,32 @@ class MonitorCheckedBroadcastTest extends TestCase
         ));
     }
 
-    public function test_recording_a_check_broadcasts_the_updated_monitor_to_every_user(): void
+    public function test_recording_a_check_broadcasts_the_updated_monitor_to_every_user_who_can_see_it(): void
     {
         Event::fake([MonitorChecked::class]);
+        $team = Team::factory()->create();
         $monitor = Monitor::factory()->create();
+        $monitor->teams()->attach($team);
+        $admin = User::factory()->admin()->create();
+        $viewingAll = User::factory()->viewingAll()->create();
+        $teamMember = User::factory()->create();
+        $teamMember->teams()->attach($team);
+        User::factory()->create()->teams()->attach(Team::factory()->create());
+        User::factory()->create();
 
         $this->record($monitor);
 
-        Event::assertDispatched(MonitorChecked::class, function (MonitorChecked $event) use ($monitor): bool {
-            $payload = $event->broadcastWith();
+        $expectedChannels = collect([$admin, $viewingAll, $teamMember])
+            ->map(fn (User $user) => "private-users.{$user->id}.monitors")
+            ->sort()
+            ->values()
+            ->all();
 
-            return $event->broadcastOn()->name === 'private-monitors'
+        Event::assertDispatched(MonitorChecked::class, function (MonitorChecked $event) use ($monitor, $expectedChannels): bool {
+            $payload = $event->broadcastWith();
+            $channels = collect($event->broadcastOn())->map(fn (PrivateChannel $channel) => $channel->name)->sort()->values()->all();
+
+            return $channels === $expectedChannels
                 && $event->broadcastAs() === 'monitor.checked'
                 && $payload['monitor']['id'] === $monitor->id
                 && $payload['monitor']['last_status_code'] === 200

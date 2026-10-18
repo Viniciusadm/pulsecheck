@@ -8,6 +8,8 @@ import { EmptyState } from '../../components/ui/EmptyState.tsx'
 import { ErrorState } from '../../components/ui/ErrorState.tsx'
 import { Skeleton } from '../../components/ui/Skeleton.tsx'
 import { t } from '../../i18n/index.ts'
+import { canManageResources } from '../../lib/permissions.ts'
+import { useAuth } from '../auth/AuthContext.ts'
 import { MonitorFormDialog } from './MonitorFormDialog.tsx'
 import { MonitorList } from './MonitorList.tsx'
 
@@ -17,6 +19,8 @@ export function MonitorsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const [isFormOpen, setIsFormOpen] = useState(false)
+  const { user } = useAuth()
+  const canManage = canManageResources(user)
   const page = Math.max(1, Number(searchParams.get('page') ?? 1) || 1)
   const statusParam = searchParams.get('status')
   const status = STATUS_FILTERS.find((filter) => filter === statusParam)
@@ -47,7 +51,7 @@ export function MonitorsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-neutral-900">{t('monitors.title')}</h1>
-        <Button onClick={() => setIsFormOpen(true)}>{t('monitors.add')}</Button>
+        {canManage && <Button onClick={() => setIsFormOpen(true)}>{t('monitors.add')}</Button>}
       </div>
 
       <div className="flex items-center gap-2">
@@ -83,7 +87,7 @@ export function MonitorsPage() {
         <EmptyState
           title={t('dashboard.empty.title')}
           description={t('dashboard.empty.description')}
-          action={<Button onClick={() => setIsFormOpen(true)}>{t('dashboard.empty.action')}</Button>}
+          action={canManage ? <Button onClick={() => setIsFormOpen(true)}>{t('dashboard.empty.action')}</Button> : undefined}
         />
       )}
       {monitors.data && monitors.data.data.length === 0 && page === 1 && status !== undefined && <p className="text-neutral-600">{t('monitors.noMatches')}</p>}

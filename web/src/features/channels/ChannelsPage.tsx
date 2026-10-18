@@ -14,6 +14,8 @@ import { ErrorState } from '../../components/ui/ErrorState.tsx'
 import { Skeleton } from '../../components/ui/Skeleton.tsx'
 import { useToast } from '../../components/ui/toast.ts'
 import { t } from '../../i18n/index.ts'
+import { canManageResources } from '../../lib/permissions.ts'
+import { useAuth } from '../auth/AuthContext.ts'
 import { NotificationChannelDialog } from './NotificationChannelDialog.tsx'
 
 function deliveryMessage(error: unknown): string {
@@ -34,35 +36,37 @@ function monitorsUsage(count: number): string {
 
 type DialogState = { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; channel: NotificationChannel }
 
-export function ChannelsSection() {
+export function ChannelsPage() {
+  const { user } = useAuth()
+  const canManage = canManageResources(user)
   const channels = useQuery({ queryKey: queryKeys.notificationChannels, queryFn: listNotificationChannels })
   const [dialog, setDialog] = useState<DialogState>({ mode: 'closed' })
 
   return (
-    <section aria-labelledby="channels-heading">
-      <Card className="flex max-w-3xl flex-col gap-6 px-5 py-6 sm:px-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex max-w-prose flex-col gap-1">
-            <h2 id="channels-heading" className="text-lg font-semibold text-neutral-900">{t('settings.channels.heading')}</h2>
-            <p className="text-neutral-600">{t('settings.channels.description')}</p>
-          </div>
-          {channels.data && channels.data.length > 0 && (
-            <Button onClick={() => setDialog({ mode: 'create' })}>{t('settings.channels.add')}</Button>
-          )}
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex max-w-prose flex-col gap-1">
+          <h1 className="text-2xl font-semibold text-neutral-900">{t('settings.channels.heading')}</h1>
+          <p className="text-neutral-600">{t('settings.channels.description')}</p>
         </div>
+        {canManage && channels.data && channels.data.length > 0 && (
+          <Button onClick={() => setDialog({ mode: 'create' })}>{t('settings.channels.add')}</Button>
+        )}
+      </div>
+      <Card className="flex flex-col gap-6 px-5 py-6 sm:px-6">
         {channels.isPending && <Skeleton className="h-40" />}
         {channels.isError && <ErrorState onRetry={() => void channels.refetch()} />}
         {channels.data?.length === 0 && (
           <EmptyState
             title={t('settings.channels.emptyTitle')}
             description={t('settings.channels.emptyDescription')}
-            action={<Button onClick={() => setDialog({ mode: 'create' })}>{t('settings.channels.add')}</Button>}
+            action={canManage ? <Button onClick={() => setDialog({ mode: 'create' })}>{t('settings.channels.add')}</Button> : undefined}
           />
         )}
         {channels.data && channels.data.length > 0 && (
           <ul className="divide-y divide-border rounded-lg border border-border">
             {channels.data.map((channel) => (
-              <ChannelRow key={channel.id} channel={channel} onEdit={() => setDialog({ mode: 'edit', channel })} />
+              <ChannelRow key={channel.id} channel={channel} canManage={canManage} onEdit={() => setDialog({ mode: 'edit', channel })} />
             ))}
           </ul>
         )}
@@ -73,11 +77,11 @@ export function ChannelsSection() {
           onClose={() => setDialog({ mode: 'closed' })}
         />
       )}
-    </section>
+    </div>
   )
 }
 
-function ChannelRow({ channel, onEdit }: { channel: NotificationChannel; onEdit: () => void }) {
+function ChannelRow({ channel, canManage, onEdit }: { channel: NotificationChannel; canManage: boolean; onEdit: () => void }) {
   const queryClient = useQueryClient()
   const { showToast } = useToast()
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
@@ -112,28 +116,30 @@ function ChannelRow({ channel, onEdit }: { channel: NotificationChannel; onEdit:
         </div>
         <p className="text-xs text-neutral-500">{monitorsUsage(channel.monitors_count)}</p>
       </div>
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant="secondary"
-          onClick={() => testMutation.mutate()}
-          isLoading={testMutation.isPending}
-          loadingLabel={t('settings.channels.testing')}
-          aria-label={`${t('settings.channels.test')}: ${channel.name}`}
-        >
-          {t('settings.channels.test')}
-        </Button>
-        <Button variant="secondary" onClick={onEdit} aria-label={`${t('settings.channels.edit')}: ${channel.name}`}>
-          {t('settings.channels.edit')}
-        </Button>
-        <Button
-          variant="ghost"
-          className="text-status-down"
-          onClick={() => setIsConfirmingDelete(true)}
-          aria-label={`${t('settings.channels.delete')}: ${channel.name}`}
-        >
-          {t('settings.channels.delete')}
-        </Button>
-      </div>
+      {canManage && (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => testMutation.mutate()}
+            isLoading={testMutation.isPending}
+            loadingLabel={t('settings.channels.testing')}
+            aria-label={`${t('settings.channels.test')}: ${channel.name}`}
+          >
+            {t('settings.channels.test')}
+          </Button>
+          <Button variant="secondary" onClick={onEdit} aria-label={`${t('settings.channels.edit')}: ${channel.name}`}>
+            {t('settings.channels.edit')}
+          </Button>
+          <Button
+            variant="ghost"
+            className="text-status-down"
+            onClick={() => setIsConfirmingDelete(true)}
+            aria-label={`${t('settings.channels.delete')}: ${channel.name}`}
+          >
+            {t('settings.channels.delete')}
+          </Button>
+        </div>
+      )}
       <ConfirmDialog
         isOpen={isConfirmingDelete}
         title={t('settings.channels.deleteTitle', { name: channel.name })}

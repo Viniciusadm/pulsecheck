@@ -1,14 +1,17 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { fieldErrors, generalErrorMessage } from '../../api/errors.ts'
 import { createNotificationChannel, updateNotificationChannel } from '../../api/notificationChannels.ts'
 import { queryKeys } from '../../api/queryKeys.ts'
+import { listTeams } from '../../api/teams.ts'
 import type { NotificationChannel, NotificationChannelInput, NotificationChannelType } from '../../api/types.ts'
 import { Alert } from '../../components/ui/Alert.tsx'
 import { Button } from '../../components/ui/Button.tsx'
 import { TextField } from '../../components/ui/TextField.tsx'
 import { useToast } from '../../components/ui/toast.ts'
 import { t } from '../../i18n/index.ts'
+import { TeamPicker } from '../teams/TeamPicker.tsx'
+import { initialTeamIds, teamIdsError } from '../teams/teamSelection.ts'
 import { channelTypeOrder, channelTypes } from './channelTypes.ts'
 
 type HeaderRow = { name: string; value: string }
@@ -40,12 +43,16 @@ export function NotificationChannelForm({
   const hasSavedHeaders = channel?.secrets_set.includes('headers') ?? false
   const [isReplacingHeaders, setIsReplacingHeaders] = useState(!hasSavedHeaders)
   const [headers, setHeaders] = useState<HeaderRow[]>([])
+  const teams = useQuery({ queryKey: queryKeys.teams, queryFn: listTeams })
+  const [selectedTeamIds, setSelectedTeamIds] = useState<number[] | null>(null)
+  const teamIds = selectedTeamIds ?? initialTeamIds(teams.data, channel?.team_ids)
 
   const mutation = useMutation({
     mutationFn: (input: NotificationChannelInput) =>
       channel ? updateNotificationChannel(channel.id, input) : createNotificationChannel(input),
     onSuccess: (saved) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.notificationChannels })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.teams })
       showToast(channel ? t('settings.channels.form.saved') : t('settings.channels.form.created'))
       onSaved(saved)
     },
@@ -95,6 +102,7 @@ export function NotificationChannelForm({
       enabled,
       is_default: isDefault,
       config: payload,
+      ...(channel && selectedTeamIds === null ? {} : { team_ids: teamIds }),
     })
   }
 
@@ -208,6 +216,8 @@ export function NotificationChannelForm({
           {headerError && <p className="text-xs font-medium text-status-down">{headerError}</p>}
         </fieldset>
       )}
+
+      <TeamPicker teams={teams.data} selectedIds={teamIds} onChange={setSelectedTeamIds} error={teamIdsError(errors)} />
 
       <div className="flex flex-col gap-2">
         <label className="inline-flex items-center gap-2 text-sm font-medium text-neutral-800">

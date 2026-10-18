@@ -38,7 +38,7 @@ class CreateMonitorTest extends TestCase
     public function test_user_can_create_a_monitor_scheduled_for_an_immediate_first_check(): void
     {
         $this->freezeSecond();
-        $user = User::factory()->create();
+        $user = User::factory()->admin()->create();
 
         $response = $this->actingAs($user)->fromSpa()->postJson('/api/monitors', $this->validPayload());
 
@@ -56,7 +56,7 @@ class CreateMonitorTest extends TestCase
 
     public function test_interval_and_timeout_default_to_configured_values(): void
     {
-        $response = $this->actingAs(User::factory()->create())->fromSpa()->postJson('/api/monitors', [
+        $response = $this->actingAs(User::factory()->admin()->create())->fromSpa()->postJson('/api/monitors', [
             'name' => 'Example',
             'url' => 'https://example.com',
         ]);
@@ -68,11 +68,11 @@ class CreateMonitorTest extends TestCase
 
     public function test_monitors_are_shared_with_every_user(): void
     {
-        $response = $this->actingAs(User::factory()->create())->fromSpa()->postJson('/api/monitors', $this->validPayload());
+        $response = $this->actingAs(User::factory()->admin()->create())->fromSpa()->postJson('/api/monitors', $this->validPayload());
 
         $response->assertCreated();
 
-        $this->actingAs(User::factory()->create())->fromSpa()
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
             ->getJson('/api/monitors/'.$response->json('data.id'))
             ->assertOk()
             ->assertJsonPath('data.name', 'Example');
@@ -80,7 +80,7 @@ class CreateMonitorTest extends TestCase
 
     public function test_server_controlled_fields_in_the_payload_are_ignored(): void
     {
-        $response = $this->actingAs(User::factory()->create())->fromSpa()->postJson('/api/monitors', $this->validPayload([
+        $response = $this->actingAs(User::factory()->admin()->create())->fromSpa()->postJson('/api/monitors', $this->validPayload([
             'status' => 'up',
             'is_paused' => true,
             'consecutive_failures' => 9,
@@ -117,7 +117,7 @@ class CreateMonitorTest extends TestCase
     #[DataProvider('invalidPayloads')]
     public function test_invalid_payloads_are_rejected(array $overrides, string $field): void
     {
-        $this->actingAs(User::factory()->create())->fromSpa()
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
             ->postJson('/api/monitors', $this->validPayload($overrides))
             ->assertUnprocessable()
             ->assertJsonValidationErrors($field);
@@ -129,7 +129,7 @@ class CreateMonitorTest extends TestCase
     {
         config(['pulsecheck.timeout_max' => 120]);
 
-        $this->actingAs(User::factory()->create())->fromSpa()
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
             ->postJson('/api/monitors', $this->validPayload(['interval_minutes' => 1, 'timeout_seconds' => 60]))
             ->assertUnprocessable()
             ->assertJsonValidationErrors('timeout_seconds');
@@ -137,7 +137,7 @@ class CreateMonitorTest extends TestCase
 
     public function test_monitor_writes_are_rate_limited_per_user(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->admin()->create();
         $this->actingAs($user)->fromSpa();
 
         for ($attempt = 1; $attempt <= 30; $attempt++) {
@@ -146,6 +146,6 @@ class CreateMonitorTest extends TestCase
 
         $this->postJson('/api/monitors', $this->validPayload())->assertTooManyRequests();
 
-        $this->actingAs(User::factory()->create())->postJson('/api/monitors', $this->validPayload())->assertCreated();
+        $this->actingAs(User::factory()->admin()->create())->postJson('/api/monitors', $this->validPayload())->assertCreated();
     }
 }

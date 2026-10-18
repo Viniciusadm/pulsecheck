@@ -24,7 +24,7 @@ class CurrentUserTest extends TestCase
         $response = $this->actingAs($user)->fromSpa()->getJson('/api/user');
 
         $response->assertOk()
-            ->assertExactJsonStructure(['data' => ['id', 'name', 'email', 'role', 'email_verified_at', 'created_at']])
+            ->assertExactJsonStructure(['data' => ['id', 'name', 'email', 'role', 'can_view_all_monitors', 'team_ids', 'email_verified_at', 'created_at']])
             ->assertJsonPath('data.id', $user->id);
     }
 

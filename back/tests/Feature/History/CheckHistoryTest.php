@@ -30,7 +30,7 @@ class CheckHistoryTest extends TestCase
         $inside = $this->checkAt($monitor, now()->parse('2026-10-17 10:30:00'));
         $atTo = $this->checkAt($monitor, now()->parse('2026-10-17 11:00:00'));
 
-        $ids = $this->actingAs(User::factory()->create())->fromSpa()
+        $ids = $this->actingAs(User::factory()->admin()->create())->fromSpa()
             ->getJson("/api/monitors/{$monitor->id}/checks?from=2026-10-17T10:00:00Z&to=2026-10-17T11:00:00Z")
             ->assertOk()
             ->json('data.*.id');
@@ -46,7 +46,7 @@ class CheckHistoryTest extends TestCase
         $recent = $this->checkAt($monitor, now()->subHours(23));
         $this->checkAt($monitor, now()->subHours(25));
 
-        $this->actingAs(User::factory()->create())->fromSpa()
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
             ->getJson("/api/monitors/{$monitor->id}/checks")
             ->assertOk()
             ->assertJsonPath('data.*.id', [$recent->id]);
@@ -59,7 +59,7 @@ class CheckHistoryTest extends TestCase
             $this->checkAt($monitor, now()->subMinutes($minutesAgo));
         }
 
-        $this->actingAs(User::factory()->create())->fromSpa();
+        $this->actingAs(User::factory()->admin()->create())->fromSpa();
         $firstPage = $this->getJson("/api/monitors/{$monitor->id}/checks")->assertOk();
 
         $firstPage->assertJsonCount(50, 'data');
@@ -82,7 +82,7 @@ class CheckHistoryTest extends TestCase
         $this->checkAt(Monitor::factory()->create(), now()->subMinute());
         $this->checkAt(Monitor::factory()->create(), now()->subMinute());
 
-        $this->actingAs(User::factory()->create())->fromSpa()
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
             ->getJson("/api/monitors/{$monitor->id}/checks")
             ->assertOk()
             ->assertJsonPath('data.*.id', [$own->id]);
@@ -104,7 +104,7 @@ class CheckHistoryTest extends TestCase
     {
         $monitor = Monitor::factory()->create();
 
-        $this->actingAs(User::factory()->create())->fromSpa()
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
             ->getJson("/api/monitors/{$monitor->id}/checks?{$query}")
             ->assertUnprocessable()
             ->assertJsonValidationErrors($field);

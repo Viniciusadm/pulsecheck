@@ -15,10 +15,10 @@ export function useMonitorRealtime() {
   const queryClient = useQueryClient()
   const { data: config } = useQuery({ queryKey: queryKeys.config, queryFn: getAppConfig, staleTime: Infinity })
   const realtimeKey = config?.realtime?.key
-  const isAuthenticated = user !== null
+  const userId = user?.id
 
   useEffect(() => {
-    if (!realtimeKey || !isAuthenticated) {
+    if (!realtimeKey || userId === undefined) {
       return
     }
 
@@ -38,7 +38,7 @@ export function useMonitorRealtime() {
       }
 
       echo = realtime.createEcho(realtimeKey)
-      echo.private('monitors').listen('.monitor.checked', ({ monitor }: MonitorCheckedEvent) => {
+      echo.private(`users.${userId}.monitors`).listen('.monitor.checked', ({ monitor }: MonitorCheckedEvent) => {
         queryClient.setQueryData(queryKeys.monitor(monitor.id), monitor)
         refreshTimer ??= setTimeout(refresh, REFRESH_DEBOUNCE_MS)
       })
@@ -49,5 +49,5 @@ export function useMonitorRealtime() {
       clearTimeout(refreshTimer)
       echo?.disconnect()
     }
-  }, [realtimeKey, isAuthenticated, queryClient])
+  }, [realtimeKey, userId, queryClient])
 }

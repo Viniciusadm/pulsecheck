@@ -15,7 +15,7 @@ import { browserTimeZone } from '../../lib/timeZones.ts'
 import { useAuth } from '../auth/AuthContext.ts'
 import { useAppConfig } from '../config/ConfigContext.ts'
 import { LocaleSelect, TimeZoneSelect } from '../instance/InstanceFields.tsx'
-import { NotificationChannelForm } from '../settings/NotificationChannelForm.tsx'
+import { NotificationChannelForm } from '../channels/NotificationChannelForm.tsx'
 
 type Step = 1 | 2 | 3
 

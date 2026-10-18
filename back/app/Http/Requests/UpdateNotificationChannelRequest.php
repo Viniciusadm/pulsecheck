@@ -14,6 +14,9 @@ class UpdateNotificationChannelRequest extends StoreNotificationChannelRequest
             'enabled' => ['sometimes', 'boolean'],
             'is_default' => ['sometimes', 'boolean'],
             ...$this->configRules(),
+            ...collect($this->teamRules())
+                ->map(fn (array $rules, string $key) => str_contains($key, '.') ? $rules : ['sometimes', ...array_filter($rules, fn (mixed $rule) => $rule !== 'sometimes')])
+                ->all(),
         ];
     }
 

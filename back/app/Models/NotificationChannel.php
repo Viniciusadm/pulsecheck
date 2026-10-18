@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\NotificationChannelType;
+use App\Models\Concerns\BelongsToTeams;
 use Database\Factories\NotificationChannelFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class NotificationChannel extends Model
 {
     /** @use HasFactory<NotificationChannelFactory> */
-    use HasFactory;
+    use BelongsToTeams, HasFactory;
 
     protected $attributes = [
         'enabled' => true,

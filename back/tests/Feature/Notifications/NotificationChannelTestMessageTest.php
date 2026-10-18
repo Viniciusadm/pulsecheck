@@ -30,7 +30,7 @@ class NotificationChannelTestMessageTest extends TestCase
 
     private function sendTest(NotificationChannel $channel, ?User $user = null)
     {
-        return $this->actingAs($user ?? User::factory()->create())->fromSpa()->postJson("/api/notification-channels/{$channel->id}/test");
+        return $this->actingAs($user ?? User::factory()->admin()->create())->fromSpa()->postJson("/api/notification-channels/{$channel->id}/test");
     }
 
     public function test_telegram_test_message_is_sent(): void
@@ -91,7 +91,7 @@ class NotificationChannelTestMessageTest extends TestCase
         Mail::fake();
         RateLimiter::clear('notification-test');
         $channel = NotificationChannel::factory()->email()->create();
-        $user = User::factory()->create();
+        $user = User::factory()->admin()->create();
 
         foreach (range(1, 5) as $attempt) {
             $this->sendTest($channel, $user)->assertOk();

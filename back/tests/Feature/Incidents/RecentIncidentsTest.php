@@ -14,7 +14,7 @@ class RecentIncidentsTest extends TestCase
 
     public function test_lists_incidents_newest_first_with_their_monitor(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->admin()->create();
         $monitor = Monitor::factory()->create(['name' => 'API']);
         $older = Incident::factory()->for($monitor)->create(['started_at' => now()->subDays(2), 'resolved_at' => now()->subDays(2)->addMinutes(5)]);
         $newer = Incident::factory()->for($monitor)->open()->create(['started_at' => now()->subHour()]);
@@ -32,7 +32,7 @@ class RecentIncidentsTest extends TestCase
 
     public function test_limit_defaults_to_ten_and_is_bounded(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->admin()->create();
         $monitor = Monitor::factory()->create();
         Incident::factory()->for($monitor)->count(12)->create();
 
@@ -50,7 +50,7 @@ class RecentIncidentsTest extends TestCase
         $monitor = Monitor::factory()->create();
         Incident::factory()->for($monitor)->open()->create(['started_at' => now()->subMinutes(2)]);
 
-        $this->actingAs(User::factory()->create())->fromSpa()->getJson("/api/monitors/{$monitor->id}/incidents")
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()->getJson("/api/monitors/{$monitor->id}/incidents")
             ->assertOk()
             ->assertJsonPath('data.0.state', 'open')
             ->assertJsonPath('data.0.duration_seconds', 120)

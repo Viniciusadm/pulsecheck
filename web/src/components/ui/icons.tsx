@@ -109,6 +109,14 @@ export function SettingsIcon(props: IconProps) {
   )
 }
 
+export function BellIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M5 13.5V9a5 5 0 0 1 10 0v4.5l1.5 2h-13zM8.25 17.5a1.75 1.75 0 0 0 3.5 0" />
+    </Icon>
+  )
+}
+
 export function LogOutIcon(props: IconProps) {
   return (
     <Icon {...props}>

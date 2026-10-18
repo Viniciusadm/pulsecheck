@@ -2,14 +2,14 @@ import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as authApi from '../../api/auth.ts'
-import * as channelsApi from '../../api/notificationChannels.ts'
+import * as teamsApi from '../../api/teams.ts'
 import * as usersApi from '../../api/users.ts'
 import { axiosError } from '../../test/axiosErrors.ts'
-import { ada, makeUser } from '../../test/fixtures.ts'
+import { ada, makeTeam, makeUser } from '../../test/fixtures.ts'
 import { renderApp } from '../../test/renderApp.tsx'
 
 vi.mock('../../api/auth.ts')
-vi.mock('../../api/notificationChannels.ts')
+vi.mock('../../api/teams.ts')
 vi.mock('../../api/users.ts')
 
 const grace = makeUser()
@@ -21,7 +21,7 @@ async function usersSection() {
 describe('UsersSection', () => {
   beforeEach(() => {
     vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(ada)
-    vi.mocked(channelsApi.listNotificationChannels).mockResolvedValue([])
+    vi.mocked(teamsApi.listTeams).mockResolvedValue([makeTeam({ id: 1, name: 'Platform' }), makeTeam({ id: 2, name: 'Commerce' })])
     vi.mocked(usersApi.listUsers).mockResolvedValue([ada, grace])
   })
 
@@ -59,6 +59,8 @@ describe('UsersSection', () => {
       name: 'Alan Turing',
       email: 'alan@example.com',
       role: 'admin',
+      can_view_all_monitors: false,
+      team_ids: [],
       password: 'enigma-1912',
       password_confirmation: 'enigma-1912',
     })
@@ -77,7 +79,13 @@ describe('UsersSection', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Save changes' }))
 
     expect(await screen.findByText('Changes saved.')).toBeInTheDocument()
-    expect(usersApi.updateUser).toHaveBeenCalledWith(grace.id, { name: 'Grace Hopper', email: 'grace@example.com', role: 'admin' })
+    expect(usersApi.updateUser).toHaveBeenCalledWith(grace.id, {
+      name: 'Grace Hopper',
+      email: 'grace@example.com',
+      role: 'admin',
+      can_view_all_monitors: false,
+      team_ids: [],
+    })
   })
 
   it('shows the last administrator error next to the role', async () => {
@@ -124,5 +132,52 @@ describe('UsersSection', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Delete user' }))
 
     expect(await screen.findByText('You cannot delete the last administrator.')).toBeInTheDocument()
+  })
+
+  it('gives a manager access to specific teams', async () => {
+    vi.mocked(usersApi.updateUser).mockResolvedValue({ ...grace, role: 'manager', team_ids: [2] })
+    const user = userEvent.setup()
+    renderApp('/settings')
+    const section = await usersSection()
+
+    await user.click(await section.findByRole('button', { name: 'Edit: Grace Hopper' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Edit Grace Hopper' })
+    await user.selectOptions(within(dialog).getByLabelText('Role'), 'manager')
+    await user.click(await within(dialog).findByRole('checkbox', { name: 'Commerce' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Save changes' }))
+
+    expect(await screen.findByText('Changes saved.')).toBeInTheDocument()
+    expect(usersApi.updateUser).toHaveBeenCalledWith(grace.id, expect.objectContaining({ role: 'manager', can_view_all_monitors: false, team_ids: [2] }))
+  })
+
+  it('uses the all monitors shortcut instead of picking teams', async () => {
+    vi.mocked(usersApi.updateUser).mockResolvedValue({ ...grace, can_view_all_monitors: true })
+    const user = userEvent.setup()
+    renderApp('/settings')
+    const section = await usersSection()
+
+    await user.click(await section.findByRole('button', { name: 'Edit: Grace Hopper' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Edit Grace Hopper' })
+    await user.click(within(dialog).getByRole('checkbox', { name: /All monitors/ }))
+
+    expect(await within(dialog).findByRole('checkbox', { name: 'Platform' })).toBeDisabled()
+    expect(within(dialog).getByRole('checkbox', { name: 'Platform' })).toBeChecked()
+
+    await user.click(within(dialog).getByRole('button', { name: 'Save changes' }))
+
+    expect(await screen.findByText('Changes saved.')).toBeInTheDocument()
+    expect(usersApi.updateUser).toHaveBeenCalledWith(grace.id, expect.objectContaining({ can_view_all_monitors: true }))
+  })
+
+  it('hides team access for administrators', async () => {
+    const user = userEvent.setup()
+    renderApp('/settings')
+    const section = await usersSection()
+
+    await user.click(await section.findByRole('button', { name: 'Edit: Ada Lovelace' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Edit Ada Lovelace' })
+
+    expect(within(dialog).getByText('Administrators always see every monitor.')).toBeInTheDocument()
+    expect(within(dialog).queryByRole('checkbox', { name: /All monitors/ })).not.toBeInTheDocument()
   })
 })

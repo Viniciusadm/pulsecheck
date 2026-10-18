@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\IncidentResource;
 use App\Models\Incident;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -16,6 +17,7 @@ class RecentIncidentController extends Controller
         ]);
 
         $incidents = Incident::query()
+            ->whereHas('monitor', fn (Builder $monitors) => $monitors->visibleTo($request->user()))
             ->with('monitor:id,name')
             ->orderByDesc('started_at')
             ->orderByDesc('id')

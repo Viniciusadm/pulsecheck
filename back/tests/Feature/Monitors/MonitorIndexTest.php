@@ -13,7 +13,7 @@ class MonitorIndexTest extends TestCase
 
     public function test_monitors_can_be_filtered_by_status(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->admin()->create();
         $up = Monitor::factory()->up()->create();
         $down = Monitor::factory()->down()->create();
         $pending = Monitor::factory()->create();
@@ -30,7 +30,7 @@ class MonitorIndexTest extends TestCase
 
     public function test_unknown_status_filter_is_rejected(): void
     {
-        $this->actingAs(User::factory()->create())->fromSpa()
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
             ->getJson('/api/monitors?status=broken')
             ->assertUnprocessable()
             ->assertJsonValidationErrors('status');

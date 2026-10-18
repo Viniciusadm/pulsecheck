@@ -14,6 +14,8 @@ import { RelativeTime } from '../../components/ui/RelativeTime.tsx'
 import { Skeleton } from '../../components/ui/Skeleton.tsx'
 import { t } from '../../i18n/index.ts'
 import { hostOf } from '../../lib/monitor.ts'
+import { canManageResources } from '../../lib/permissions.ts'
+import { useAuth } from '../auth/AuthContext.ts'
 import { IncidentList } from '../monitors/IncidentList.tsx'
 import { MonitorFormDialog } from '../monitors/MonitorFormDialog.tsx'
 
@@ -21,6 +23,8 @@ const REFRESH_INTERVAL_MS = 30_000
 
 export function DashboardPage() {
   const [isFormOpen, setIsFormOpen] = useState(false)
+  const { user } = useAuth()
+  const canManage = canManageResources(user)
   const navigate = useNavigate()
   const summary = useQuery({ queryKey: queryKeys.summary, queryFn: getDashboardSummary, refetchInterval: REFRESH_INTERVAL_MS })
   const downMonitors = useQuery({
@@ -33,7 +37,7 @@ export function DashboardPage() {
   const header = (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <h1 className="text-2xl font-semibold text-neutral-900">{t('dashboard.title')}</h1>
-      {summary.data && summary.data.total > 0 && <Button onClick={() => setIsFormOpen(true)}>{t('monitors.add')}</Button>}
+      {canManage && summary.data && summary.data.total > 0 && <Button onClick={() => setIsFormOpen(true)}>{t('monitors.add')}</Button>}
     </div>
   )
 
@@ -76,7 +80,7 @@ export function DashboardPage() {
         <EmptyState
           title={t('dashboard.empty.title')}
           description={t('dashboard.empty.description')}
-          action={<Button onClick={() => setIsFormOpen(true)}>{t('dashboard.empty.action')}</Button>}
+          action={canManage ? <Button onClick={() => setIsFormOpen(true)}>{t('dashboard.empty.action')}</Button> : undefined}
         />
         {formDialog}
       </div>

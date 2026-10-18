@@ -1,10 +1,12 @@
-import type { AppConfig, Incident, LatencySeries, Monitor, MonitorStats, NotificationChannel, PaginatedResponse, UptimeDay, User } from '../api/types.ts'
+import type { AppConfig, Incident, LatencySeries, Monitor, MonitorStats, NotificationChannel, PaginatedResponse, Team, UptimeDay, User } from '../api/types.ts'
 
 export const ada: User = {
   id: 1,
   name: 'Ada Lovelace',
   email: 'ada@example.com',
   role: 'admin',
+  can_view_all_monitors: false,
+  team_ids: [],
   email_verified_at: null,
   created_at: '2026-10-17T12:00:00Z',
 }
@@ -15,6 +17,8 @@ export function makeUser(overrides: Partial<User> = {}): User {
     name: 'Grace Hopper',
     email: 'grace@example.com',
     role: 'member',
+    can_view_all_monitors: false,
+    team_ids: [],
     email_verified_at: null,
     created_at: '2026-10-17T12:00:00Z',
     ...overrides,
@@ -48,6 +52,7 @@ export function makeMonitor(overrides: Partial<Monitor> = {}): Monitor {
     last_failed_at: null,
     next_check_at: null,
     notification_channel_ids: [],
+    team_ids: [],
     created_at: '2026-10-01T12:00:00Z',
     updated_at: '2026-10-01T12:00:00Z',
     ...overrides,
@@ -89,6 +94,18 @@ export const emptyUptimeDays: UptimeDay[] = [
   { date: '2026-10-17', total_checks: 0, successful_checks: 0, uptime_percentage: null },
 ]
 
+export function makeTeam(overrides: Partial<Team> = {}): Team {
+  return {
+    id: 1,
+    name: 'Platform',
+    users_count: 2,
+    monitors_count: 3,
+    created_at: '2026-10-01T12:00:00Z',
+    updated_at: '2026-10-01T12:00:00Z',
+    ...overrides,
+  }
+}
+
 export function makeChannel(overrides: Partial<NotificationChannel> = {}): NotificationChannel {
   return {
     id: 1,
@@ -99,6 +116,7 @@ export function makeChannel(overrides: Partial<NotificationChannel> = {}): Notif
     config: { chat_id: '123456789' },
     secrets_set: ['bot_token'],
     monitors_count: 2,
+    team_ids: [],
     created_at: '2026-10-01T12:00:00Z',
     updated_at: '2026-10-01T12:00:00Z',
     ...overrides,

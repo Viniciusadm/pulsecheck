@@ -4,6 +4,7 @@ namespace App\Events;
 
 use App\Http\Resources\MonitorResource;
 use App\Models\Monitor;
+use App\Models\User;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -15,9 +16,13 @@ class MonitorChecked implements ShouldBroadcastNow
 
     public function __construct(public Monitor $monitor) {}
 
-    public function broadcastOn(): PrivateChannel
+    public function broadcastOn(): array
     {
-        return new PrivateChannel('monitors');
+        return User::query()
+            ->whoCanSee($this->monitor)
+            ->pluck('id')
+            ->map(fn (int $userId) => new PrivateChannel("users.{$userId}.monitors"))
+            ->all();
     }
 
     public function broadcastAs(): string

@@ -14,7 +14,7 @@ class DashboardSummaryTest extends TestCase
 
     public function test_counts_paused_separately_from_status_in_a_single_query(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->admin()->create();
         Monitor::factory()->up()->count(3)->create();
         Monitor::factory()->down()->count(2)->create();
         Monitor::factory()->create();
@@ -34,7 +34,7 @@ class DashboardSummaryTest extends TestCase
 
     public function test_user_without_monitors_gets_zeros(): void
     {
-        $this->actingAs(User::factory()->create())->fromSpa()
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
             ->getJson('/api/dashboard/summary')
             ->assertExactJson(['data' => ['total' => 0, 'up' => 0, 'down' => 0, 'pending' => 0, 'paused' => 0]]);
     }

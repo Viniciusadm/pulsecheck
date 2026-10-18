@@ -14,4 +14,5 @@ export const queryKeys = {
   monitorIncidents: (id: number, page: number) => ['monitors', id, 'incidents', page] as const,
   notificationChannels: ['notification-channels'] as const,
   users: ['users'] as const,
+  teams: ['teams'] as const,
 }

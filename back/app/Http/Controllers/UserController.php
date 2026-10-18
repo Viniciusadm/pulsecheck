@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\CreateUser;
 use App\Actions\DeleteUser;
 use App\Actions\UpdateUser;
 use App\Http\Requests\StoreUserRequest;
@@ -16,12 +17,12 @@ class UserController extends Controller
 {
     public function index(): AnonymousResourceCollection
     {
-        return UserResource::collection(User::query()->orderBy('name')->orderBy('id')->get());
+        return UserResource::collection(User::query()->with('teams:id')->orderBy('name')->orderBy('id')->get());
     }
 
-    public function store(StoreUserRequest $request): UserResource
+    public function store(StoreUserRequest $request, CreateUser $createUser): UserResource
     {
-        return new UserResource(User::create($request->validated()));
+        return new UserResource($createUser->handle($request->validated()));
     }
 
     public function update(UpdateUserRequest $request, User $user, UpdateUser $updateUser): UserResource

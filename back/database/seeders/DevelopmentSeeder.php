@@ -7,6 +7,7 @@ use App\Enums\MonitorStatus;
 use App\Models\CheckResult;
 use App\Models\InstanceSettings;
 use App\Models\Monitor;
+use App\Models\Team;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
@@ -51,6 +52,21 @@ class DevelopmentSeeder extends Seeder
         $staging = $this->monitor('Staging', 'https://staging.example.com', 10);
         $this->seedHistory($staging, $now->subDays(2), latencyBase: 260, outages: [], days: 3);
         $staging->forceFill(['is_paused' => true, 'next_check_at' => null])->save();
+
+        $platform = Team::factory()->create(['name' => 'Platform']);
+        $commerce = Team::factory()->create(['name' => 'Commerce']);
+        $platform->monitors()->attach([$api->id, $docs->id, $staging->id]);
+        $commerce->monitors()->attach([$website->id, $shop->id]);
+
+        User::factory()->manager()->create([
+            'name' => 'Platform Manager',
+            'email' => 'manager@example.com',
+        ])->teams()->attach($platform);
+
+        User::factory()->create([
+            'name' => 'Commerce Viewer',
+            'email' => 'viewer@example.com',
+        ])->teams()->attach($commerce);
     }
 
     private function monitor(string $name, string $url, int $intervalMinutes): Monitor

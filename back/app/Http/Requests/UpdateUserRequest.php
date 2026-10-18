@@ -16,6 +16,7 @@ class UpdateUserRequest extends StoreUserRequest
             'email' => ['sometimes', 'required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->targetUser())],
             'role' => ['sometimes', 'required', Rule::enum(UserRole::class)],
             'password' => ['nullable', 'string', 'confirmed', Password::defaults()],
+            ...$this->accessRules(),
         ];
     }
 

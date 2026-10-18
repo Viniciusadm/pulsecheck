@@ -4,6 +4,7 @@ namespace Tests\Feature\Users;
 
 use App\Actions\DeleteUser;
 use App\Enums\UserRole;
+use App\Models\Team;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -207,5 +208,64 @@ class UserManagementTest extends TestCase
         $admin = User::factory()->admin()->create();
 
         $this->actingAs($admin)->fromSpa()->deleteJson('/api/users/999999')->assertNotFound();
+    }
+
+    public function test_admin_creates_a_manager_with_team_access(): void
+    {
+        $team = Team::factory()->create();
+
+        $response = $this->actingAs(User::factory()->admin()->create())->fromSpa()->postJson('/api/users', [
+            'name' => 'Maria',
+            'email' => 'maria@example.com',
+            'role' => 'manager',
+            'password' => 'secret123',
+            'password_confirmation' => 'secret123',
+            'team_ids' => [$team->id],
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.role', 'manager')
+            ->assertJsonPath('data.can_view_all_monitors', false)
+            ->assertJsonPath('data.team_ids', [$team->id]);
+    }
+
+    public function test_admin_grants_access_to_every_monitor_and_changes_teams(): void
+    {
+        $alpha = Team::factory()->create();
+        $beta = Team::factory()->create();
+        $member = User::factory()->create();
+        $member->teams()->attach($alpha);
+
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
+            ->putJson("/api/users/{$member->id}", ['can_view_all_monitors' => true, 'team_ids' => [$beta->id]])
+            ->assertOk()
+            ->assertJsonPath('data.can_view_all_monitors', true)
+            ->assertJsonPath('data.team_ids', [$beta->id]);
+
+        $this->putJson("/api/users/{$member->id}", ['name' => 'Renamed'])
+            ->assertOk()
+            ->assertJsonPath('data.team_ids', [$beta->id]);
+    }
+
+    public function test_admins_do_not_keep_team_access_settings(): void
+    {
+        $team = Team::factory()->create();
+        $member = User::factory()->viewingAll()->create();
+        $member->teams()->attach($team);
+
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
+            ->putJson("/api/users/{$member->id}", ['role' => 'admin', 'team_ids' => [$team->id]])
+            ->assertOk()
+            ->assertJsonPath('data.can_view_all_monitors', false)
+            ->assertJsonPath('data.team_ids', []);
+    }
+
+    public function test_unknown_teams_are_rejected(): void
+    {
+        $member = User::factory()->create();
+
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
+            ->putJson("/api/users/{$member->id}", ['team_ids' => [999]])
+            ->assertJsonValidationErrors('team_ids.0');
     }
 }

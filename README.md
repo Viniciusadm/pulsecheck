@@ -14,8 +14,8 @@ Self-hosted uptime monitoring for one team or organization per deploy: PulseChec
 - **Metrics**: uptime per period (24 h, 7 d, 30 d), average and 95th percentile response time, latency chart and a 30-day availability bar that tells "no data" apart from "100%".
 - **Check history** with date filters and pagination.
 - **Notification channels** on down and recovery: Telegram, Slack, Discord, email and a generic JSON webhook for anything else. Each monitor picks its channels; every channel has a test button, and secrets (tokens, webhook URLs, headers) are stored encrypted and never shown again.
-- **One instance per organization**: the first visit opens a setup wizard (instance name, time zone, language and the first administrator). Monitors and notification channels are shared by everyone on the instance.
-- **Users and roles**: administrators create accounts for their team (`admin` or `member`) and edit the instance settings; there is no public sign-up. Login and password reset for everyone.
+- **One instance per organization**: the first visit opens a setup wizard (instance name, time zone, language and the first administrator). Monitors and notification channels belong to teams, and each person sees only the teams they were given.
+- **Teams, users and roles**: administrators create teams and accounts, and pick each person's role (`admin`, `manager` or `member`) and teams, or give them access to all monitors. Managers create and edit the monitors and channels of their teams; members only view them. There is no public sign-up. Login and password reset for everyone.
 - **SSRF protection**: monitors cannot reach private networks, cloud metadata endpoints or other internal addresses, including through redirects or DNS tricks.
 - **Single `docker compose up`** on any Linux server; Redis is optional.
 
@@ -89,7 +89,7 @@ docker compose ps -a         # app and web "healthy", migrate "Exited (0)"
 curl -fsS http://localhost/up
 ```
 
-Open `APP_URL` in a browser: the setup wizard asks for the instance name, time zone, language and the administrator account, and lets you add a first notification channel. Then add a monitor and create accounts for your team under **Settings → Users**. The first check runs within a minute; after two successful checks the monitor shows **Up**.
+Open `APP_URL` in a browser: the setup wizard asks for the instance name, time zone, language and the administrator account, and lets you add a first notification channel. Then add a monitor and create teams and accounts under **Settings → Teams** and **Settings → Users**. The first check runs within a minute; after two successful checks the monitor shows **Up**.
 
 PulseCheck serves plain HTTP on `APP_PORT`. For HTTPS, put it behind a TLS-terminating proxy (Caddy, Traefik, your provider's proxy), then set `APP_URL` to the `https://` address, `SESSION_SECURE_COOKIE=true` and `TRUSTED_PROXIES` (see the table below). Until setup is done, anyone who reaches the instance can complete it and become the administrator. If the server is public before you finish setup, set `PULSECHECK_SETUP_TOKEN` and enter the same value in the wizard.
 
@@ -249,7 +249,7 @@ They use Redis databases 15 and 14, so data in the default databases is never to
 
 ## Notifications
 
-Each user adds notification channels in **Settings** and picks, per monitor, which channels get its alerts. Channels marked *default* are selected automatically for new monitors. An alert is sent when a monitor goes down and when it recovers; deliveries are queued, retried twice on connection errors, timeouts, 429 and 5xx responses, and never block checks.
+Administrators and managers add notification channels on the **Channels** page and pick, per monitor, which channels get its alerts. Channels marked *default* are selected automatically for new monitors. An alert is sent when a monitor goes down and when it recovers; deliveries are queued, retried twice on connection errors, timeouts, 429 and 5xx responses, and never block checks.
 
 | Channel | Settings | Notes |
 |---|---|---|
@@ -323,7 +323,7 @@ What is **not** guaranteed:
 
 ### Data and access
 
-- Every signed-in user sees and manages the instance's monitors and notification channels. Only administrators can manage users and instance settings; the last administrator cannot be demoted or deleted, and nobody can delete their own account.
+- Monitors and notification channels are visible only to administrators, users with access to all monitors, and members of the teams they belong to; items without a team are hidden from everyone else, and anything outside a user's scope answers 404. Real-time updates go to a per-user channel (`users.{id}.monitors`) and reach only users who can see the monitor. Managers and administrators can change monitors and channels; members are read-only. Only administrators can manage teams, users and instance settings; the last administrator cannot be demoted or deleted, and nobody can delete their own account.
 - There is no public sign-up. The setup endpoint only works while the instance has not been set up, and can require `PULSECHECK_SETUP_TOKEN`.
 - Session cookies are `HttpOnly`, `SameSite=Lax` and `Secure` when `SESSION_SECURE_COOKIE=true`; state-changing requests require the CSRF token.
 - Notification channel settings are encrypted with `APP_KEY`. Secrets (Telegram bot token, Slack and Discord webhook URLs, webhook headers) are never returned by the API or logged, and delivery errors are reported with generic messages.

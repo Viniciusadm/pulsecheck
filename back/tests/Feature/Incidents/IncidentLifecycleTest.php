@@ -166,10 +166,10 @@ class IncidentLifecycleTest extends TestCase
         $this->record($monitor, false);
         $this->record($monitor, false);
 
-        $this->actingAs(User::factory()->create())->fromSpa()->postJson("/api/monitors/{$monitor->id}/pause")->assertOk();
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()->postJson("/api/monitors/{$monitor->id}/pause")->assertOk();
         $this->assertTrue($monitor->incidents()->sole()->is_open);
 
-        $this->actingAs(User::factory()->create())->fromSpa()->postJson("/api/monitors/{$monitor->id}/resume")->assertOk();
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()->postJson("/api/monitors/{$monitor->id}/resume")->assertOk();
         $this->record($monitor, true);
         $this->record($monitor, true);
 

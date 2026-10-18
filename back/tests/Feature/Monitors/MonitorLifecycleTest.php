@@ -17,7 +17,7 @@ class MonitorLifecycleTest extends TestCase
     {
         $monitor = Monitor::factory()->down()->create(['next_check_at' => now()->addMinute()]);
 
-        $this->actingAs(User::factory()->create())->fromSpa()->postJson("/api/monitors/{$monitor->id}/pause")
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()->postJson("/api/monitors/{$monitor->id}/pause")
             ->assertOk()
             ->assertJsonPath('data.is_paused', true)
             ->assertJsonPath('data.next_check_at', null)
@@ -34,7 +34,7 @@ class MonitorLifecycleTest extends TestCase
         $this->freezeSecond();
         $monitor = Monitor::factory()->paused()->create(['next_check_at' => null]);
 
-        $this->actingAs(User::factory()->create())->fromSpa()->postJson("/api/monitors/{$monitor->id}/resume")
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()->postJson("/api/monitors/{$monitor->id}/resume")
             ->assertOk()
             ->assertJsonPath('data.is_paused', false);
 
@@ -48,7 +48,7 @@ class MonitorLifecycleTest extends TestCase
         $nextCheckAt = now()->addMinutes(3)->startOfSecond();
         $monitor = Monitor::factory()->create(['next_check_at' => $nextCheckAt]);
 
-        $this->actingAs(User::factory()->create())->fromSpa()->postJson("/api/monitors/{$monitor->id}/resume")->assertOk();
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()->postJson("/api/monitors/{$monitor->id}/resume")->assertOk();
 
         $this->assertTrue($monitor->fresh()->next_check_at->equalTo($nextCheckAt));
     }
@@ -58,7 +58,7 @@ class MonitorLifecycleTest extends TestCase
         $monitor = Monitor::factory()->create();
         CheckResult::factory()->for($monitor)->count(2)->create();
 
-        $this->actingAs(User::factory()->create())->fromSpa()->deleteJson("/api/monitors/{$monitor->id}")->assertNoContent();
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()->deleteJson("/api/monitors/{$monitor->id}")->assertNoContent();
 
         $this->assertModelMissing($monitor);
         $this->assertDatabaseCount('check_results', 0);
@@ -66,7 +66,7 @@ class MonitorLifecycleTest extends TestCase
 
     public function test_monitor_list_is_paginated_newest_first(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->admin()->create();
         Monitor::factory()->count(22)->create();
 
         $response = $this->actingAs($user)->fromSpa()->getJson('/api/monitors');

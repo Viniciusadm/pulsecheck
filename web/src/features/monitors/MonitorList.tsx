@@ -7,6 +7,8 @@ import { RelativeTime } from '../../components/ui/RelativeTime.tsx'
 import { t } from '../../i18n/index.ts'
 import { formatLatency } from '../../lib/format.ts'
 import { displayStatus, hostOf } from '../../lib/monitor.ts'
+import { canManageResources } from '../../lib/permissions.ts'
+import { useAuth } from '../auth/AuthContext.ts'
 import { MonitorFormDialog } from './MonitorFormDialog.tsx'
 
 function LastCheck({ value }: { value: string | null }) {
@@ -27,6 +29,8 @@ function EditButton({ monitor, onEdit }: { monitor: Monitor; onEdit: (monitor: M
 
 export function MonitorList({ monitors }: { monitors: Monitor[] }) {
   const [editingMonitor, setEditingMonitor] = useState<Monitor | null>(null)
+  const { user } = useAuth()
+  const canManage = canManageResources(user)
 
   return (
     <>
@@ -62,7 +66,7 @@ export function MonitorList({ monitors }: { monitors: Monitor[] }) {
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums text-neutral-700">{monitor.last_status_code ?? '—'}</td>
                 <td className="px-4 py-2 text-right">
-                  <EditButton monitor={monitor} onEdit={setEditingMonitor} />
+                  {canManage && <EditButton monitor={monitor} onEdit={setEditingMonitor} />}
                 </td>
               </tr>
             ))}
@@ -87,7 +91,7 @@ export function MonitorList({ monitors }: { monitors: Monitor[] }) {
                 <LastCheck value={monitor.last_checked_at} />
               </div>
             </Link>
-            <EditButton monitor={monitor} onEdit={setEditingMonitor} />
+            {canManage && <EditButton monitor={monitor} onEdit={setEditingMonitor} />}
           </li>
         ))}
       </ul>

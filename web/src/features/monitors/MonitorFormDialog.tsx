@@ -5,6 +5,7 @@ import { getAppConfig } from '../../api/config.ts'
 import { fieldErrors, generalErrorMessage } from '../../api/errors.ts'
 import { listNotificationChannels } from '../../api/notificationChannels.ts'
 import { queryKeys } from '../../api/queryKeys.ts'
+import { listTeams } from '../../api/teams.ts'
 import type { AppConfig, Monitor, MonitorInput, NotificationChannel } from '../../api/types.ts'
 import { Alert } from '../../components/ui/Alert.tsx'
 import { Button } from '../../components/ui/Button.tsx'
@@ -13,6 +14,8 @@ import { Spinner } from '../../components/ui/Spinner.tsx'
 import { TextField } from '../../components/ui/TextField.tsx'
 import { useToast } from '../../components/ui/toast.ts'
 import { t } from '../../i18n/index.ts'
+import { TeamPicker } from '../teams/TeamPicker.tsx'
+import { initialTeamIds, teamIdsError } from '../teams/teamSelection.ts'
 import { useCreateMonitor, useUpdateMonitor } from './useMonitorMutations.ts'
 
 type MonitorFormDialogProps = {
@@ -59,6 +62,10 @@ function MonitorForm({ isOpen, onClose, onSaved, monitor, config }: MonitorFormD
     ?? monitor?.notification_channel_ids
     ?? (channels.data ?? []).filter((channel) => channel.is_default).map((channel) => channel.id)
 
+  const teams = useQuery({ queryKey: queryKeys.teams, queryFn: listTeams })
+  const [selectedTeamIds, setSelectedTeamIds] = useState<number[] | null>(null)
+  const teamIds = selectedTeamIds ?? initialTeamIds(teams.data, monitor?.team_ids)
+
   const toggleChannel = (id: number, isChecked: boolean) =>
     setSelectedChannelIds(isChecked ? [...channelIds, id] : channelIds.filter((current) => current !== id))
 
@@ -80,6 +87,11 @@ function MonitorForm({ isOpen, onClose, onSaved, monitor, config }: MonitorFormD
     if (selectedChannelIds !== null) {
       input.notification_channel_ids = selectedChannelIds
     }
+
+    if (!monitor || selectedTeamIds !== null) {
+      input.team_ids = teamIds
+    }
+
     const onSuccess = (saved: Monitor) => {
       showToast(monitor ? t('monitors.form.saved') : t('monitors.form.created'))
       onSaved?.(saved)
@@ -152,6 +164,7 @@ function MonitorForm({ isOpen, onClose, onSaved, monitor, config }: MonitorFormD
             error={errors.timeout_seconds}
           />
         </div>
+        <TeamPicker teams={teams.data} selectedIds={teamIds} onChange={setSelectedTeamIds} error={teamIdsError(errors)} />
         <ChannelPicker
           channels={channels.data}
           selectedIds={channelIds}
@@ -194,7 +207,7 @@ function ChannelPicker({ channels, selectedIds, onToggle, error }: ChannelPicker
       {channels.length === 0 ? (
         <p className="text-sm text-neutral-600">
           {t('monitors.form.noChannels')}{' '}
-          <Link to="/settings" className="font-medium text-primary-700 hover:underline">
+          <Link to="/channels" className="font-medium text-primary-700 hover:underline">
             {t('monitors.form.manageChannels')}
           </Link>
         </p>

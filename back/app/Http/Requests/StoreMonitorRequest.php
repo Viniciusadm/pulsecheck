@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesTeamAssignment;
+use App\Models\NotificationChannel;
 use App\Rules\SafeUrl;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -9,6 +11,8 @@ use Illuminate\Validation\Validator;
 
 class StoreMonitorRequest extends FormRequest
 {
+    use ValidatesTeamAssignment;
+
     public function authorize(): bool
     {
         return true;
@@ -22,7 +26,8 @@ class StoreMonitorRequest extends FormRequest
             'interval_minutes' => ['sometimes', 'integer', Rule::in(config('pulsecheck.allowed_intervals'))],
             'timeout_seconds' => ['sometimes', 'integer', 'between:'.config('pulsecheck.timeout_min').','.config('pulsecheck.timeout_max')],
             'notification_channel_ids' => ['sometimes', 'array'],
-            'notification_channel_ids.*' => ['integer', 'distinct', Rule::exists('notification_channels', 'id')],
+            'notification_channel_ids.*' => ['integer', 'distinct', Rule::in(NotificationChannel::query()->visibleTo($this->user())->pluck('id')->all())],
+            ...$this->teamRules(),
         ];
     }
 

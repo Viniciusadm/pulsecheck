@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\MonitorStatus;
+use App\Models\Concerns\BelongsToTeams;
 use Database\Factories\MonitorFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Monitor extends Model
 {
     /** @use HasFactory<MonitorFactory> */
-    use HasFactory;
+    use BelongsToTeams, HasFactory;
 
     protected $attributes = [
         'status' => 'pending',

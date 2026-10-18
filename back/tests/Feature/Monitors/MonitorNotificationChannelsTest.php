@@ -23,7 +23,7 @@ class MonitorNotificationChannelsTest extends TestCase
 
     public function test_new_monitors_get_the_default_channels_when_none_are_given(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->admin()->create();
         $default = NotificationChannel::factory()->asDefault()->create();
         NotificationChannel::factory()->create();
 
@@ -34,7 +34,7 @@ class MonitorNotificationChannelsTest extends TestCase
 
     public function test_new_monitors_use_the_given_channels_even_when_empty(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->admin()->create();
         NotificationChannel::factory()->asDefault()->create();
         $chosen = NotificationChannel::factory()->create();
 
@@ -55,12 +55,12 @@ class MonitorNotificationChannelsTest extends TestCase
         [$first, $second] = NotificationChannel::factory()->count(2)->create();
         $monitor->notificationChannels()->attach($first);
 
-        $this->actingAs(User::factory()->create())->fromSpa()
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
             ->patchJson("/api/monitors/{$monitor->id}", ['name' => 'Renamed'])
             ->assertOk()
             ->assertJsonPath('data.notification_channel_ids', [$first->id]);
 
-        $this->actingAs(User::factory()->create())->fromSpa()
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
             ->patchJson("/api/monitors/{$monitor->id}", ['notification_channel_ids' => [$second->id]])
             ->assertOk()
             ->assertJsonPath('data.notification_channel_ids', [$second->id]);
@@ -68,7 +68,7 @@ class MonitorNotificationChannelsTest extends TestCase
 
     public function test_unknown_channels_are_rejected(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->admin()->create();
         $unknownChannelId = 999999;
         $monitor = Monitor::factory()->create();
 
@@ -91,7 +91,7 @@ class MonitorNotificationChannelsTest extends TestCase
         $channel = NotificationChannel::factory()->create();
         $monitor->notificationChannels()->attach($channel);
 
-        $this->actingAs(User::factory()->create())->fromSpa()
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
             ->getJson('/api/monitors')
             ->assertOk()
             ->assertJsonPath('data.0.notification_channel_ids', [$channel->id]);

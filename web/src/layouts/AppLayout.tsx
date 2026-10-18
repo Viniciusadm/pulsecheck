@@ -2,22 +2,25 @@ import { useMutation } from '@tanstack/react-query'
 import { useState, type ComponentType, type SVGProps } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 import { logout } from '../api/auth.ts'
-import { CloseIcon, DashboardIcon, LogOutIcon, MenuIcon, MonitorsIcon, PulseIcon, SettingsIcon } from '../components/ui/icons.tsx'
+import { BellIcon, CloseIcon, DashboardIcon, LogOutIcon, MenuIcon, MonitorsIcon, PulseIcon, SettingsIcon } from '../components/ui/icons.tsx'
 import { useAuth } from '../features/auth/AuthContext.ts'
 import { instanceName, useAppConfig } from '../features/config/ConfigContext.ts'
 import { useMonitorRealtime } from '../features/monitors/useMonitorRealtime.ts'
 import { t, type MessageKey } from '../i18n/index.ts'
+import { isAdmin } from '../lib/permissions.ts'
 
 type NavigationItem = {
   to: string
   label: MessageKey
   icon: ComponentType<SVGProps<SVGSVGElement>>
+  isAdminOnly?: boolean
 }
 
 const navigation: NavigationItem[] = [
   { to: '/dashboard', label: 'nav.dashboard', icon: DashboardIcon },
   { to: '/monitors', label: 'nav.monitors', icon: MonitorsIcon },
-  { to: '/settings', label: 'nav.settings', icon: SettingsIcon },
+  { to: '/channels', label: 'nav.channels', icon: BellIcon },
+  { to: '/settings', label: 'nav.settings', icon: SettingsIcon, isAdminOnly: true },
 ]
 
 export function AppLayout() {
@@ -76,10 +79,13 @@ function Logo() {
 }
 
 function Navigation({ onNavigate }: { onNavigate?: () => void }) {
+  const { user } = useAuth()
+  const items = navigation.filter((item) => !item.isAdminOnly || isAdmin(user))
+
   return (
     <nav aria-label={t('nav.mainNavigation')}>
       <ul className="flex flex-col gap-0.5">
-        {navigation.map(({ to, label, icon: Icon }) => (
+        {items.map(({ to, label, icon: Icon }) => (
           <li key={to}>
             <NavLink
               to={to}

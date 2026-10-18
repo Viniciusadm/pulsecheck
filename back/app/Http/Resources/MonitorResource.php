@@ -23,6 +23,7 @@ class MonitorResource extends JsonResource
             'last_failed_at' => $this->last_failed_at,
             'next_check_at' => $this->next_check_at,
             'notification_channel_ids' => $this->notificationChannels->modelKeys(),
+            'team_ids' => $this->teams->modelKeys(),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

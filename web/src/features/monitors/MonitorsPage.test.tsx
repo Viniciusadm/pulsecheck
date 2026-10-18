@@ -5,18 +5,21 @@ import * as authApi from '../../api/auth.ts'
 import * as configApi from '../../api/config.ts'
 import * as monitorsApi from '../../api/monitors.ts'
 import * as channelsApi from '../../api/notificationChannels.ts'
-import { ada, makeMonitor, paginated } from '../../test/fixtures.ts'
+import * as teamsApi from '../../api/teams.ts'
+import { ada, makeMonitor, makeUser, paginated } from '../../test/fixtures.ts'
 import { renderApp } from '../../test/renderApp.tsx'
 
 vi.mock('../../api/auth.ts')
 vi.mock('../../api/config.ts')
 vi.mock('../../api/monitors.ts')
 vi.mock('../../api/notificationChannels.ts')
+vi.mock('../../api/teams.ts')
 
 describe('MonitorsPage', () => {
   beforeEach(() => {
     vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(ada)
     vi.mocked(channelsApi.listNotificationChannels).mockResolvedValue([])
+    vi.mocked(teamsApi.listTeams).mockResolvedValue([])
     vi.mocked(configApi.getAppConfig).mockResolvedValue({
       setup_required: false,
       setup_token_required: false,
@@ -25,6 +28,16 @@ describe('MonitorsPage', () => {
       monitors: { allowed_intervals: [1, 5, 10], default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10 },
       realtime: null,
     })
+  })
+
+  it('shows monitors read-only to members', async () => {
+    vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(makeUser())
+    vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([makeMonitor()]))
+    renderApp('/monitors')
+
+    expect(await screen.findAllByRole('link', { name: 'Shop API' })).not.toHaveLength(0)
+    expect(screen.queryByRole('button', { name: 'Add monitor' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Edit Shop API' })).not.toBeInTheDocument()
   })
 
   it('edits a monitor straight from the list', async () => {

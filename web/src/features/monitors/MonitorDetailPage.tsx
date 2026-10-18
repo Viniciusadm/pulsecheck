@@ -18,6 +18,8 @@ import { useToast } from '../../components/ui/toast.ts'
 import { t } from '../../i18n/index.ts'
 import { formatDateTime, formatLatency, formatPercentage, formatTime } from '../../lib/format.ts'
 import { displayStatus } from '../../lib/monitor.ts'
+import { canManageResources } from '../../lib/permissions.ts'
+import { useAuth } from '../auth/AuthContext.ts'
 import { CheckHistory } from './CheckHistory.tsx'
 import { IncidentList } from './IncidentList.tsx'
 import { MonitorFormDialog } from './MonitorFormDialog.tsx'
@@ -67,6 +69,8 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
   const [isEditing, setIsEditing] = useState(false)
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const canManage = canManageResources(user)
   const { showToast } = useToast()
   const pauseMutation = usePauseMonitor(monitor.id)
   const resumeMutation = useResumeMonitor(monitor.id)
@@ -127,17 +131,19 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
               )}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={() => setIsEditing(true)}>
-              {t('monitors.detail.edit')}
-            </Button>
-            <Button variant="secondary" onClick={togglePause} isLoading={pauseMutation.isPending || resumeMutation.isPending}>
-              {monitor.is_paused ? t('monitors.detail.resume') : t('monitors.detail.pause')}
-            </Button>
-            <Button variant="danger" onClick={() => setIsConfirmingDelete(true)}>
-              {t('monitors.detail.delete')}
-            </Button>
-          </div>
+          {canManage && (
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" onClick={() => setIsEditing(true)}>
+                {t('monitors.detail.edit')}
+              </Button>
+              <Button variant="secondary" onClick={togglePause} isLoading={pauseMutation.isPending || resumeMutation.isPending}>
+                {monitor.is_paused ? t('monitors.detail.resume') : t('monitors.detail.pause')}
+              </Button>
+              <Button variant="danger" onClick={() => setIsConfirmingDelete(true)}>
+                {t('monitors.detail.delete')}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 

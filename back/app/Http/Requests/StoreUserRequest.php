@@ -21,6 +21,16 @@ class StoreUserRequest extends FormRequest
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')],
             'role' => ['required', Rule::enum(UserRole::class)],
             'password' => ['required', 'string', 'confirmed', Password::defaults()],
+            ...$this->accessRules(),
+        ];
+    }
+
+    protected function accessRules(): array
+    {
+        return [
+            'can_view_all_monitors' => ['sometimes', 'boolean'],
+            'team_ids' => ['sometimes', 'array'],
+            'team_ids.*' => ['integer', 'distinct', Rule::exists('teams', 'id')],
         ];
     }
 

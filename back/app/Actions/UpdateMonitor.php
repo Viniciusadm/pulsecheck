@@ -4,16 +4,20 @@ namespace App\Actions;
 
 use App\Enums\MonitorStatus;
 use App\Models\Monitor;
+use App\Models\NotificationChannel;
+use App\Models\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class UpdateMonitor
 {
-    public function handle(Monitor $monitor, array $attributes): Monitor
+    public function __construct(private SyncScopedRelation $syncScopedRelation) {}
+
+    public function handle(User $user, Monitor $monitor, array $attributes): Monitor
     {
-        return DB::transaction(function () use ($monitor, $attributes): Monitor {
+        return DB::transaction(function () use ($user, $monitor, $attributes): Monitor {
             $monitor = Monitor::query()->lockForUpdate()->findOrFail($monitor->id);
-            $monitor->fill(Arr::except($attributes, 'notification_channel_ids'));
+            $monitor->fill(Arr::except($attributes, ['notification_channel_ids', 'team_ids']));
 
             $urlChanged = $monitor->isDirty('url');
             $intervalChanged = $monitor->isDirty('interval_minutes');
@@ -29,7 +33,15 @@ class UpdateMonitor
             $monitor->save();
 
             if (array_key_exists('notification_channel_ids', $attributes)) {
-                $monitor->notificationChannels()->sync($attributes['notification_channel_ids']);
+                $this->syncScopedRelation->handle(
+                    $monitor->notificationChannels(),
+                    $attributes['notification_channel_ids'],
+                    NotificationChannel::query()->visibleTo($user)->pluck('id')->all(),
+                );
+            }
+
+            if (array_key_exists('team_ids', $attributes)) {
+                $this->syncScopedRelation->handle($monitor->teams(), $attributes['team_ids'], $user->visibleTeamIds());
             }
 
             return $monitor;

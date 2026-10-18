@@ -1,10 +1,12 @@
-export type UserRole = 'admin' | 'member'
+export type UserRole = 'admin' | 'manager' | 'member'
 
 export type User = {
   id: number
   name: string
   email: string
   role: UserRole
+  can_view_all_monitors: boolean
+  team_ids: number[]
   email_verified_at: string | null
   created_at: string
 }
@@ -53,6 +55,7 @@ export type Monitor = {
   last_failed_at: string | null
   next_check_at: string | null
   notification_channel_ids: number[]
+  team_ids: number[]
   created_at: string
   updated_at: string
 }
@@ -63,6 +66,7 @@ export type MonitorInput = {
   interval_minutes: number
   timeout_seconds: number
   notification_channel_ids?: number[]
+  team_ids?: number[]
 }
 
 export type CheckErrorType =
@@ -168,6 +172,7 @@ export type NotificationChannel = {
   config: Record<string, string>
   secrets_set: string[]
   monitors_count: number
+  team_ids: number[]
   created_at: string
   updated_at: string
 }
@@ -178,14 +183,30 @@ export type NotificationChannelInput = {
   enabled: boolean
   is_default: boolean
   config: Record<string, string | Record<string, string>>
+  team_ids?: number[]
 }
 
 export type UserInput = {
   name: string
   email: string
   role: UserRole
+  can_view_all_monitors: boolean
+  team_ids: number[]
   password?: string
   password_confirmation?: string
+}
+
+export type Team = {
+  id: number
+  name: string
+  users_count?: number
+  monitors_count?: number
+  created_at: string
+  updated_at: string
+}
+
+export type TeamInput = {
+  name: string
 }
 
 export type SetupInput = {

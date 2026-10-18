@@ -7,6 +7,7 @@ import * as dashboardApi from '../../api/dashboard.ts'
 import * as monitorsApi from '../../api/monitors.ts'
 import * as channelsApi from '../../api/notificationChannels.ts'
 import * as setupApi from '../../api/setup.ts'
+import * as teamsApi from '../../api/teams.ts'
 import { axiosError } from '../../test/axiosErrors.ts'
 import { ada, makeChannel, makeConfig, paginated } from '../../test/fixtures.ts'
 import { renderApp } from '../../test/renderApp.tsx'
@@ -16,6 +17,7 @@ vi.mock('../../api/dashboard.ts')
 vi.mock('../../api/monitors.ts')
 vi.mock('../../api/notificationChannels.ts')
 vi.mock('../../api/setup.ts')
+vi.mock('../../api/teams.ts')
 
 const pendingConfig = makeConfig({ setup_required: true, instance: { name: '', timezone: 'UTC', locale: 'en' } })
 
@@ -48,6 +50,7 @@ describe('setup', () => {
     vi.mocked(dashboardApi.listRecentIncidents).mockResolvedValue([])
     vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([]))
     vi.mocked(channelsApi.listNotificationChannels).mockResolvedValue([])
+    vi.mocked(teamsApi.listTeams).mockResolvedValue([])
   })
 
   it.each(['/login', '/dashboard', '/settings'])('sends %s to the setup page while the instance is not set up', async (path) => {
@@ -140,6 +143,7 @@ describe('setup', () => {
       enabled: true,
       is_default: true,
       config: { email: 'ops@example.com' },
+      team_ids: [],
     })
   })
 

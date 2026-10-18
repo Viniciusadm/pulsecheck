@@ -39,7 +39,7 @@ describe('useMonitorRealtime', () => {
     vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([makeMonitor()]))
   })
 
-  it('subscribes to the shared monitors channel and refreshes monitors when a check arrives', async () => {
+  it('subscribes to the current user monitors channel and refreshes monitors when a check arrives', async () => {
     const echo = fakeEcho()
     vi.mocked(configApi.getAppConfig).mockResolvedValue(makeConfig({ realtime: { key: 'public-key' } }))
 
@@ -48,7 +48,7 @@ describe('useMonitorRealtime', () => {
     expect(await screen.findAllByRole('link', { name: 'Shop API' })).not.toHaveLength(0)
     await waitFor(() => expect(echo.listeners.has('.monitor.checked')).toBe(true))
     expect(realtimeApi.createEcho).toHaveBeenCalledWith('public-key')
-    expect(echo.privateChannel).toHaveBeenCalledWith('monitors')
+    expect(echo.privateChannel).toHaveBeenCalledWith(`users.${ada.id}.monitors`)
 
     const summaryCalls = vi.mocked(dashboardApi.getDashboardSummary).mock.calls.length
     const listCalls = vi.mocked(monitorsApi.listMonitors).mock.calls.length

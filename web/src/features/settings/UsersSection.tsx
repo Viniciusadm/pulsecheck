@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { fieldErrors, generalErrorMessage } from '../../api/errors.ts'
 import { queryKeys } from '../../api/queryKeys.ts'
-import type { User } from '../../api/types.ts'
+import type { User, UserRole } from '../../api/types.ts'
 import { deleteUser, listUsers } from '../../api/users.ts'
 import { Badge } from '../../components/ui/Badge.tsx'
 import { Button } from '../../components/ui/Button.tsx'
@@ -16,6 +16,12 @@ import { useAuth } from '../auth/AuthContext.ts'
 import { UserDialog } from './UserDialog.tsx'
 
 type DialogState = { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; user: User }
+
+const roleBadgeClassName: Record<UserRole, string> = {
+  admin: 'bg-primary-50 text-primary-700',
+  manager: 'bg-status-up-soft text-status-up',
+  member: 'bg-neutral-100 text-neutral-700',
+}
 
 function deleteErrorMessage(error: unknown): string {
   const errors = fieldErrors(error)
@@ -79,7 +85,7 @@ function UserRow({ user, onEdit }: { user: User; onEdit: () => void }) {
       <div className="flex min-w-0 flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="truncate font-semibold text-neutral-900">{user.name}</span>
-          <Badge className={user.role === 'admin' ? 'bg-primary-50 text-primary-700' : 'bg-neutral-100 text-neutral-700'}>
+          <Badge className={roleBadgeClassName[user.role]}>
             {t(`settings.users.roles.${user.role}`)}
           </Badge>
           {isCurrentUser && <Badge className="bg-neutral-100 text-neutral-700">{t('settings.users.you')}</Badge>}

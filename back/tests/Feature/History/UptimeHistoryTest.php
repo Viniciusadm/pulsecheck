@@ -29,7 +29,7 @@ class UptimeHistoryTest extends TestCase
         $this->checkAt($monitor, CarbonImmutable::parse('2026-10-15 23:59:59'));
         $this->checkAt($monitor, CarbonImmutable::parse('2026-10-14 23:59:59'));
 
-        $response = $this->actingAs(User::factory()->create())->fromSpa()
+        $response = $this->actingAs(User::factory()->admin()->create())->fromSpa()
             ->getJson("/api/monitors/{$monitor->id}/uptime-history?days=3")
             ->assertOk();
 
@@ -43,7 +43,7 @@ class UptimeHistoryTest extends TestCase
     public function test_days_default_to_30_and_are_bounded(): void
     {
         $monitor = Monitor::factory()->create();
-        $this->actingAs(User::factory()->create())->fromSpa();
+        $this->actingAs(User::factory()->admin()->create())->fromSpa();
 
         $this->getJson("/api/monitors/{$monitor->id}/uptime-history")->assertOk()->assertJsonCount(30, 'data');
         $this->getJson("/api/monitors/{$monitor->id}/uptime-history?days=0")->assertJsonValidationErrors('days');

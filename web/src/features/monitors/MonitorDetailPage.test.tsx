@@ -5,15 +5,17 @@ import * as authApi from '../../api/auth.ts'
 import * as configApi from '../../api/config.ts'
 import * as monitorsApi from '../../api/monitors.ts'
 import * as channelsApi from '../../api/notificationChannels.ts'
+import * as teamsApi from '../../api/teams.ts'
 import { axiosError } from '../../test/axiosErrors.ts'
 import { formatTime } from '../../lib/format.ts'
-import { ada, emptyLatency, emptyUptimeDays, makeMonitor, makeStats, paginated } from '../../test/fixtures.ts'
+import { ada, emptyLatency, emptyUptimeDays, makeMonitor, makeStats, makeUser, paginated } from '../../test/fixtures.ts'
 import { renderApp } from '../../test/renderApp.tsx'
 
 vi.mock('../../api/auth.ts')
 vi.mock('../../api/config.ts')
 vi.mock('../../api/monitors.ts')
 vi.mock('../../api/notificationChannels.ts')
+vi.mock('../../api/teams.ts')
 
 describe('MonitorDetailPage', () => {
   beforeEach(() => {
@@ -26,6 +28,7 @@ describe('MonitorDetailPage', () => {
     vi.mocked(monitorsApi.listChecks).mockResolvedValue({ data: [], meta: { per_page: 50, next_cursor: null, prev_cursor: null } })
     vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([]))
     vi.mocked(channelsApi.listNotificationChannels).mockResolvedValue([])
+    vi.mocked(teamsApi.listTeams).mockResolvedValue([])
     vi.mocked(configApi.getAppConfig).mockResolvedValue({
       setup_required: false,
       setup_token_required: false,
@@ -34,6 +37,16 @@ describe('MonitorDetailPage', () => {
       monitors: { allowed_intervals: [1, 5, 10], default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10 },
       realtime: null,
     })
+  })
+
+  it('hides edit, pause and delete from members', async () => {
+    vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(makeUser())
+    renderApp('/monitors/7')
+
+    expect(await screen.findByRole('heading', { name: 'Shop API' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Pause' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
   })
 
   it('shows when the next check is scheduled', async () => {

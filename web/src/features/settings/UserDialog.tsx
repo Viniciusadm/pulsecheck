@@ -1,7 +1,8 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { fieldErrors, generalErrorMessage } from '../../api/errors.ts'
 import { queryKeys } from '../../api/queryKeys.ts'
+import { listTeams } from '../../api/teams.ts'
 import type { User, UserInput, UserRole } from '../../api/types.ts'
 import { createUser, updateUser } from '../../api/users.ts'
 import { Alert } from '../../components/ui/Alert.tsx'
@@ -12,8 +13,10 @@ import { TextField } from '../../components/ui/TextField.tsx'
 import { useToast } from '../../components/ui/toast.ts'
 import { t } from '../../i18n/index.ts'
 import { useAuth } from '../auth/AuthContext.ts'
+import { TeamPicker } from '../teams/TeamPicker.tsx'
+import { teamIdsError } from '../teams/teamSelection.ts'
 
-const roles: UserRole[] = ['member', 'admin']
+const roles: UserRole[] = ['member', 'manager', 'admin']
 
 type UserDialogProps = {
   user?: User
@@ -28,14 +31,19 @@ export function UserDialog({ user, onClose }: UserDialogProps) {
     name: user?.name ?? '',
     email: user?.email ?? '',
     role: user?.role ?? ('member' as UserRole),
+    can_view_all_monitors: user?.can_view_all_monitors ?? false,
+    team_ids: user?.team_ids ?? [],
     password: '',
     password_confirmation: '',
   })
+
+  const teams = useQuery({ queryKey: queryKeys.teams, queryFn: listTeams })
 
   const mutation = useMutation({
     mutationFn: (input: UserInput) => (user ? updateUser(user.id, input) : createUser(input)),
     onSuccess: (saved) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.users })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.teams })
 
       if (saved.id === currentUser?.id) {
         setUser(saved)
@@ -102,6 +110,36 @@ export function UserDialog({ user, onClose }: UserDialogProps) {
             </option>
           ))}
         </SelectField>
+        <fieldset className="flex flex-col gap-3 rounded-lg border border-border px-4 py-3">
+          <legend className="px-1 text-sm font-medium text-neutral-800">{t('settings.users.form.access')}</legend>
+          {form.role === 'admin' ? (
+            <p className="text-sm text-neutral-600">{t('settings.users.form.adminAccess')}</p>
+          ) : (
+            <>
+              <label className="flex items-start gap-2 text-sm text-neutral-800">
+                <input
+                  type="checkbox"
+                  name="can_view_all_monitors"
+                  checked={form.can_view_all_monitors}
+                  onChange={(event) => setForm((current) => ({ ...current, can_view_all_monitors: event.target.checked }))}
+                  className="mt-0.5 size-4 accent-primary-600"
+                />
+                <span className="flex flex-col">
+                  <span className="font-medium">{t('settings.users.form.allMonitors')}</span>
+                  <span className="text-xs text-neutral-500">{t('settings.users.form.allMonitorsHint')}</span>
+                </span>
+              </label>
+              <TeamPicker
+                teams={teams.data}
+                selectedIds={form.team_ids}
+                onChange={(teamIds) => setForm((current) => ({ ...current, team_ids: teamIds }))}
+                hint={t('settings.users.form.accessHint')}
+                isDisabled={form.can_view_all_monitors}
+                error={errors.can_view_all_monitors ?? teamIdsError(errors)}
+              />
+            </>
+          )}
+        </fieldset>
         <TextField
           label={t('settings.users.form.password')}
           type="password"

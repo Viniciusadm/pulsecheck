@@ -41,11 +41,13 @@ class AppServiceProvider extends ServiceProvider
         Route::pattern('monitor', '[0-9]+');
         Route::pattern('notificationChannel', '[0-9]+');
         Route::pattern('user', '[0-9]+');
+        Route::pattern('team', '[0-9]+');
     }
 
     private function configureGates(): void
     {
         Gate::define('manage-users', fn (User $user): bool => $user->isAdmin());
+        Gate::define('manage-resources', fn (User $user): bool => $user->canManageResources());
     }
 
     private function configurePasswordRules(): void

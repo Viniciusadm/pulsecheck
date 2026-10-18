@@ -1,4 +1,5 @@
 import { Navigate, type RouteObject } from 'react-router'
+import { ChannelsPage } from '../features/channels/ChannelsPage.tsx'
 import { ForgotPasswordPage } from '../features/auth/ForgotPasswordPage.tsx'
 import { LoginPage } from '../features/auth/LoginPage.tsx'
 import { ResetPasswordPage } from '../features/auth/ResetPasswordPage.tsx'
@@ -48,6 +49,7 @@ export const routes: RouteObject[] = [
               { path: '/dashboard', element: <DashboardPage /> },
               { path: '/monitors', element: <MonitorsPage /> },
               { path: '/monitors/:id', element: <MonitorDetailPage /> },
+              { path: '/channels', element: <ChannelsPage /> },
               { path: '/settings', element: <SettingsPage /> },
             ],
           },

@@ -3,12 +3,15 @@
 namespace App\Http\Requests;
 
 use App\Enums\NotificationChannelType;
+use App\Http\Requests\Concerns\ValidatesTeamAssignment;
 use App\Notifications\Channels\ChannelDriver;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class StoreNotificationChannelRequest extends FormRequest
 {
+    use ValidatesTeamAssignment;
+
     public function authorize(): bool
     {
         return true;
@@ -22,6 +25,7 @@ class StoreNotificationChannelRequest extends FormRequest
             'enabled' => ['sometimes', 'boolean'],
             'is_default' => ['sometimes', 'boolean'],
             ...$this->configRules(),
+            ...$this->teamRules(),
         ];
     }
 

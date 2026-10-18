@@ -51,4 +51,18 @@ class UserFactory extends Factory
             'role' => UserRole::Admin,
         ]);
     }
+
+    public function manager(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => UserRole::Manager,
+        ]);
+    }
+
+    public function viewingAll(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'can_view_all_monitors' => true,
+        ]);
+    }
 }
