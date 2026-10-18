@@ -148,4 +148,15 @@ class CreateMonitorTest extends TestCase
 
         $this->actingAs(User::factory()->admin()->create())->postJson('/api/monitors', $this->validPayload())->assertCreated();
     }
+
+    public function test_custom_intervals_and_timeouts_from_config_are_persisted(): void
+    {
+        config(['pulsecheck.allowed_intervals' => [2, 15], 'pulsecheck.timeout_max' => 45]);
+
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
+            ->postJson('/api/monitors', [...$this->validPayload(), 'interval_minutes' => 15, 'timeout_seconds' => 45])
+            ->assertCreated()
+            ->assertJsonPath('data.interval_minutes', 15)
+            ->assertJsonPath('data.timeout_seconds', 45);
+    }
 }

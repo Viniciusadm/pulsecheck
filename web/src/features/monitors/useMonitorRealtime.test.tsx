@@ -16,7 +16,7 @@ vi.mock('../../api/dashboard.ts')
 vi.mock('../../api/monitors.ts')
 vi.mock('../../api/realtime.ts')
 
-type Listener = (event: { monitor: Monitor }) => void
+type Listener = (event: { monitor: Omit<Monitor, 'notification_channel_ids'> }) => void
 
 function fakeEcho() {
   const listeners = new Map<string, Listener>()
@@ -53,13 +53,18 @@ describe('useMonitorRealtime', () => {
 
     const summaryCalls = vi.mocked(dashboardApi.getDashboardSummary).mock.calls.length
     const listCalls = vi.mocked(monitorsApi.listMonitors).mock.calls.length
-    const checkedMonitor = makeMonitor({ status: 'down', last_status_code: 503 })
+    const cachedMonitor = makeMonitor({ notification_channel_ids: [7] })
+    queryClient.setQueryData(queryKeys.monitor(cachedMonitor.id), cachedMonitor)
+    const otherMonitorStatsKey = queryKeys.stats(cachedMonitor.id + 1, '24h')
+    queryClient.setQueryData(otherMonitorStatsKey, { uptime_percentage: 100 })
+    const { notification_channel_ids: _channelIds, ...checkedMonitor } = makeMonitor({ status: 'down', last_status_code: 503 })
 
     echo.listeners.get('.monitor.checked')?.({ monitor: checkedMonitor })
 
-    expect(queryClient.getQueryData(queryKeys.monitor(checkedMonitor.id))).toEqual(checkedMonitor)
+    expect(queryClient.getQueryData(queryKeys.monitor(cachedMonitor.id))).toEqual({ ...checkedMonitor, notification_channel_ids: [7] })
     await waitFor(() => expect(vi.mocked(monitorsApi.listMonitors).mock.calls.length).toBeGreaterThan(listCalls))
     expect(vi.mocked(dashboardApi.getDashboardSummary).mock.calls.length).toBeGreaterThan(summaryCalls)
+    expect(queryClient.getQueryState(otherMonitorStatsKey)?.isInvalidated).toBe(false)
   })
 
   it('does not connect when realtime is disabled', async () => {

@@ -40,11 +40,11 @@ class MonitorTest extends TestCase
 
     public static function allowedIntervals(): array
     {
-        return [[1], [5], [10]];
+        return [[1], [2], [15], [1440]];
     }
 
     #[DataProvider('invalidIntervals')]
-    public function test_database_rejects_intervals_outside_the_allowed_list(int $interval): void
+    public function test_database_rejects_intervals_outside_the_safe_range(int $interval): void
     {
         $this->expectException(QueryException::class);
         $this->expectExceptionCode('23514');
@@ -54,7 +54,7 @@ class MonitorTest extends TestCase
 
     public static function invalidIntervals(): array
     {
-        return [[0], [2], [60]];
+        return [[0], [1441]];
     }
 
     #[DataProvider('invalidTimeouts')]
@@ -68,6 +68,6 @@ class MonitorTest extends TestCase
 
     public static function invalidTimeouts(): array
     {
-        return [[0], [31]];
+        return [[0], [61]];
     }
 }

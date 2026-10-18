@@ -33,19 +33,16 @@ const REFRESH_INTERVAL_MS = 60_000
 
 export function MonitorDetailPage() {
   const monitorId = Number(useParams().id)
-  const monitor = useQuery({ queryKey: queryKeys.monitor(monitorId), queryFn: () => getMonitor(monitorId), refetchInterval: REFRESH_INTERVAL_MS })
+  const isValidId = Number.isInteger(monitorId) && monitorId > 0
+  const monitor = useQuery({
+    queryKey: queryKeys.monitor(monitorId),
+    queryFn: () => getMonitor(monitorId),
+    refetchInterval: REFRESH_INTERVAL_MS,
+    enabled: isValidId,
+  })
 
-  if (monitor.isPending) {
-    return (
-      <div className="flex flex-col gap-6" aria-busy="true">
-        <Skeleton className="h-24" />
-        <Skeleton className="h-64" />
-      </div>
-    )
-  }
-
-  if (monitor.isError) {
-    const isNotFound = isAxiosError(monitor.error) && monitor.error.response?.status === 404
+  if (!isValidId || monitor.isError) {
+    const isNotFound = !isValidId || (isAxiosError(monitor.error) && monitor.error.response?.status === 404)
 
     return isNotFound ? (
       <EmptyState
@@ -58,6 +55,15 @@ export function MonitorDetailPage() {
       />
     ) : (
       <ErrorState onRetry={() => void monitor.refetch()} />
+    )
+  }
+
+  if (monitor.isPending) {
+    return (
+      <div className="flex flex-col gap-6" aria-busy="true">
+        <Skeleton className="h-24" />
+        <Skeleton className="h-64" />
+      </div>
     )
   }
 

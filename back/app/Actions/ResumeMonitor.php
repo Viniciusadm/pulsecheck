@@ -18,6 +18,8 @@ class ResumeMonitor
 
             $monitor->forceFill([
                 'is_paused' => false,
+                'consecutive_failures' => 0,
+                'consecutive_successes' => 0,
                 'next_check_at' => now(),
             ])->save();
 

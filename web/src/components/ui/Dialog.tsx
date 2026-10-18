@@ -14,6 +14,11 @@ type DialogProps = {
 export function Dialog({ isOpen, title, onClose, children, footer }: DialogProps) {
   const titleId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
+  const onCloseRef = useRef(onClose)
+
+  useEffect(() => {
+    onCloseRef.current = onClose
+  })
 
   useEffect(() => {
     if (!isOpen) {
@@ -25,7 +30,7 @@ export function Dialog({ isOpen, title, onClose, children, footer }: DialogProps
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onClose()
+        onCloseRef.current()
       }
     }
 
@@ -35,7 +40,7 @@ export function Dialog({ isOpen, title, onClose, children, footer }: DialogProps
       document.removeEventListener('keydown', handleKeyDown)
       previouslyFocused?.focus()
     }
-  }, [isOpen, onClose])
+  }, [isOpen])
 
   if (!isOpen) {
     return null

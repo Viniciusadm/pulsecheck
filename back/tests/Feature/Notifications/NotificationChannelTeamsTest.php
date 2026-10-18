@@ -107,4 +107,36 @@ class NotificationChannelTeamsTest extends TestCase
 
         $this->assertEqualsCanonicalizing([$foreignTeam->id, $secondTeam->id], $this->teamChannel->teams()->pluck('teams.id')->all());
     }
+
+    public function test_members_do_not_receive_channel_config(): void
+    {
+        $this->teamChannel->update(['config' => ['email' => 'ops@example.com']]);
+
+        $this->actingAs($this->userInTeam(User::factory()->create()))->fromSpa()->getJson('/api/notification-channels')
+            ->assertOk()
+            ->assertJsonPath('data.0.config', []);
+
+        $this->actingAs($this->userInTeam(User::factory()->manager()->create()))->fromSpa()->getJson('/api/notification-channels')
+            ->assertOk()
+            ->assertJsonPath('data.0.config', ['email' => 'ops@example.com']);
+    }
+
+    public function test_monitor_lists_only_channels_visible_to_the_user(): void
+    {
+        $monitor = Monitor::factory()->create();
+        $monitor->teams()->attach($this->team);
+        $monitor->notificationChannels()->attach([$this->teamChannel->id, $this->otherChannel->id]);
+
+        $this->actingAs($this->userInTeam(User::factory()->create()))->fromSpa()->getJson('/api/monitors')
+            ->assertOk()
+            ->assertJsonPath('data.0.notification_channel_ids', [$this->teamChannel->id]);
+
+        $this->actingAs($this->userInTeam(User::factory()->create()))->fromSpa()->getJson("/api/monitors/{$monitor->id}")
+            ->assertOk()
+            ->assertJsonPath('data.notification_channel_ids', [$this->teamChannel->id]);
+
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()->getJson("/api/monitors/{$monitor->id}")
+            ->assertOk()
+            ->assertJsonPath('data.notification_channel_ids', [$this->teamChannel->id, $this->otherChannel->id]);
+    }
 }

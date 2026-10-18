@@ -26,7 +26,7 @@ class WebhookDriver extends HttpChannelDriver
 
     public function secretKeys(): array
     {
-        return ['headers'];
+        return ['url', 'headers'];
     }
 
     public function send(NotificationChannel $channel, AlertMessage $message): void

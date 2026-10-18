@@ -32,8 +32,8 @@ class NotificationChannelApiTest extends TestCase
         return [
             'telegram' => ['telegram', ['bot_token' => self::TOKEN, 'chat_id' => '-100123'], ['chat_id' => '-100123'], ['bot_token']],
             'telegram channel name' => ['telegram', ['bot_token' => self::TOKEN, 'chat_id' => '@my_status_channel'], ['chat_id' => '@my_status_channel'], ['bot_token']],
-            'webhook' => ['webhook', ['url' => 'https://hooks.example.com/in', 'headers' => ['Authorization' => 'Bearer s3cret']], ['url' => 'https://hooks.example.com/in'], ['headers']],
-            'webhook without headers' => ['webhook', ['url' => 'https://hooks.example.com/in'], ['url' => 'https://hooks.example.com/in'], []],
+            'webhook' => ['webhook', ['url' => 'https://hooks.example.com/in', 'headers' => ['Authorization' => 'Bearer s3cret']], [], ['url', 'headers']],
+            'webhook without headers' => ['webhook', ['url' => 'https://hooks.example.com/in'], [], ['url']],
             'slack' => ['slack', ['webhook_url' => self::SLACK_URL], [], ['webhook_url']],
             'discord' => ['discord', ['webhook_url' => 'https://discord.com/api/webhooks/123456/abc_DEF-123'], [], ['webhook_url']],
             'email' => ['email', ['email' => 'ops@example.com'], ['email' => 'ops@example.com'], []],
@@ -155,7 +155,7 @@ class NotificationChannelApiTest extends TestCase
 
         $this->actingAs(User::factory()->admin()->create())->fromSpa()->putJson("/api/notification-channels/{$channel->id}", [
             'config' => ['url' => 'https://hooks.example.com/b', 'headers' => []],
-        ])->assertOk()->assertJsonPath('data.secrets_set', []);
+        ])->assertOk()->assertJsonPath('data.secrets_set', ['url']);
         $this->assertSame(['url' => 'https://hooks.example.com/b', 'headers' => []], $channel->refresh()->config);
     }
 

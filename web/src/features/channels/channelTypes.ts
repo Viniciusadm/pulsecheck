@@ -46,7 +46,7 @@ export const channelTypes: Record<NotificationChannelType, ChannelTypeDefinition
   },
   webhook: {
     fields: [
-      { key: 'url', label: 'settings.channels.fields.url', inputType: 'url', placeholder: 'https://example.com/hooks/pulsecheck', hint: 'settings.channels.fields.urlHint' },
+      { key: 'url', label: 'settings.channels.fields.url', inputType: 'url', placeholder: 'https://example.com/hooks/pulsecheck', hint: 'settings.channels.fields.urlHint', isSecret: true },
     ],
     help: ['settings.channels.help.webhook.payload', 'settings.channels.help.webhook.response'],
     hasHeaders: true,

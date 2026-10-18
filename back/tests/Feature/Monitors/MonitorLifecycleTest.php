@@ -43,6 +43,18 @@ class MonitorLifecycleTest extends TestCase
         $this->assertTrue($monitor->next_check_at->equalTo(now()));
     }
 
+    public function test_resuming_clears_the_counters_accumulated_before_the_pause(): void
+    {
+        $monitor = Monitor::factory()->up()->paused()->create(['consecutive_failures' => 1, 'consecutive_successes' => 3]);
+
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()->postJson("/api/monitors/{$monitor->id}/resume")->assertOk();
+
+        $monitor->refresh();
+        $this->assertSame(0, $monitor->consecutive_failures);
+        $this->assertSame(0, $monitor->consecutive_successes);
+        $this->assertSame(MonitorStatus::Up, $monitor->status);
+    }
+
     public function test_resuming_an_active_monitor_does_not_reschedule_it(): void
     {
         $nextCheckAt = now()->addMinutes(3)->startOfSecond();

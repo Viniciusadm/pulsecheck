@@ -14,7 +14,7 @@ return [
 
     'timeout_min' => (int) env('PULSECHECK_TIMEOUT_MIN', 1),
 
-    'timeout_max' => (int) env('PULSECHECK_TIMEOUT_MAX', 30),
+    'timeout_max' => min((int) env('PULSECHECK_TIMEOUT_MAX', 30), 60),
 
     'timeout_default' => (int) env('PULSECHECK_TIMEOUT_DEFAULT', 10),
 

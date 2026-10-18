@@ -20,7 +20,7 @@ class MonitorController extends Controller
 
         $monitors = Monitor::query()
             ->visibleTo($request->user())
-            ->with(['notificationChannels:id', 'teams:id'])
+            ->with(['notificationChannels:id', 'notificationChannels.teams:id', 'teams:id'])
             ->when($status === 'paused', fn ($query) => $query->where('is_paused', true))
             ->when($status !== null && $status !== 'paused', fn ($query) => $query->where('is_paused', false)->where('status', $status))
             ->orderByDesc('id')
