@@ -33,6 +33,8 @@ export const en = {
     email: 'Email',
     password: 'Password',
     passwordConfirmation: 'Confirm password',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
     name: 'Name',
     passwordHint: 'At least 8 characters, with letters and numbers.',
     login: {

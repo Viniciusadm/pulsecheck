@@ -7,6 +7,7 @@ import { completeSetup } from '../../api/setup.ts'
 import type { AppConfig } from '../../api/types.ts'
 import { Alert } from '../../components/ui/Alert.tsx'
 import { Button } from '../../components/ui/Button.tsx'
+import { PasswordField } from '../../components/ui/PasswordField.tsx'
 import { TextField } from '../../components/ui/TextField.tsx'
 import { setLocale, t } from '../../i18n/index.ts'
 import { useLocale } from '../../i18n/useLocale.ts'
@@ -171,9 +172,8 @@ export function SetupPage() {
             onChange={updateAdmin('email')}
             error={errors.email}
           />
-          <TextField
+          <PasswordField
             label={t('auth.password')}
-            type="password"
             name="password"
             autoComplete="new-password"
             required
@@ -182,9 +182,8 @@ export function SetupPage() {
             onChange={updateAdmin('password')}
             error={errors.password}
           />
-          <TextField
+          <PasswordField
             label={t('auth.passwordConfirmation')}
-            type="password"
             name="password_confirmation"
             autoComplete="new-password"
             required
@@ -193,9 +192,8 @@ export function SetupPage() {
             error={errors.password_confirmation}
           />
           {config.setup_token_required && (
-            <TextField
+            <PasswordField
               label={t('setup.admin.token')}
-              type="password"
               name="token"
               autoComplete="off"
               required

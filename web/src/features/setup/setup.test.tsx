@@ -143,6 +143,24 @@ describe('setup', () => {
     })
   })
 
+  it('reveals and hides the password on demand', async () => {
+    const user = userEvent.setup()
+    renderApp('/setup')
+
+    await fillInstanceStep(user)
+    const password = await screen.findByLabelText('Password')
+    expect(password).toHaveAttribute('type', 'password')
+
+    await user.click(screen.getAllByRole('button', { name: 'Show password' })[0])
+
+    expect(password).toHaveAttribute('type', 'text')
+    expect(screen.getByRole('button', { name: 'Hide password' })).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(screen.getByRole('button', { name: 'Hide password' }))
+
+    expect(password).toHaveAttribute('type', 'password')
+  })
+
   it('asks for the setup token when the server requires one', async () => {
     vi.mocked(configApi.getAppConfig).mockResolvedValue({ ...pendingConfig, setup_token_required: true })
     vi.mocked(setupApi.completeSetup).mockRejectedValue(

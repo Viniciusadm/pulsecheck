@@ -116,3 +116,21 @@ export function LogOutIcon(props: IconProps) {
     </Icon>
   )
 }
+
+export function EyeIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M1.5 10S4.5 4 10 4s8.5 6 8.5 6-3 6-8.5 6-8.5-6-8.5-6Z" />
+      <circle cx="10" cy="10" r="2.5" />
+    </Icon>
+  )
+}
+
+export function EyeOffIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M8.2 4.2A8 8 0 0 1 10 4c5.5 0 8.5 6 8.5 6a14 14 0 0 1-2 2.8M5.2 5.2C2.8 6.8 1.5 10 1.5 10s3 6 8.5 6a8 8 0 0 0 4.8-1.6" />
+      <path d="M8.2 8.2a2.5 2.5 0 0 0 3.6 3.6M2 2l16 16" />
+    </Icon>
+  )
+}

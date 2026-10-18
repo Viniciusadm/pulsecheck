@@ -35,6 +35,8 @@ export const ptBR = {
     email: 'E-mail',
     password: 'Senha',
     passwordConfirmation: 'Confirme a senha',
+    showPassword: 'Mostrar senha',
+    hidePassword: 'Ocultar senha',
     name: 'Nome',
     passwordHint: 'Pelo menos 8 caracteres, com letras e números.',
     login: {

@@ -1,4 +1,5 @@
 import { useId, type InputHTMLAttributes } from 'react'
+import { inputClassName } from './inputClassName.ts'
 
 type TextFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string
@@ -21,9 +22,7 @@ export function TextField({ label, error, hint, id, className = '', ...props }: 
         id={inputId}
         aria-invalid={error ? true : undefined}
         aria-describedby={[hintId, errorId].filter(Boolean).join(' ') || undefined}
-        className={`min-h-10 rounded-md border bg-surface px-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 ${
-          error ? 'border-status-down' : 'border-neutral-300'
-        }`}
+        className={inputClassName(error)}
         {...props}
       />
       {hint && !error && (

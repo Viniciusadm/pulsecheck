@@ -25,15 +25,15 @@ export function AuthLayout() {
   useLocale()
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-      <aside className="hidden flex-col justify-between bg-primary-ink px-12 py-12 text-white lg:flex">
+    <div className="grid min-h-screen lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start">
+      <aside className="hidden flex-col justify-between bg-primary-ink px-12 py-12 text-white lg:sticky lg:top-0 lg:flex lg:h-screen">
         <Logo className="text-white" />
         <div className="flex max-w-md flex-col gap-6">
           <CheckTicks />
           <p className="text-2xl font-semibold leading-snug">{t('auth.tagline')}</p>
         </div>
       </aside>
-      <main className="flex flex-col px-4 py-10 sm:px-8 lg:justify-center lg:px-16">
+      <main className="flex flex-col px-4 py-10 sm:px-8 lg:min-h-screen lg:justify-center lg:px-16">
         <Logo className="mb-10 text-primary-ink lg:hidden" />
         <div className="w-full max-w-sm">
           <Outlet />
