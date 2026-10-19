@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['name', 'type', 'url', 'options', 'secrets', 'interval_minutes', 'timeout_seconds', 'latency_threshold_ms', 'reminder_interval_minutes'])]
-#[Hidden(['secrets', 'heartbeat_token'])]
+#[Hidden(['secrets', 'heartbeat_token', 'badge_token'])]
 class Monitor extends Model
 {
     /** @use HasFactory<MonitorFactory> */

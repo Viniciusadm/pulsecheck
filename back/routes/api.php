@@ -16,6 +16,7 @@ use App\Http\Controllers\IncidentAcknowledgementController;
 use App\Http\Controllers\IncidentNoteController;
 use App\Http\Controllers\InstanceSettingsController;
 use App\Http\Controllers\MaintenanceWindowController;
+use App\Http\Controllers\MonitorBadgeTokenController;
 use App\Http\Controllers\MonitorCheckResultController;
 use App\Http\Controllers\MonitorController;
 use App\Http\Controllers\MonitorHeartbeatTokenController;
@@ -27,9 +28,12 @@ use App\Http\Controllers\MonitorStatsController;
 use App\Http\Controllers\MonitorUptimeHistoryController;
 use App\Http\Controllers\NotificationChannelController;
 use App\Http\Controllers\NotificationChannelTestController;
+use App\Http\Controllers\PublicBadgeController;
 use App\Http\Controllers\PublicConfigController;
+use App\Http\Controllers\PublicStatusPageController;
 use App\Http\Controllers\RecentIncidentController;
 use App\Http\Controllers\SetupController;
+use App\Http\Controllers\StatusPageController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\EnsureSetupIsPending;
@@ -54,6 +58,12 @@ Route::prefix('auth')->name('auth.')->group(function () {
 });
 
 Route::get('config', PublicConfigController::class)->name('config');
+
+Route::prefix('public')->name('public.')->group(function () {
+    Route::get('status-pages/{slug}', PublicStatusPageController::class)->middleware('throttle:public-status')->name('status-pages.show');
+    Route::get('badges/{badgeToken}/status.svg', [PublicBadgeController::class, 'status'])->middleware('throttle:badges')->name('badges.status');
+    Route::get('badges/{badgeToken}/uptime.svg', [PublicBadgeController::class, 'uptime'])->middleware('throttle:badges')->name('badges.uptime');
+});
 
 Route::match(['get', 'post', 'head'], 'heartbeat/{token}', HeartbeatController::class)
     ->middleware('throttle:heartbeat')
@@ -116,6 +126,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('notes/{note}', [IncidentNoteController::class, 'destroy'])->middleware('throttle:incident-writes')->name('notes.destroy');
     });
 
+    Route::get('status-pages', [StatusPageController::class, 'index'])->name('status-pages.index');
+    Route::post('status-pages', [StatusPageController::class, 'store'])->middleware(['can:manage-resources', 'throttle:status-page-writes'])->name('status-pages.store');
+    Route::get('status-pages/{statusPage}', [StatusPageController::class, 'show'])->middleware('can:view,statusPage')->name('status-pages.show');
+    Route::match(['put', 'patch'], 'status-pages/{statusPage}', [StatusPageController::class, 'update'])->middleware(['can:update,statusPage', 'throttle:status-page-writes'])->name('status-pages.update');
+    Route::delete('status-pages/{statusPage}', [StatusPageController::class, 'destroy'])->middleware(['can:update,statusPage', 'throttle:status-page-writes'])->name('status-pages.destroy');
+
     Route::get('maintenance-windows', [MaintenanceWindowController::class, 'index'])->name('maintenance-windows.index');
     Route::post('maintenance-windows', [MaintenanceWindowController::class, 'store'])->middleware(['can:manage-resources', 'throttle:maintenance-writes'])->name('maintenance-windows.store');
     Route::get('maintenance-windows/{maintenanceWindow}', [MaintenanceWindowController::class, 'show'])->middleware('can:view,maintenanceWindow')->name('maintenance-windows.show');
@@ -141,6 +157,8 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('pause', MonitorPauseController::class)->name('pause');
             Route::post('resume', MonitorResumeController::class)->name('resume');
             Route::post('heartbeat-token', MonitorHeartbeatTokenController::class)->name('heartbeat-token');
+            Route::post('badge', [MonitorBadgeTokenController::class, 'store'])->name('badge.store');
+            Route::delete('badge', [MonitorBadgeTokenController::class, 'destroy'])->name('badge.destroy');
         });
     });
 });

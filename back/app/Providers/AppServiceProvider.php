@@ -46,6 +46,9 @@ class AppServiceProvider extends ServiceProvider
         Route::pattern('incident', '[0-9]+');
         Route::pattern('note', '[0-9]+');
         Route::pattern('maintenanceWindow', '[0-9]+');
+        Route::pattern('statusPage', '[0-9]+');
+        Route::pattern('badgeToken', '[A-Za-z0-9]{40}');
+        Route::pattern('slug', '[a-z0-9-]{1,60}');
     }
 
     private function configureGates(): void
@@ -100,6 +103,12 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('incident-writes', fn (Request $request): Limit => Limit::perMinute(30)->by((string) $request->user()?->id ?: $request->ip()));
 
         RateLimiter::for('maintenance-writes', fn (Request $request): Limit => Limit::perMinute(30)->by((string) $request->user()?->id ?: $request->ip()));
+
+        RateLimiter::for('status-page-writes', fn (Request $request): Limit => Limit::perMinute(30)->by((string) $request->user()?->id ?: $request->ip()));
+
+        RateLimiter::for('public-status', fn (Request $request): Limit => Limit::perMinute(60)->by($request->ip()));
+
+        RateLimiter::for('badges', fn (Request $request): Limit => Limit::perMinute(120)->by($request->ip()));
 
         RateLimiter::for('dashboard-writes', fn (Request $request): Limit => Limit::perMinute(60)->by((string) $request->user()?->id ?: $request->ip()));
     }

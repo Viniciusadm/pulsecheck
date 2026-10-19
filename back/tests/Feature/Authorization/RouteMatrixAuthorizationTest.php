@@ -19,6 +19,9 @@ class RouteMatrixAuthorizationTest extends TestCase
         'GET api/config',
         'POST api/setup',
         'GET api/heartbeat/{token}',
+        'GET api/public/status-pages/{slug}',
+        'GET api/public/badges/{badgeToken}/status.svg',
+        'GET api/public/badges/{badgeToken}/uptime.svg',
     ];
 
     public function test_every_private_api_route_requires_authentication(): void

@@ -26,6 +26,10 @@ class MonitorResource extends JsonResource
             'display_target' => $this->displayTarget(),
             'certificate_expires_at' => $this->certificate_expires_at,
             'last_heartbeat_at' => $this->last_heartbeat_at,
+            'badge_url' => $this->when(
+                $request->user()?->can('update', $this->resource) ?? false,
+                fn () => $this->badge_token === null ? null : url("/api/public/badges/{$this->badge_token}"),
+            ),
             'heartbeat_url' => $this->when(
                 $this->heartbeat_token !== null && $request->user()?->can('update', $this->resource),
                 fn () => route('heartbeat', ['token' => $this->heartbeat_token]),

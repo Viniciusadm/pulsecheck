@@ -29,6 +29,11 @@ class Team extends Model
         return $this->belongsToMany(NotificationChannel::class);
     }
 
+    public function statusPages(): BelongsToMany
+    {
+        return $this->belongsToMany(StatusPage::class);
+    }
+
     public function maintenanceWindows(): BelongsToMany
     {
         return $this->belongsToMany(MaintenanceWindow::class);
