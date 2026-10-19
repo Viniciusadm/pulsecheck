@@ -35,8 +35,8 @@ function Distribution({ summary }: { summary: DashboardSummary }) {
   const visibleSlices = slices.filter((slice) => slice.value > 0)
 
   return (
-    <div className="flex h-full flex-col items-center gap-4 @xs:flex-row">
-      <div className="relative h-full min-h-32 w-full max-w-44 flex-1" role="img" aria-label={t('dashboard.charts.statusDistribution')}>
+    <div className="flex h-full flex-col items-center gap-3 @xs:flex-row @xs:gap-4">
+      <div className="relative h-full min-h-28 w-full max-w-44 flex-1" role="img" aria-label={t('dashboard.charts.statusDistribution')}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -61,7 +61,7 @@ function Distribution({ summary }: { summary: DashboardSummary }) {
           <span className="text-xs text-neutral-500">{t('dashboard.summary.total')}</span>
         </div>
       </div>
-      <ul className="flex flex-col gap-2 self-stretch @xs:justify-center">
+      <ul className="grid grid-cols-2 gap-x-6 gap-y-1.5 self-stretch @xs:flex @xs:flex-col @xs:justify-center">
         {slices.map((slice) => (
           <li key={slice.key} className="flex items-center justify-between gap-4">
             <span className={`flex items-center gap-1.5 font-medium ${slice.tone}`}>
