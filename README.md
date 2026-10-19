@@ -2,7 +2,7 @@
 
 Self-hosted uptime monitoring for one team or organization per deploy: PulseCheck checks your websites and APIs every few minutes, records response times and incidents, and alerts you on Telegram, Slack, Discord, email or any webhook when something goes down and when it comes back.
 
-![Dashboard with five monitors, one of them down, and recent incidents](screenshots/dashboard.png)
+![Dashboard with the status summary, uptime, status distribution, response time and slowest monitors charts](screenshots/dashboard.png)
 
 <sub>Screenshots show the real application running locally with demo data from `DevelopmentSeeder`.</sub>
 
@@ -19,20 +19,27 @@ Self-hosted uptime monitoring for one team or organization per deploy: PulseChec
 - **Incidents** with cause, start, end and duration; one incident per outage. Anyone who can see the monitor can **acknowledge** an open incident and add **notes**; both update live for everyone looking at it.
 - **Repeated alerts**: each monitor can repeat the down alert every 15, 30, 60, 120 or 240 minutes (`PULSECHECK_REMINDER_INTERVALS`) until the incident is acknowledged or resolved.
 - **Maintenance windows**: one-off or weekly (with time zone, and windows that cross midnight), for chosen monitors or whole teams. During a window checks keep running, but no incident or alert is created and uptime leaves the period out. A failure that continues after the window opens the incident from the first check after it.
+- **Customizable dashboard**: each person arranges their own dashboard with resizable charts (status summary and distribution, monitors needing attention, recent incidents and incident timeline, uptime and latency trends, slowest monitors, error breakdown, latency of one monitor) and can reset it to the default layout.
 - **Metrics**: uptime per period (24 h, 7 d, 30 d), average and 95th percentile response time, latency chart and a 30-day availability bar that tells "no data" apart from "100%".
 - **Languages**: the interface, alerts and validation messages written by PulseCheck follow the instance language (English or Portuguese).
 - **Check history** with date filters and pagination.
+- **Monitor forms on their own pages** (`/monitors/new`, `/monitors/{id}/edit`), with the form grouped in sections.
 - **Public status pages** at `/status/{slug}`, without login: overall status, each chosen monitor with its uptime for the last 30, 60 or 90 days, optionally the average response time and the incidents of the last 14 days. Monitors can get a public display name; URLs, error details and incident causes are never shown. Pages belong to teams like monitors, start as drafts and are cached for 60 seconds.
 - **Uptime badges**: per-monitor SVG images (`/api/public/badges/{token}/status.svg` and `uptime.svg?days=7|30|90`) for a README or an internal page. The token is random, not the monitor id, and can be regenerated or turned off.
-- **Notification channels** on down and recovery: Telegram, Slack, Discord, email and a generic JSON webhook for anything else. Each monitor picks its channels; every channel has a test button, and secrets (tokens, webhook URLs, headers) are stored encrypted and never shown again.
+- **Notification channels** on down and recovery: Telegram, Slack, Discord, email and a generic JSON webhook for anything else. Each channel has its own page where you choose which events it receives, set quiet hours, pick a detailed or compact message, mention `@here`/`@channel` on Slack or a role on Discord, send Telegram messages silently and see a live preview of the alert. Each monitor picks its channels; every channel has a test button, and secrets (tokens, webhook URLs, headers) are stored encrypted and never shown again.
+- **Email service from the panel**: SMTP, Mailgun, Postmark, Resend or Amazon SES configured under **Settings › Email**, with a test email. Credentials are stored encrypted and take priority over the `MAIL_*` variables.
 - **One instance per organization**: the first visit opens a setup wizard (instance name, time zone, language and the first administrator). Monitors and notification channels belong to teams, and each person sees only the teams they were given.
-- **Teams, users and roles**: administrators create teams and accounts, and pick each person's role (`admin`, `manager` or `member`) and teams, or give them access to all monitors. Managers create and edit the monitors and channels of their teams; members only view them. There is no public sign-up. Login and password reset for everyone.
+- **Teams, users and roles**: administrators manage teams and accounts on the **Teams** and **Users** pages. Each team has its own page to choose its people and monitors; each account gets a role (`admin`, `manager` or `member`) and teams, or access to all monitors. Managers create and edit the monitors and channels of their teams; members only view them. There is no public sign-up. Login and password reset for everyone.
 - **SSRF protection**: monitors cannot reach private networks, cloud metadata endpoints or other internal addresses, including through redirects or DNS tricks.
 - **Single `docker compose up`** on any Linux server; Redis is optional.
 
 | Monitor detail | Mobile |
 |---|---|
 | ![Monitor detail with uptime, latency chart, daily availability and incidents](screenshots/monitor-detail.png) | ![Dashboard on a phone](screenshots/mobile-dashboard.png) |
+
+| Notification channel | Team |
+|---|---|
+| ![New notification channel page with setup help and alert preview](screenshots/channel.png) | ![Team page with its people and monitors](screenshots/team.png) |
 
 More screenshots: [login](screenshots/login.png), [settings](screenshots/settings.png).
 
@@ -100,7 +107,7 @@ docker compose ps -a         # app and web "healthy", migrate "Exited (0)"
 curl -fsS http://localhost/up
 ```
 
-Open `APP_URL` in a browser: the setup wizard asks for the instance name, time zone, language and the administrator account, and lets you add a first notification channel. Then add a monitor and create teams and accounts under **Settings → Teams** and **Settings → Users**. The first check runs within a minute; after two successful checks the monitor shows **Up**.
+Open `APP_URL` in a browser: the setup wizard asks for the instance name, time zone, language and the administrator account, and lets you add a first notification channel. Then add a monitor and create teams and accounts on the **Teams** and **Users** pages (administrators only). To send password reset and email alerts, configure the mail service under **Settings › Email**. The first check runs within a minute; after two successful checks the monitor shows **Up**.
 
 PulseCheck serves plain HTTP on `APP_PORT`. For HTTPS, put it behind a TLS-terminating proxy (Caddy, Traefik, your provider's proxy), then set `APP_URL` to the `https://` address, `SESSION_SECURE_COOKIE=true` and `TRUSTED_PROXIES` (see the table below). Until setup is done, the wizard asks for a setup token so that nobody else can claim the instance: Docker Compose generates one and prints it in the app logs (`docker compose logs app | grep "Setup token"`, or `docker compose exec app php artisan pulsecheck:setup-token`). To choose the token yourself, set `PULSECHECK_SETUP_TOKEN`.
 
@@ -110,7 +117,7 @@ All variables live in the `.env` file next to `docker-compose.yml` (template: [`
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `APP_KEY` | **yes** | — | Encryption key for sessions and the stored notification channel secrets. Keep it secret and do not change it: stored secrets become unreadable. |
+| `APP_KEY` | **yes** | — | Encryption key for sessions, the stored notification channel secrets and the mail service credentials. Keep it secret and do not change it: stored secrets become unreadable. |
 | `APP_URL` | **yes** | — | Public address without trailing slash, e.g. `https://status.example.com`. Used for links in emails and to accept the SPA's session cookies. |
 | `DB_PASSWORD` | **yes** | — | PostgreSQL password, used by both the database and the application. |
 | `APP_PORT` | no | `80` | Host port published by the `web` container. |
@@ -193,7 +200,7 @@ Daily backup at 03:30 with cron (`crontab -e`, adjust the path; `%` must be esca
 30 3 * * * cd /opt/pulsecheck && mkdir -p backups && docker compose exec -T db pg_dump -U pulsecheck -d pulsecheck -Fc > backups/pulsecheck-$(date +\%F).dump
 ```
 
-Keep `.env` (especially `APP_KEY`) with your backups: without the same key, stored notification channel secrets cannot be decrypted.
+Keep `.env` (especially `APP_KEY`) with your backups: without the same key, stored notification channel secrets and mail service credentials cannot be decrypted.
 
 ## Deploy on Hostinger
 
@@ -262,14 +269,21 @@ They use Redis databases 15 and 14, so data in the default databases is never to
 
 ## Notifications
 
-Administrators and managers add notification channels on the **Channels** page and pick, per monitor, which channels get its alerts. Channels marked *default* are selected automatically for new monitors. An alert is sent when a monitor goes down and when it recovers; deliveries are queued, retried twice on connection errors, timeouts, 429 and 5xx responses, and never block checks.
+Administrators and managers add notification channels on the **Channels** page (each channel opens on its own page, `/channels/new` or `/channels/{id}`) and pick, per monitor, which channels get its alerts. Channels marked *default* are selected automatically for new monitors. An alert is sent when a monitor goes down and when it recovers; deliveries are queued, retried twice on connection errors, timeouts, 429 and 5xx responses, and never block checks.
+
+Every channel also has delivery preferences:
+
+- **Events**: which events it receives (down, still down, recovered, degraded, degradation resolved, incident closed). All of them by default.
+- **Quiet hours**: a daily window in the instance time zone (it may cross midnight) during which alerts are not sent. By default critical alerts (down and still down) still go out.
+- **Message format**: `detailed` (with host, cause and times) or `compact` (title and summary only).
+- **Preview**: the channel page shows how each event will look with the chosen format (`GET /api/notification-channels/preview`).
 
 | Channel | Settings | Notes |
 |---|---|---|
-| Telegram | Bot token, chat ID | Plain-text message through the Bot API. |
-| Slack | Incoming webhook URL (`https://hooks.slack.com/…`) | Block Kit message. |
-| Discord | Webhook URL (`https://discord.com/api/webhooks/…`) | Colored embed, mentions disabled. |
-| Email | Address | Sent with the mailer configured in `MAIL_*`. |
+| Telegram | Bot token, chat ID, optional silent delivery | Plain-text message through the Bot API. Silent messages arrive without sound. |
+| Slack | Incoming webhook URL (`https://hooks.slack.com/…`), optional mention | Block Kit message. Critical alerts can mention `@here` or `@channel`. |
+| Discord | Webhook URL (`https://discord.com/api/webhooks/…`), optional role ID | Colored embed. Critical alerts can mention one role; every other mention is disabled. |
+| Email | Address | Sent with the mail service from **Settings › Email**, or `MAIL_*` when none is set. |
 | Webhook | URL, optional headers (up to 10) | JSON `POST` for any other service (PagerDuty, Opsgenie, n8n, Zapier, your own API…). |
 
 Slack, Discord and webhook deliveries go through the same SSRF guard as checks: private and internal addresses are refused, the connection is pinned to the validated IP and redirects are not followed. Webhook headers can carry credentials such as `Authorization`; `Host`, `Content-Type`, `Content-Length`, `Transfer-Encoding`, `Connection` and `User-Agent` are reserved.
@@ -341,12 +355,12 @@ What is **not** guaranteed:
 
 ### Data and access
 
-- Monitors and notification channels are visible only to administrators, users with access to all monitors, and members of the teams they belong to; items without a team are hidden from everyone else, and anything outside a user's scope answers 404. Real-time updates go to a per-user channel (`users.{id}.monitors`) and reach only users who can see the monitor. Managers and administrators can change monitors and channels; members are read-only and do not receive channel settings. Only administrators can manage teams, users and instance settings; the last administrator cannot be demoted or deleted, and nobody can delete their own account.
+- Monitors and notification channels are visible only to administrators, users with access to all monitors, and members of the teams they belong to; items without a team are hidden from everyone else, and anything outside a user's scope answers 404. Real-time updates go to a per-user channel (`users.{id}.monitors`) and reach only users who can see the monitor. Managers and administrators can change monitors and channels; members are read-only and do not receive channel settings. Only administrators can manage teams, users and instance settings (administrators already see everything, so they are not team members); the last administrator cannot be demoted or deleted, and nobody can delete their own account.
 - There is no public sign-up. The setup endpoint only works while the instance has not been set up, and requires a setup token (`PULSECHECK_SETUP_TOKEN` or a generated one).
 - Session cookies are `HttpOnly`, `SameSite=Lax` and `Secure` when `SESSION_SECURE_COOKIE=true`; state-changing requests require the CSRF token.
-- Notification channel settings are encrypted with `APP_KEY`. Secrets (Telegram bot token, Slack, Discord and generic webhook URLs, webhook headers) are never returned by the API or logged, and delivery errors are reported with generic messages.
+- Notification channel settings and the mail service credentials are encrypted with `APP_KEY`. Secrets (Telegram bot token, Slack, Discord and generic webhook URLs, webhook headers) are never returned by the API or logged, and delivery errors are reported with generic messages.
 - Error messages stored for failed checks drop URL query strings and are truncated.
-- Rate limits (per minute): login 5 per email and IP; setup, forgot-password and reset-password 5 per IP; monitor and notification channel changes 30 per user; test notifications 5 per user.
+- Rate limits (per minute): login 5 per email and IP; setup, forgot-password and reset-password 5 per IP; monitor, notification channel, incident, maintenance window and status page changes 30 per user; dashboard layout changes 60 per user; test notifications and test emails 5 per user; heartbeats 30 per token and IP; public status pages 60 and badges 120 per IP.
 - Production passwords need at least 8 characters with mixed case and numbers, and are checked against known breaches.
 - Password reset links contain a token: Nginx does not write `/reset-password` requests to its access log, but the `log` mailer writes the emails to the container logs, so use SMTP in production.
 
@@ -379,7 +393,7 @@ docker compose exec app ls -ld storage bootstrap/cache
 
 **"CSRF token mismatch" (HTTP 419) or being logged out right after logging in.** Usually a proxy or cookie mismatch: `APP_URL` must be exactly the address in the browser (scheme, host and port); behind HTTPS set `SESSION_SECURE_COOKIE=true`; behind a proxy set `TRUSTED_PROXIES`. Then recreate the PHP containers so the configuration cache is rebuilt: `docker compose up -d`.
 
-**Notifications do not arrive.** Use *Send test* next to the channel in Settings. "The destination rejected the notification" means the destination answered with an error such as 401, 403 or 404: for Telegram the token or chat ID is wrong or the bot cannot write to that chat (send the bot a message first, or add it to the group or channel); for Slack and Discord the webhook was deleted; for a webhook the URL or headers are wrong, or it redirected. Check also that the channel is enabled and selected in the monitor's settings. Notifications are only sent on state changes (down and recovery), not on every failed check. Failed deliveries are logged without secrets:
+**Notifications do not arrive.** Use *Send test* on the **Channels** page or on the channel's own page. "The destination rejected the notification" means the destination answered with an error such as 401, 403 or 404: for Telegram the token or chat ID is wrong or the bot cannot write to that chat (send the bot a message first, or add it to the group or channel); for Slack and Discord the webhook was deleted; for a webhook the URL or headers are wrong, or it redirected. Check also that the channel is enabled, selected in the monitor's settings, subscribed to that event and not inside its quiet hours. Notifications are only sent on state changes (down and recovery), not on every failed check. Failed deliveries are logged without secrets:
 
 ```sh
 docker compose logs queue | grep -i "notification delivery failed"
