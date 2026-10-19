@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
-import { useId, useState, type FormEvent, type ReactNode } from 'react'
+import { useId, useState, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { getAppConfig } from '../../api/config.ts'
 import { fieldErrors, generalErrorMessage } from '../../api/errors.ts'
@@ -11,9 +11,9 @@ import { listTeams } from '../../api/teams.ts'
 import type { AppConfig, Monitor, MonitorInput, MonitorType, NotificationChannel } from '../../api/types.ts'
 import { Alert } from '../../components/ui/Alert.tsx'
 import { Button } from '../../components/ui/Button.tsx'
-import { Card } from '../../components/ui/Card.tsx'
 import { EmptyState } from '../../components/ui/EmptyState.tsx'
 import { ErrorState } from '../../components/ui/ErrorState.tsx'
+import { FormSection } from '../../components/ui/FormSection.tsx'
 import { SelectField } from '../../components/ui/SelectField.tsx'
 import { Skeleton } from '../../components/ui/Skeleton.tsx'
 import { TextField } from '../../components/ui/TextField.tsx'
@@ -95,19 +95,6 @@ function MonitorFormLoader({ monitor }: { monitor?: Monitor }) {
   }
 
   return <MonitorForm monitor={monitor} config={config} />
-}
-
-function FormSection({ title, children }: { title: string; children: ReactNode }) {
-  const headingId = useId()
-
-  return (
-    <Card className="flex flex-col gap-4 px-4 py-5 sm:px-6" role="group" aria-labelledby={headingId}>
-      <h2 id={headingId} className="text-base font-semibold text-neutral-900">
-        {title}
-      </h2>
-      {children}
-    </Card>
-  )
 }
 
 function MonitorForm({ monitor, config }: { monitor?: Monitor; config?: AppConfig }) {

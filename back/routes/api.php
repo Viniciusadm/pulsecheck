@@ -27,6 +27,7 @@ use App\Http\Controllers\MonitorResumeController;
 use App\Http\Controllers\MonitorStatsController;
 use App\Http\Controllers\MonitorUptimeHistoryController;
 use App\Http\Controllers\NotificationChannelController;
+use App\Http\Controllers\NotificationChannelPreviewController;
 use App\Http\Controllers\NotificationChannelTestController;
 use App\Http\Controllers\PublicBadgeController;
 use App\Http\Controllers\PublicConfigController;
@@ -98,6 +99,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('teams', [TeamController::class, 'index'])->name('teams.index');
 
     Route::get('notification-channels', [NotificationChannelController::class, 'index'])->name('notification-channels.index');
+    Route::get('notification-channels/preview', NotificationChannelPreviewController::class)->middleware('can:manage-resources')->name('notification-channels.preview');
     Route::post('notification-channels', [NotificationChannelController::class, 'store'])->middleware(['can:manage-resources', 'throttle:notification-channel-writes'])->name('notification-channels.store');
 
     Route::prefix('notification-channels/{notificationChannel}')->name('notification-channels.')->middleware('can:update,notificationChannel')->group(function () {

@@ -1,5 +1,5 @@
 import { http } from './client.ts'
-import type { DataResponse, NotificationChannel, NotificationChannelInput } from './types.ts'
+import type { AlertPreview, DataResponse, MessageFormat, NotificationChannel, NotificationChannelInput, NotificationEvent } from './types.ts'
 
 export async function listNotificationChannels() {
   const response = await http.get<DataResponse<NotificationChannel[]>>('/api/notification-channels')
@@ -21,6 +21,14 @@ export async function updateNotificationChannel(id: number, input: NotificationC
 
 export async function deleteNotificationChannel(id: number) {
   await http.delete(`/api/notification-channels/${id}`)
+}
+
+export async function getAlertPreview(event: NotificationEvent, messageFormat: MessageFormat) {
+  const response = await http.get<DataResponse<AlertPreview>>('/api/notification-channels/preview', {
+    params: { event, message_format: messageFormat },
+  })
+
+  return response.data.data
 }
 
 export async function sendNotificationChannelTest(id: number) {

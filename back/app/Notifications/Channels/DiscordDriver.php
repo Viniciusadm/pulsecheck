@@ -15,6 +15,7 @@ class DiscordDriver extends HttpChannelDriver
     {
         return [
             'webhook_url' => ['required', 'string', 'max:500', 'regex:'.self::WEBHOOK_URL_PATTERN],
+            'mention_role_id' => ['sometimes', 'nullable', 'string', 'regex:/^\d{17,20}$/D'],
         ];
     }
 
@@ -25,10 +26,10 @@ class DiscordDriver extends HttpChannelDriver
 
     public function send(NotificationChannel $channel, AlertMessage $message): void
     {
-        $this->post($channel->setting('webhook_url'), $this->payload($message));
+        $this->post($channel->setting('webhook_url'), $this->payload($message, $message->severity === AlertSeverity::Critical ? $channel->setting('mention_role_id') : null));
     }
 
-    private function payload(AlertMessage $message): array
+    private function payload(AlertMessage $message, ?string $mentionRoleId): array
     {
         $embed = [
             'title' => Str::limit($message->title, 253),
@@ -45,7 +46,11 @@ class DiscordDriver extends HttpChannelDriver
             $embed['description'] = $message->summary;
         }
 
-        return ['embeds' => [$embed], 'allowed_mentions' => ['parse' => []]];
+        if ($mentionRoleId === null) {
+            return ['embeds' => [$embed], 'allowed_mentions' => ['parse' => []]];
+        }
+
+        return ['content' => "<@&{$mentionRoleId}>", 'embeds' => [$embed], 'allowed_mentions' => ['parse' => [], 'roles' => [$mentionRoleId]]];
     }
 
     private function color(AlertSeverity $severity): int

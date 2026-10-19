@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { isAxiosError } from 'axios'
 import { useState } from 'react'
-import { generalErrorMessage } from '../../api/errors.ts'
+import { useNavigate } from 'react-router'
 import { deleteNotificationChannel, listNotificationChannels, sendNotificationChannelTest } from '../../api/notificationChannels.ts'
 import { queryKeys } from '../../api/queryKeys.ts'
 import type { NotificationChannel } from '../../api/types.ts'
@@ -16,15 +15,7 @@ import { useToast } from '../../components/ui/toast.ts'
 import { t } from '../../i18n/index.ts'
 import { canManageResources } from '../../lib/permissions.ts'
 import { useAuth } from '../auth/AuthContext.ts'
-import { NotificationChannelDialog } from './NotificationChannelDialog.tsx'
-
-function deliveryMessage(error: unknown): string {
-  if (isAxiosError<{ message?: string }>(error) && error.response && [422, 503].includes(error.response.status)) {
-    return error.response.data.message ?? t('common.genericError')
-  }
-
-  return generalErrorMessage(error) ?? t('common.genericError')
-}
+import { deliveryMessage } from './deliveryMessage.ts'
 
 function monitorsUsage(count: number): string {
   if (count === 0) {
@@ -34,13 +25,11 @@ function monitorsUsage(count: number): string {
   return count === 1 ? t('settings.channels.monitorsOne') : t('settings.channels.monitorsCount', { count })
 }
 
-type DialogState = { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; channel: NotificationChannel }
-
 export function ChannelsPage() {
   const { user } = useAuth()
   const canManage = canManageResources(user)
   const channels = useQuery({ queryKey: queryKeys.notificationChannels, queryFn: listNotificationChannels })
-  const [dialog, setDialog] = useState<DialogState>({ mode: 'closed' })
+  const navigate = useNavigate()
 
   return (
     <div className="flex flex-col gap-6">
@@ -50,7 +39,7 @@ export function ChannelsPage() {
           <p className="text-neutral-600">{t('settings.channels.description')}</p>
         </div>
         {canManage && channels.data && channels.data.length > 0 && (
-          <Button onClick={() => setDialog({ mode: 'create' })}>{t('settings.channels.add')}</Button>
+          <Button onClick={() => navigate('/channels/new')}>{t('settings.channels.add')}</Button>
         )}
       </div>
       <Card className="flex flex-col gap-6 px-5 py-6 sm:px-6">
@@ -60,23 +49,17 @@ export function ChannelsPage() {
           <EmptyState
             title={t('settings.channels.emptyTitle')}
             description={t('settings.channels.emptyDescription')}
-            action={canManage ? <Button onClick={() => setDialog({ mode: 'create' })}>{t('settings.channels.add')}</Button> : undefined}
+            action={canManage ? <Button onClick={() => navigate('/channels/new')}>{t('settings.channels.add')}</Button> : undefined}
           />
         )}
         {channels.data && channels.data.length > 0 && (
           <ul className="divide-y divide-border rounded-lg border border-border">
             {channels.data.map((channel) => (
-              <ChannelRow key={channel.id} channel={channel} canManage={canManage} onEdit={() => setDialog({ mode: 'edit', channel })} />
+              <ChannelRow key={channel.id} channel={channel} canManage={canManage} onEdit={() => navigate(`/channels/${channel.id}`)} />
             ))}
           </ul>
         )}
       </Card>
-      {dialog.mode !== 'closed' && (
-        <NotificationChannelDialog
-          channel={dialog.mode === 'edit' ? dialog.channel : undefined}
-          onClose={() => setDialog({ mode: 'closed' })}
-        />
-      )}
     </div>
   )
 }

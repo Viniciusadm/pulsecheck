@@ -68,5 +68,6 @@
     "up": "no ar",
     "uptime :days d": "uptime :days d",
     "Use a status code from 100 to 599 or a range such as 200-299.": "Use um código de status de 100 a 599 ou uma faixa como 200-299.",
-    "You cannot delete your own account.": "Você não pode excluir a própria conta."
+    "You cannot delete your own account.": "Você não pode excluir a própria conta.",
+    "Example API": "API de exemplo"
 }

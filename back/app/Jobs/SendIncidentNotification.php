@@ -7,6 +7,7 @@ use App\Exceptions\NotificationDeliveryException;
 use App\Models\Incident;
 use App\Models\InstanceSettings;
 use App\Notifications\AlertMessage;
+use App\Notifications\AlertSeverity;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -49,7 +50,7 @@ class SendIncidentNotification implements ShouldBeUnique, ShouldQueue
         $incident = Incident::query()->with('monitor')->find($this->incidentId);
         $channel = $incident?->monitor->notificationChannels()->where('enabled', true)->find($this->channelId);
 
-        if ($channel === null) {
+        if ($channel === null || ! $channel->receives($this->type)) {
             return;
         }
 
@@ -63,8 +64,14 @@ class SendIncidentNotification implements ShouldBeUnique, ShouldQueue
 
         App::setLocale(InstanceSettings::currentLocale());
 
+        $message = AlertMessage::fromIncident($incident, $this->type)->formattedAs($channel->message_format);
+
+        if ($channel->isQuietAt(now()) && ! ($channel->quiet_hours_allow_critical && $message->severity === AlertSeverity::Critical)) {
+            return;
+        }
+
         try {
-            $channel->type->driver()->send($channel, AlertMessage::fromIncident($incident, $this->type));
+            $channel->type->driver()->send($channel, $message);
         } catch (NotificationDeliveryException $exception) {
             $willRetry = $exception->isRetryable && $this->attempts() < $this->tries;
 

@@ -12,7 +12,7 @@ class NotificationChannelTestController extends Controller
     public function __invoke(NotificationChannel $notificationChannel): JsonResponse
     {
         try {
-            $notificationChannel->type->driver()->send($notificationChannel, AlertMessage::test());
+            $notificationChannel->type->driver()->send($notificationChannel, AlertMessage::test()->formattedAs($notificationChannel->message_format));
         } catch (NotificationDeliveryException $exception) {
             return response()->json(['message' => __($exception->getMessage())], $exception->isRetryable ? 503 : 422);
         }

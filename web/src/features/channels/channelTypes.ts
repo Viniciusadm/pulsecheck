@@ -1,4 +1,4 @@
-import type { NotificationChannelType } from '../../api/types.ts'
+import type { NotificationChannelType, NotificationEvent } from '../../api/types.ts'
 import type { MessageKey } from '../../i18n/index.ts'
 
 export type ChannelField = {
@@ -10,8 +10,14 @@ export type ChannelField = {
   isSecret?: boolean
 }
 
+export type ChannelOption =
+  | { key: string; kind: 'select'; label: MessageKey; hint: MessageKey; choices: { value: string; label: MessageKey }[] }
+  | { key: string; kind: 'text'; label: MessageKey; hint: MessageKey; placeholder?: string }
+  | { key: string; kind: 'checkbox'; label: MessageKey; hint: MessageKey }
+
 export type ChannelTypeDefinition = {
   fields: ChannelField[]
+  options?: ChannelOption[]
   help: MessageKey[]
   hasHeaders?: boolean
 }
@@ -27,18 +33,41 @@ export const channelTypes: Record<NotificationChannelType, ChannelTypeDefinition
       'settings.channels.help.telegram.startChat',
       'settings.channels.help.telegram.findChatId',
     ],
+    options: [{ key: 'silent', kind: 'checkbox', label: 'settings.channels.options.silent', hint: 'settings.channels.options.silentHint' }],
   },
   slack: {
     fields: [
       { key: 'webhook_url', label: 'settings.channels.fields.webhookUrl', inputType: 'password', placeholder: 'https://hooks.slack.com/services/…', isSecret: true },
     ],
     help: ['settings.channels.help.slack.createApp', 'settings.channels.help.slack.copyUrl'],
+    options: [
+      {
+        key: 'mention',
+        kind: 'select',
+        label: 'settings.channels.options.mention',
+        hint: 'settings.channels.options.mentionHint',
+        choices: [
+          { value: '', label: 'settings.channels.options.mentionNone' },
+          { value: 'here', label: 'settings.channels.options.mentionHere' },
+          { value: 'channel', label: 'settings.channels.options.mentionChannel' },
+        ],
+      },
+    ],
   },
   discord: {
     fields: [
       { key: 'webhook_url', label: 'settings.channels.fields.webhookUrl', inputType: 'password', placeholder: 'https://discord.com/api/webhooks/…', isSecret: true },
     ],
     help: ['settings.channels.help.discord.openSettings', 'settings.channels.help.discord.copyUrl'],
+    options: [
+      {
+        key: 'mention_role_id',
+        kind: 'text',
+        label: 'settings.channels.options.mentionRole',
+        hint: 'settings.channels.options.mentionRoleHint',
+        placeholder: '123456789012345678',
+      },
+    ],
   },
   email: {
     fields: [{ key: 'email', label: 'settings.channels.fields.email', inputType: 'email', placeholder: 'ops@example.com' }],
@@ -53,4 +82,6 @@ export const channelTypes: Record<NotificationChannelType, ChannelTypeDefinition
   },
 }
 
-export const channelTypeOrder: NotificationChannelType[] = ['telegram', 'slack', 'discord', 'email', 'webhook']
+export const channelTypeOrder: NotificationChannelType[] = ['discord', 'email', 'slack', 'telegram', 'webhook']
+
+export const notificationEventOrder: NotificationEvent[] = ['down', 'recovered', 'degraded', 'degradation_resolved', 'reminder', 'closed']

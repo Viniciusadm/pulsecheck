@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Enums\MessageFormat;
 use App\Enums\MonitorType;
 use App\Enums\NotificationType;
 use App\Models\Incident;
@@ -122,6 +123,15 @@ final readonly class AlertMessage
             fields: [],
             occurredAt: now(),
         );
+    }
+
+    public function formattedAs(MessageFormat $format): self
+    {
+        if ($format === MessageFormat::Detailed) {
+            return $this;
+        }
+
+        return new self($this->event, $this->severity, $this->title, $this->summary, [], $this->occurredAt, $this->incident);
     }
 
     public function toText(): string

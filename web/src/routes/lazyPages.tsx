@@ -1,6 +1,12 @@
 import { lazy, Suspense, type ReactNode } from 'react'
 
 export const ChannelsPage = lazy(() => import('../features/channels/ChannelsPage.tsx').then((module) => ({ default: module.ChannelsPage })))
+export const NotificationChannelCreatePage = lazy(() =>
+  import('../features/channels/NotificationChannelPage.tsx').then((module) => ({ default: module.NotificationChannelCreatePage })),
+)
+export const NotificationChannelEditPage = lazy(() =>
+  import('../features/channels/NotificationChannelPage.tsx').then((module) => ({ default: module.NotificationChannelEditPage })),
+)
 export const ForgotPasswordPage = lazy(() => import('../features/auth/ForgotPasswordPage.tsx').then((module) => ({ default: module.ForgotPasswordPage })))
 export const LoginPage = lazy(() => import('../features/auth/LoginPage.tsx').then((module) => ({ default: module.LoginPage })))
 export const MaintenancePage = lazy(() => import('../features/maintenance/MaintenancePage.tsx').then((module) => ({ default: module.MaintenancePage })))

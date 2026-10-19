@@ -10,7 +10,7 @@ class TelegramClient
 {
     private const API_URL = 'https://api.telegram.org';
 
-    public function sendMessage(string $botToken, string $chatId, string $text): void
+    public function sendMessage(string $botToken, string $chatId, string $text, bool $isSilent = false): void
     {
         try {
             $response = Http::timeout(10)
@@ -20,6 +20,7 @@ class TelegramClient
                     'chat_id' => $chatId,
                     'text' => $text,
                     'disable_web_page_preview' => 'true',
+                    'disable_notification' => $isSilent ? 'true' : 'false',
                 ]);
         } catch (Throwable) {
             throw NotificationDeliveryException::unavailable();

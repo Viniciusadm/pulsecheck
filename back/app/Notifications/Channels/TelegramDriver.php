@@ -19,6 +19,7 @@ class TelegramDriver implements ChannelDriver
         return [
             'bot_token' => ['required', 'string', 'regex:'.self::BOT_TOKEN_PATTERN],
             'chat_id' => ['required', 'string', 'regex:'.self::CHAT_ID_PATTERN],
+            'silent' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -29,6 +30,6 @@ class TelegramDriver implements ChannelDriver
 
     public function send(NotificationChannel $channel, AlertMessage $message): void
     {
-        $this->client->sendMessage($channel->setting('bot_token'), $channel->setting('chat_id'), $message->toText());
+        $this->client->sendMessage($channel->setting('bot_token'), $channel->setting('chat_id'), $message->toText(), (bool) $channel->setting('silent'));
     }
 }

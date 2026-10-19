@@ -22,6 +22,7 @@ export const queryKeys = {
   publicStatusPage: (slug: string) => ['public-status-page', slug] as const,
   monitorMaintenanceWindows: (id: number) => ['maintenance-windows', 'monitor', id] as const,
   notificationChannels: ['notification-channels'] as const,
+  alertPreview: (event: string, messageFormat: string) => ['notification-channels', 'preview', event, messageFormat] as const,
   users: ['users'] as const,
   teams: ['teams'] as const,
 }

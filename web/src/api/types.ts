@@ -396,13 +396,24 @@ export type AppConfig = {
 
 export type NotificationChannelType = 'telegram' | 'webhook' | 'slack' | 'discord' | 'email'
 
+export type NotificationEvent = 'down' | 'recovered' | 'closed' | 'degraded' | 'degradation_resolved' | 'reminder'
+
+export type MessageFormat = 'detailed' | 'compact'
+
+export type AlertSeverity = 'critical' | 'warning' | 'resolved' | 'info'
+
 export type NotificationChannel = {
   id: number
   type: NotificationChannelType
   name: string
   enabled: boolean
   is_default: boolean
-  config: Record<string, string>
+  events: NotificationEvent[]
+  quiet_hours_start: string | null
+  quiet_hours_end: string | null
+  quiet_hours_allow_critical: boolean
+  message_format: MessageFormat
+  config: Record<string, string | boolean>
   secrets_set: string[]
   monitors_count: number
   team_ids: number[]
@@ -415,8 +426,21 @@ export type NotificationChannelInput = {
   name: string
   enabled: boolean
   is_default: boolean
-  config: Record<string, string | Record<string, string>>
+  events?: NotificationEvent[]
+  quiet_hours_start?: string | null
+  quiet_hours_end?: string | null
+  quiet_hours_allow_critical?: boolean
+  message_format?: MessageFormat
+  config: Record<string, string | boolean | null | Record<string, string>>
   team_ids?: number[]
+}
+
+export type AlertPreview = {
+  event: string
+  severity: AlertSeverity
+  title: string
+  summary: string | null
+  fields: { label: string; value: string }[]
 }
 
 export type UserInput = {

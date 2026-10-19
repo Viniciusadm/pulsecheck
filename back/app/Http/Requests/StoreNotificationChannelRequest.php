@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\MessageFormat;
 use App\Enums\NotificationChannelType;
+use App\Enums\NotificationType;
 use App\Http\Requests\Concerns\ValidatesTeamAssignment;
 use App\Notifications\Channels\ChannelDriver;
 use Illuminate\Foundation\Http\FormRequest;
@@ -24,8 +26,21 @@ class StoreNotificationChannelRequest extends FormRequest
             'name' => ['required', 'string', 'max:100'],
             'enabled' => ['sometimes', 'boolean'],
             'is_default' => ['sometimes', 'boolean'],
+            ...$this->deliveryRules(),
             ...$this->configRules(),
             ...$this->teamRules(),
+        ];
+    }
+
+    protected function deliveryRules(): array
+    {
+        return [
+            'events' => ['sometimes', 'array', 'min:1'],
+            'events.*' => ['distinct', Rule::enum(NotificationType::class)],
+            'quiet_hours_start' => ['nullable', 'date_format:H:i', 'required_with:quiet_hours_end', 'different:quiet_hours_end'],
+            'quiet_hours_end' => ['nullable', 'date_format:H:i', 'required_with:quiet_hours_start'],
+            'quiet_hours_allow_critical' => ['sometimes', 'boolean'],
+            'message_format' => ['sometimes', Rule::enum(MessageFormat::class)],
         ];
     }
 
