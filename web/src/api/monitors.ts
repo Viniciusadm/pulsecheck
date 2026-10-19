@@ -45,6 +45,18 @@ export async function rotateHeartbeatToken(id: number) {
   return response.data.data
 }
 
+export async function enableMonitorBadge(id: number) {
+  const response = await http.post<DataResponse<Monitor>>(`/api/monitors/${id}/badge`)
+
+  return response.data.data
+}
+
+export async function disableMonitorBadge(id: number) {
+  const response = await http.delete<DataResponse<Monitor>>(`/api/monitors/${id}/badge`)
+
+  return response.data.data
+}
+
 export async function deleteMonitor(id: number) {
   await http.delete(`/api/monitors/${id}`)
 }

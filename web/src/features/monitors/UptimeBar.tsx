@@ -1,13 +1,15 @@
 import { useRef, useState, type KeyboardEvent } from 'react'
 import type { UptimeDay } from '../../api/types.ts'
+
+export type UptimeBarDay = Pick<UptimeDay, 'date' | 'uptime_percentage'> & Partial<Pick<UptimeDay, 'total_checks' | 'degraded_checks' | 'maintenance_checks'>>
 import { t } from '../../i18n/index.ts'
 import { formatPercentage, formatShortDate } from '../../lib/format.ts'
 
 const NO_DATA_PATTERN = 'repeating-linear-gradient(135deg, #e1e5ea 0 3px, #f4f6f8 3px 6px)'
 
-function dayClass(day: UptimeDay): string {
+function dayClass(day: UptimeBarDay): string {
   if (day.uptime_percentage === null) {
-    return day.maintenance_checks > 0 ? 'bg-status-maintenance' : ''
+    return (day.maintenance_checks ?? 0) > 0 ? 'bg-status-maintenance' : ''
   }
 
   if (day.uptime_percentage === 100) {
@@ -17,18 +19,22 @@ function dayClass(day: UptimeDay): string {
   return day.uptime_percentage >= 95 ? 'bg-status-pending' : 'bg-status-down'
 }
 
-function dayLabel(day: UptimeDay): string {
+function dayLabel(day: UptimeBarDay): string {
   const date = formatShortDate(day.date)
 
   if (day.uptime_percentage === null) {
     const label = t('monitors.detail.dailyUptimeNoData', { date })
 
-    return day.maintenance_checks > 0 ? `${label} · ${t('status.maintenance')}` : label
+    return (day.maintenance_checks ?? 0) > 0 ? `${label} · ${t('status.maintenance')}` : label
+  }
+
+  if (day.total_checks === undefined) {
+    return t('monitors.detail.dailyUptimeDayShort', { date, uptime: formatPercentage(day.uptime_percentage) })
   }
 
   const label = t('monitors.detail.dailyUptimeDay', { date, uptime: formatPercentage(day.uptime_percentage), total: day.total_checks })
 
-  return day.degraded_checks > 0 ? `${label} · ${t('monitors.detail.dailyUptimeSlow', { count: day.degraded_checks })}` : label
+  return (day.degraded_checks ?? 0) > 0 ? `${label} · ${t('monitors.detail.dailyUptimeSlow', { count: day.degraded_checks ?? 0 })}` : label
 }
 
 const NAVIGATION_KEYS: Record<string, (index: number, last: number) => number> = {
@@ -38,7 +44,7 @@ const NAVIGATION_KEYS: Record<string, (index: number, last: number) => number> =
   End: (_index, last) => last,
 }
 
-export function UptimeBar({ days }: { days: UptimeDay[] }) {
+export function UptimeBar({ days, label }: { days: UptimeBarDay[]; label?: string }) {
   const withData = days.filter((day) => day.uptime_percentage !== null).length
   const lastIndex = days.length - 1
   const [focusIndex, setFocusIndex] = useState(lastIndex)
@@ -64,7 +70,7 @@ export function UptimeBar({ days }: { days: UptimeDay[] }) {
     <div className="flex flex-col gap-2">
       <ol
         className="flex h-10 gap-0.5"
-        aria-label={t('monitors.detail.dailyUptimeSummary', { withData })}
+        aria-label={label ?? t('monitors.detail.dailyUptimeSummary', { withData })}
         onKeyDown={handleKeyDown}
         onMouseLeave={() => setHighlightedIndex(null)}
       >
@@ -84,7 +90,7 @@ export function UptimeBar({ days }: { days: UptimeDay[] }) {
             onBlur={() => setHighlightedIndex(null)}
             onMouseEnter={() => setHighlightedIndex(index)}
             className={`flex-1 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 ${dayClass(day)}`}
-            style={day.uptime_percentage === null && day.maintenance_checks === 0 ? { backgroundImage: NO_DATA_PATTERN } : undefined}
+            style={day.uptime_percentage === null && !day.maintenance_checks ? { backgroundImage: NO_DATA_PATTERN } : undefined}
           />
         ))}
       </ol>
@@ -108,7 +114,7 @@ export function UptimeBar({ days }: { days: UptimeDay[] }) {
           <span className="size-3 rounded-sm" style={{ backgroundImage: NO_DATA_PATTERN }} aria-hidden="true" />
           {t('monitors.detail.legendNoData')}
         </span>
-        {days.some((day) => day.uptime_percentage === null && day.maintenance_checks > 0) && (
+        {days.some((day) => day.uptime_percentage === null && (day.maintenance_checks ?? 0) > 0) && (
           <span className="inline-flex items-center gap-1.5">
             <span className="size-3 rounded-sm bg-status-maintenance" aria-hidden="true" />
             {t('status.maintenance')}

@@ -23,6 +23,7 @@ import { canManageResources } from '../../lib/permissions.ts'
 import { useAuth } from '../auth/AuthContext.ts'
 import { MonitorMaintenanceSection } from '../maintenance/MonitorMaintenanceSection.tsx'
 import { CheckHistory } from './CheckHistory.tsx'
+import { MonitorBadgeCard } from './MonitorBadgeCard.tsx'
 import { HeartbeatPanel } from './HeartbeatPanel.tsx'
 import { IncidentList } from './IncidentList.tsx'
 import { MonitorFormDialog } from './MonitorFormDialog.tsx'
@@ -229,6 +230,8 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
       </section>
 
       <MonitorMaintenanceSection monitorId={monitor.id} canManage={canManage} />
+
+      {canManage && <MonitorBadgeCard monitor={monitor} />}
 
       <CheckHistory monitorId={monitor.id} />
 

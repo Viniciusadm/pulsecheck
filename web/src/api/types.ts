@@ -84,6 +84,7 @@ export type Monitor = {
   certificate_expires_at: string | null
   last_heartbeat_at: string | null
   heartbeat_url?: string
+  badge_url?: string | null
   status: MonitorStatus
   is_paused: boolean
   is_in_maintenance: boolean
@@ -168,6 +169,63 @@ export type IncidentNote = {
   user: { id: number; name: string } | null
   can_delete: boolean
   created_at: string
+}
+
+export type StatusPageMonitor = {
+  monitor_id: number
+  name: string
+  display_name: string | null
+  status: MonitorStatus
+}
+
+export type StatusPage = {
+  id: number
+  name: string
+  slug: string
+  description: string | null
+  is_published: boolean
+  show_latency: boolean
+  show_incidents: boolean
+  uptime_days: 30 | 60 | 90
+  public_path: string
+  monitors: StatusPageMonitor[]
+  hidden_monitors_count: number
+  team_ids: number[]
+  created_at: string
+  updated_at: string
+}
+
+export type StatusPageInput = {
+  name: string
+  slug: string
+  description: string | null
+  is_published: boolean
+  show_latency: boolean
+  show_incidents: boolean
+  uptime_days: number
+  monitors: { monitor_id: number; display_name: string | null }[]
+  team_ids?: number[]
+}
+
+export type PublicMonitorStatus = MonitorStatus | 'paused' | 'maintenance'
+
+export type PublicOverallStatus = 'operational' | 'degraded' | 'partial_outage' | 'major_outage' | 'maintenance' | 'unknown'
+
+export type PublicStatusPage = {
+  name: string
+  description: string | null
+  generated_at: string
+  uptime_days: number
+  overall_status: PublicOverallStatus
+  monitors: {
+    key: number
+    name: string
+    status: PublicMonitorStatus
+    uptime_percentage: number | null
+    latency_ms: number | null
+    days: { date: string; uptime_percentage: number | null }[]
+  }[]
+  incidents: { monitor_key: number; started_at: string; resolved_at: string | null; duration_seconds: number }[]
 }
 
 export type MaintenanceWindowType = 'one_off' | 'recurring'

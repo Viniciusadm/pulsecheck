@@ -18,6 +18,8 @@ export const queryKeys = {
   monitorIncidents: (id: number, page: number) => ['monitors', id, 'incidents', page] as const,
   incidentNotes: (id: number) => ['incidents', id, 'notes'] as const,
   maintenanceWindows: ['maintenance-windows'] as const,
+  statusPages: ['status-pages'] as const,
+  publicStatusPage: (slug: string) => ['public-status-page', slug] as const,
   monitorMaintenanceWindows: (id: number) => ['maintenance-windows', 'monitor', id] as const,
   notificationChannels: ['notification-channels'] as const,
   users: ['users'] as const,

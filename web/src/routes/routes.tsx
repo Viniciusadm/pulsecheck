@@ -4,15 +4,18 @@ import { MonitorDetailPage } from '../features/monitors/MonitorDetailPage.tsx'
 import { MonitorsPage } from '../features/monitors/MonitorsPage.tsx'
 import { AppLayout } from '../layouts/AppLayout.tsx'
 import { AuthLayout } from '../layouts/AuthLayout.tsx'
+import { PublicLayout } from '../layouts/PublicLayout.tsx'
 import {
   ChannelsPage,
   ForgotPasswordPage,
   LazyPage,
   LoginPage,
   MaintenancePage,
+  PublicStatusPage,
   ResetPasswordPage,
   SettingsPage,
   SetupPage,
+  StatusPagesPage,
 } from './lazyPages.tsx'
 import { RedirectIfAuthenticated, RedirectIfSetupDone, RequireAuth, RequireSetup } from './guards.tsx'
 import { NotFoundPage } from './NotFoundPage.tsx'
@@ -44,6 +47,10 @@ export const routes: RouteObject[] = [
         ],
       },
       {
+        element: <PublicLayout />,
+        children: [{ path: '/status/:slug', element: <LazyPage><PublicStatusPage /></LazyPage> }],
+      },
+      {
         element: <RequireAuth />,
         children: [
           {
@@ -55,6 +62,7 @@ export const routes: RouteObject[] = [
               { path: '/monitors/:id', element: <MonitorDetailPage /> },
               { path: '/channels', element: <LazyPage><ChannelsPage /></LazyPage> },
               { path: '/maintenance', element: <LazyPage><MaintenancePage /></LazyPage> },
+              { path: '/status-pages', element: <LazyPage><StatusPagesPage /></LazyPage> },
               { path: '/settings', element: <LazyPage><SettingsPage /></LazyPage> },
             ],
           },

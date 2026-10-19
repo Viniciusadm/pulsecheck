@@ -4,6 +4,8 @@ export const ChannelsPage = lazy(() => import('../features/channels/ChannelsPage
 export const ForgotPasswordPage = lazy(() => import('../features/auth/ForgotPasswordPage.tsx').then((module) => ({ default: module.ForgotPasswordPage })))
 export const LoginPage = lazy(() => import('../features/auth/LoginPage.tsx').then((module) => ({ default: module.LoginPage })))
 export const MaintenancePage = lazy(() => import('../features/maintenance/MaintenancePage.tsx').then((module) => ({ default: module.MaintenancePage })))
+export const PublicStatusPage = lazy(() => import('../features/statusPages/PublicStatusPage.tsx').then((module) => ({ default: module.PublicStatusPage })))
+export const StatusPagesPage = lazy(() => import('../features/statusPages/StatusPagesPage.tsx').then((module) => ({ default: module.StatusPagesPage })))
 export const ResetPasswordPage = lazy(() => import('../features/auth/ResetPasswordPage.tsx').then((module) => ({ default: module.ResetPasswordPage })))
 export const SettingsPage = lazy(() => import('../features/settings/SettingsPage.tsx').then((module) => ({ default: module.SettingsPage })))
 export const SetupPage = lazy(() => import('../features/setup/SetupPage.tsx').then((module) => ({ default: module.SetupPage })))
