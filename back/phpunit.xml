@@ -37,6 +37,7 @@
         <env name="REDIS_CACHE_DB" value="14"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
+        <env name="PULSECHECK_GENERATE_SETUP_TOKEN" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
     </php>

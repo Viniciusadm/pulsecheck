@@ -6,6 +6,7 @@ use App\Actions\RecordCheckResult;
 use App\Enums\CheckErrorType;
 use App\Events\MonitorChecked;
 use App\Models\Monitor;
+use App\Models\NotificationChannel;
 use App\Models\Team;
 use App\Models\User;
 use App\Services\CheckOutcome;
@@ -14,6 +15,7 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -61,6 +63,33 @@ class MonitorCheckedBroadcastTest extends TestCase
                 && $payload['monitor']['id'] === $monitor->id
                 && $payload['monitor']['last_status_code'] === 200
                 && $payload['monitor']['last_latency_ms'] === 120;
+        });
+    }
+
+    public function test_the_payload_does_not_carry_fields_of_the_user_whose_request_triggered_it(): void
+    {
+        Event::fake([MonitorChecked::class]);
+        $monitor = Monitor::factory()->up()->create(['badge_token' => Str::random(40), 'heartbeat_token' => Str::random(40)]);
+        $monitor->notificationChannels()->attach(NotificationChannel::factory()->create());
+
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
+            ->postJson('/api/maintenance-windows', [
+                'name' => 'Database upgrade',
+                'type' => 'one_off',
+                'starts_at' => now()->subMinutes(5)->toIso8601String(),
+                'ends_at' => now()->addHour()->toIso8601String(),
+                'monitor_ids' => [$monitor->id],
+            ])
+            ->assertCreated();
+
+        Event::assertDispatched(MonitorChecked::class, function (MonitorChecked $event) use ($monitor): bool {
+            $payload = $event->broadcastWith()['monitor'];
+
+            return $payload['id'] === $monitor->id
+                && $payload['is_in_maintenance'] === true
+                && ! array_key_exists('badge_url', $payload)
+                && ! array_key_exists('heartbeat_url', $payload)
+                && ! array_key_exists('notification_channel_ids', $payload);
         });
     }
 

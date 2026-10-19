@@ -55,6 +55,26 @@ class MonitorTypesApiTest extends TestCase
             ->assertJsonPath('data.options.warning_days', 30);
     }
 
+    public function test_keyword_and_tcp_monitors_are_updated_without_resending_their_options(): void
+    {
+        $keywordId = $this->create(['type' => 'keyword', 'url' => 'https://example.com', 'options' => ['keyword' => 'ok']])->assertCreated()->json('data.id');
+        $tcpId = $this->create(['type' => 'tcp', 'options' => ['host' => 'db.example.com', 'port' => 5432]])->assertCreated()->json('data.id');
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)->fromSpa()->patchJson("/api/monitors/{$keywordId}", ['name' => 'Renamed'])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Renamed')
+            ->assertJsonPath('data.options.keyword', 'ok');
+
+        $this->actingAs($admin)->fromSpa()->patchJson("/api/monitors/{$tcpId}", ['interval_minutes' => 10])
+            ->assertOk()
+            ->assertJsonPath('data.display_target', 'db.example.com:5432');
+
+        $this->actingAs($admin)->fromSpa()->patchJson("/api/monitors/{$tcpId}", ['options' => ['host' => 'db.example.com']])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('options.port');
+    }
+
     public static function invalidPayloads(): array
     {
         return [

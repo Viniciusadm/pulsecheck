@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enums\MonitorType;
 use App\Models\Monitor;
+use Illuminate\Support\Str;
 
 class UpdateMonitorRequest extends StoreMonitorRequest
 {
@@ -12,7 +13,7 @@ class UpdateMonitorRequest extends StoreMonitorRequest
         return [
             ...collect(parent::rules())
                 ->map(fn (array $rules, string $key) => str_contains($key, '.')
-                    ? $rules
+                    ? ['exclude_without:'.Str::before($key, '.'), ...$rules]
                     : ['sometimes', ...array_filter($rules, fn (mixed $rule) => $rule !== 'sometimes')])
                 ->all(),
             'type' => ['prohibited'],

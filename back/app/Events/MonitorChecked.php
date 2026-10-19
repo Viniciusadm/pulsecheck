@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Http\Request;
 use Illuminate\Queue\SerializesModels;
 
 class MonitorChecked implements ShouldBroadcastNow
@@ -32,6 +33,6 @@ class MonitorChecked implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
-        return ['monitor' => MonitorResource::make($this->monitor)->resolve()];
+        return ['monitor' => MonitorResource::make($this->monitor)->resolve(new Request)];
     }
 }
