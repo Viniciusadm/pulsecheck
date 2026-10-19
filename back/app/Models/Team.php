@@ -28,4 +28,9 @@ class Team extends Model
     {
         return $this->belongsToMany(NotificationChannel::class);
     }
+
+    public function maintenanceWindows(): BelongsToMany
+    {
+        return $this->belongsToMany(MaintenanceWindow::class);
+    }
 }

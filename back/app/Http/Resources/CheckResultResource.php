@@ -17,6 +17,7 @@ class CheckResultResource extends JsonResource
             'status_code' => $this->status_code,
             'is_success' => $this->is_success,
             'is_degraded' => $this->is_degraded,
+            'in_maintenance' => $this->in_maintenance,
             'error_type' => $this->error_type,
             'error_message' => $this->error_message,
             'warning_type' => $this->warning_type,

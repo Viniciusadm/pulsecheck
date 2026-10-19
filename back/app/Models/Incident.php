@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['kind', 'started_at', 'resolved_at', 'cause'])]
 class Incident extends Model
@@ -26,12 +27,25 @@ class Incident extends Model
             'kind' => IncidentKind::class,
             'started_at' => 'datetime',
             'resolved_at' => 'datetime',
+            'acknowledged_at' => 'datetime',
+            'last_reminded_at' => 'datetime',
+            'reminder_count' => 'integer',
         ];
     }
 
     public function monitor(): BelongsTo
     {
         return $this->belongsTo(Monitor::class);
+    }
+
+    public function acknowledger(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'acknowledged_by');
+    }
+
+    public function notes(): HasMany
+    {
+        return $this->hasMany(IncidentNote::class);
     }
 
     protected function isOpen(): Attribute

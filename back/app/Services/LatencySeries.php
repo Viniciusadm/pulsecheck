@@ -12,7 +12,7 @@ class LatencySeries
     {
         $window = new BucketWindow($period);
 
-        $rows = $window->selectBucket($monitor->checkResults()->toBase(), 'started_at')
+        $rows = $window->selectBucket($monitor->checkResults()->where('in_maintenance', false)->toBase(), 'started_at')
             ->selectRaw('avg(latency_ms) filter (where is_success) as average_latency_ms')
             ->selectRaw('count(*) as checks')
             ->selectRaw('count(*) filter (where not is_success) as failed_checks')

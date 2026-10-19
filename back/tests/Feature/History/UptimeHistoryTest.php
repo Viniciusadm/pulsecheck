@@ -34,9 +34,9 @@ class UptimeHistoryTest extends TestCase
             ->assertOk();
 
         $this->assertSame([
-            ['date' => '2026-10-15', 'total_checks' => 1, 'successful_checks' => 1, 'degraded_checks' => 0, 'uptime_percentage' => 100],
-            ['date' => '2026-10-16', 'total_checks' => 0, 'successful_checks' => 0, 'degraded_checks' => 0, 'uptime_percentage' => null],
-            ['date' => '2026-10-17', 'total_checks' => 2, 'successful_checks' => 1, 'degraded_checks' => 0, 'uptime_percentage' => 50],
+            ['date' => '2026-10-15', 'total_checks' => 1, 'successful_checks' => 1, 'degraded_checks' => 0, 'maintenance_checks' => 0, 'uptime_percentage' => 100],
+            ['date' => '2026-10-16', 'total_checks' => 0, 'successful_checks' => 0, 'degraded_checks' => 0, 'maintenance_checks' => 0, 'uptime_percentage' => null],
+            ['date' => '2026-10-17', 'total_checks' => 2, 'successful_checks' => 1, 'degraded_checks' => 0, 'maintenance_checks' => 0, 'uptime_percentage' => 50],
         ], $response->json('data'));
     }
 

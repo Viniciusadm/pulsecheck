@@ -10,13 +10,13 @@ class MonitorStateMachine
 {
     private const MAX_COUNTER = 32767;
 
-    public function apply(Monitor $monitor, CheckOutcome $outcome): ?Transition
+    public function apply(Monitor $monitor, CheckOutcome $outcome, bool $inMaintenance = false): ?Transition
     {
         $this->updateCounters($monitor, $outcome);
 
         $previousStatus = $monitor->status;
 
-        if ($previousStatus !== MonitorStatus::Down && $monitor->consecutive_failures >= $this->failuresToDown($monitor)) {
+        if (! $inMaintenance && $previousStatus !== MonitorStatus::Down && $monitor->consecutive_failures >= $this->failuresToDown($monitor)) {
             $monitor->status = MonitorStatus::Down;
 
             return Transition::WentDown;
@@ -28,7 +28,7 @@ class MonitorStateMachine
             return $previousStatus === MonitorStatus::Down ? Transition::Recovered : Transition::BecameUp;
         }
 
-        if ($previousStatus === MonitorStatus::Up && $monitor->consecutive_degraded >= $this->degradedToConfirm()) {
+        if (! $inMaintenance && $previousStatus === MonitorStatus::Up && $monitor->consecutive_degraded >= $this->degradedToConfirm()) {
             $monitor->status = MonitorStatus::Degraded;
 
             return Transition::BecameDegraded;

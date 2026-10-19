@@ -13,6 +13,7 @@ class UptimeCalculator
         $row = $monitor->checkResults()
             ->where('started_at', '>=', $from)
             ->where('started_at', '<', $to)
+            ->where('in_maintenance', false)
             ->toBase()
             ->selectRaw('count(*) as total_checks')
             ->selectRaw('count(*) filter (where is_success) as successful_checks')
@@ -42,7 +43,7 @@ class UptimeCalculator
             ->where('date', '>=', $firstDay->toDateString())
             ->toBase()
             ->selectRaw("to_char(date, 'YYYY-MM-DD') as day")
-            ->addSelect(['total_checks', 'successful_checks', 'degraded_checks'])
+            ->addSelect(['total_checks', 'successful_checks', 'degraded_checks', 'maintenance_checks'])
             ->orderBy('date')
             ->get()
             ->keyBy('day');
@@ -53,9 +54,10 @@ class UptimeCalculator
             ->where('started_at', '>=', $rawFrom)
             ->toBase()
             ->selectRaw("to_char(started_at at time zone 'UTC', 'YYYY-MM-DD') as day")
-            ->selectRaw('count(*) as total_checks')
-            ->selectRaw('count(*) filter (where is_success) as successful_checks')
-            ->selectRaw('count(*) filter (where is_degraded) as degraded_checks')
+            ->selectRaw('count(*) filter (where not in_maintenance) as total_checks')
+            ->selectRaw('count(*) filter (where is_success and not in_maintenance) as successful_checks')
+            ->selectRaw('count(*) filter (where is_degraded and not in_maintenance) as degraded_checks')
+            ->selectRaw('count(*) filter (where in_maintenance) as maintenance_checks')
             ->groupBy('day')
             ->get()
             ->keyBy('day');
@@ -73,6 +75,7 @@ class UptimeCalculator
                     'total_checks' => $totalChecks,
                     'successful_checks' => $successfulChecks,
                     'degraded_checks' => (int) ($rows[$day]->degraded_checks ?? 0),
+                    'maintenance_checks' => (int) ($rows[$day]->maintenance_checks ?? 0),
                     'uptime_percentage' => self::percentage($successfulChecks, $totalChecks),
                 ];
             })

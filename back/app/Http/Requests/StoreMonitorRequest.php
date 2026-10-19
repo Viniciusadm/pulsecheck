@@ -27,6 +27,7 @@ class StoreMonitorRequest extends FormRequest
             'interval_minutes' => ['sometimes', 'integer', Rule::in($this->monitorType()->allowedIntervals())],
             'timeout_seconds' => ['sometimes', 'integer', 'between:'.config('pulsecheck.timeout_min').','.config('pulsecheck.timeout_max')],
             'latency_threshold_ms' => ['sometimes', 'nullable', 'integer', 'between:1,60000'],
+            'reminder_interval_minutes' => ['sometimes', 'nullable', 'integer', Rule::in(config('pulsecheck.reminder_intervals'))],
             'notification_channel_ids' => ['sometimes', 'array'],
             'notification_channel_ids.*' => ['integer', 'distinct', Rule::in(NotificationChannel::query()->visibleTo($this->user())->pluck('id')->all())],
             ...$this->checkRules(),

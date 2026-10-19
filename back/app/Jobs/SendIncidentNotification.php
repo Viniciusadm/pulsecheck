@@ -27,13 +27,16 @@ class SendIncidentNotification implements ShouldBeUnique, ShouldQueue
         public int $incidentId,
         public int $channelId,
         public NotificationType $type,
+        public int $sequence = 0,
     ) {
         $this->onQueue(self::QUEUE);
     }
 
     public function uniqueId(): string
     {
-        return "{$this->incidentId}:{$this->channelId}:{$this->type->value}";
+        $key = "{$this->incidentId}:{$this->channelId}:{$this->type->value}";
+
+        return $this->sequence > 0 ? "{$key}:{$this->sequence}" : $key;
     }
 
     public function backoff(): array
@@ -50,7 +53,11 @@ class SendIncidentNotification implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        if (in_array($this->type, [NotificationType::Down, NotificationType::Degraded], true) && $incident->resolved_at !== null) {
+        if (in_array($this->type, [NotificationType::Down, NotificationType::Degraded, NotificationType::Reminder], true) && $incident->resolved_at !== null) {
+            return;
+        }
+
+        if ($this->type === NotificationType::Reminder && ($incident->acknowledged_at !== null || $incident->monitor->is_paused || $incident->monitor->isInMaintenance())) {
             return;
         }
 

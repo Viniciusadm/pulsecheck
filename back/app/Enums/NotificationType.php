@@ -9,4 +9,5 @@ enum NotificationType: string
     case Closed = 'closed';
     case Degraded = 'degraded';
     case DegradationResolved = 'degradation_resolved';
+    case Reminder = 'reminder';
 }

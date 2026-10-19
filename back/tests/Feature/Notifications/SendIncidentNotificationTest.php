@@ -161,6 +161,8 @@ class SendIncidentNotificationTest extends TestCase
             'incident' => [
                 'id' => $incident->id,
                 'kind' => 'outage',
+                'acknowledged_at' => null,
+                'reminder_count' => 0,
                 'cause' => 'timeout: Operation timed out',
                 'started_at' => '2026-10-17T12:00:00Z',
                 'resolved_at' => null,

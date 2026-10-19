@@ -11,6 +11,8 @@ class MonitorIncidentController extends Controller
     public function index(Monitor $monitor): AnonymousResourceCollection
     {
         $incidents = $monitor->incidents()
+            ->with('acknowledger:id,name')
+            ->withCount('notes')
             ->orderByDesc('started_at')
             ->orderByDesc('id')
             ->paginate(20);

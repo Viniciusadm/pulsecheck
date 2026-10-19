@@ -18,7 +18,8 @@ class RecentIncidentController extends Controller
 
         $incidents = Incident::query()
             ->whereHas('monitor', fn (Builder $monitors) => $monitors->visibleTo($request->user()))
-            ->with('monitor:id,name')
+            ->with(['monitor:id,name', 'acknowledger:id,name'])
+            ->withCount('notes')
             ->orderByDesc('started_at')
             ->orderByDesc('id')
             ->limit($validated['limit'] ?? 10)

@@ -12,7 +12,10 @@ use App\Http\Controllers\DashboardSlowestMonitorsController;
 use App\Http\Controllers\DashboardSummaryController;
 use App\Http\Controllers\DashboardUptimeTrendController;
 use App\Http\Controllers\HeartbeatController;
+use App\Http\Controllers\IncidentAcknowledgementController;
+use App\Http\Controllers\IncidentNoteController;
 use App\Http\Controllers\InstanceSettingsController;
+use App\Http\Controllers\MaintenanceWindowController;
 use App\Http\Controllers\MonitorCheckResultController;
 use App\Http\Controllers\MonitorController;
 use App\Http\Controllers\MonitorHeartbeatTokenController;
@@ -105,6 +108,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::match(['put', 'patch'], 'users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
+
+    Route::prefix('incidents/{incident}')->name('incidents.')->middleware('can:view,incident')->scopeBindings()->group(function () {
+        Route::post('acknowledge', IncidentAcknowledgementController::class)->middleware('throttle:incident-writes')->name('acknowledge');
+        Route::get('notes', [IncidentNoteController::class, 'index'])->name('notes.index');
+        Route::post('notes', [IncidentNoteController::class, 'store'])->middleware('throttle:incident-writes')->name('notes.store');
+        Route::delete('notes/{note}', [IncidentNoteController::class, 'destroy'])->middleware('throttle:incident-writes')->name('notes.destroy');
+    });
+
+    Route::get('maintenance-windows', [MaintenanceWindowController::class, 'index'])->name('maintenance-windows.index');
+    Route::post('maintenance-windows', [MaintenanceWindowController::class, 'store'])->middleware(['can:manage-resources', 'throttle:maintenance-writes'])->name('maintenance-windows.store');
+    Route::get('maintenance-windows/{maintenanceWindow}', [MaintenanceWindowController::class, 'show'])->middleware('can:view,maintenanceWindow')->name('maintenance-windows.show');
+    Route::match(['put', 'patch'], 'maintenance-windows/{maintenanceWindow}', [MaintenanceWindowController::class, 'update'])->middleware(['can:update,maintenanceWindow', 'throttle:maintenance-writes'])->name('maintenance-windows.update');
+    Route::delete('maintenance-windows/{maintenanceWindow}', [MaintenanceWindowController::class, 'destroy'])->middleware(['can:update,maintenanceWindow', 'throttle:maintenance-writes'])->name('maintenance-windows.destroy');
 
     Route::get('monitors', [MonitorController::class, 'index'])->name('monitors.index');
     Route::post('monitors', [MonitorController::class, 'store'])->middleware(['can:manage-resources', 'throttle:monitor-writes'])->name('monitors.store');

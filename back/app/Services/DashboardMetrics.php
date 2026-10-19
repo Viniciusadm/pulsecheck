@@ -58,6 +58,7 @@ class DashboardMetrics
             ->join('check_results', 'check_results.monitor_id', '=', 'monitors.id')
             ->where('check_results.started_at', '>=', (new BucketWindow($period))->first)
             ->where('check_results.is_success', true)
+            ->where('check_results.in_maintenance', false)
             ->whereNotNull('check_results.latency_ms')
             ->groupBy('monitors.id', 'monitors.name')
             ->select('monitors.id', 'monitors.name')
@@ -127,7 +128,9 @@ class DashboardMetrics
 
     private function checkResults(User $user): QueryBuilder
     {
-        return DB::table('check_results')->whereIn('monitor_id', $this->visibleMonitors($user)->select('monitors.id'));
+        return DB::table('check_results')
+            ->where('in_maintenance', false)
+            ->whereIn('monitor_id', $this->visibleMonitors($user)->select('monitors.id'));
     }
 
     private function roundedOrNull(mixed $value): ?int

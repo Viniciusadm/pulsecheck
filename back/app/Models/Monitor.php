@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'type', 'url', 'options', 'secrets', 'interval_minutes', 'timeout_seconds', 'latency_threshold_ms'])]
+#[Fillable(['name', 'type', 'url', 'options', 'secrets', 'interval_minutes', 'timeout_seconds', 'latency_threshold_ms', 'reminder_interval_minutes'])]
 #[Hidden(['secrets', 'heartbeat_token'])]
 class Monitor extends Model
 {
@@ -42,6 +42,7 @@ class Monitor extends Model
             'interval_minutes' => 'integer',
             'timeout_seconds' => 'integer',
             'latency_threshold_ms' => 'integer',
+            'reminder_interval_minutes' => 'integer',
             'config_revision' => 'integer',
             'status' => MonitorStatus::class,
             'is_paused' => 'boolean',
@@ -56,6 +57,7 @@ class Monitor extends Model
             'next_check_at' => 'datetime',
             'last_heartbeat_at' => 'datetime',
             'certificate_expires_at' => 'datetime',
+            'maintenance_ends_at' => 'datetime',
         ];
     }
 
@@ -108,6 +110,16 @@ class Monitor extends Model
     public function incidents(): HasMany
     {
         return $this->hasMany(Incident::class);
+    }
+
+    public function maintenanceWindows(): BelongsToMany
+    {
+        return $this->belongsToMany(MaintenanceWindow::class);
+    }
+
+    public function isInMaintenance(): bool
+    {
+        return $this->maintenance_ends_at !== null;
     }
 
     public function notificationChannels(): BelongsToMany

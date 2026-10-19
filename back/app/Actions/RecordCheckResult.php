@@ -13,6 +13,7 @@ use App\Models\CheckResult;
 use App\Models\Incident;
 use App\Models\Monitor;
 use App\Services\CheckOutcome;
+use App\Services\MaintenanceSchedule;
 use App\Services\MonitorStateMachine;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +27,7 @@ class RecordCheckResult
 
     private const MIN_CONFIRMATION_DELAY_SECONDS = 60;
 
-    public function __construct(private MonitorStateMachine $stateMachine) {}
+    public function __construct(private MonitorStateMachine $stateMachine, private MaintenanceSchedule $maintenanceSchedule) {}
 
     public function handle(Monitor $monitor, CheckOutcome $outcome): ?CheckResult
     {
@@ -39,7 +40,11 @@ class RecordCheckResult
                 return null;
             }
 
+            $maintenanceEndsAt = $this->maintenanceSchedule->endsAtFor($monitor, $outcome->startedAt);
+            $inMaintenance = $maintenanceEndsAt !== null;
+
             $checkResult = $monitor->checkResults()->create([
+                'in_maintenance' => $inMaintenance,
                 'started_at' => $outcome->startedAt,
                 'finished_at' => $outcome->finishedAt,
                 'latency_ms' => $outcome->latencyMs,
@@ -52,9 +57,10 @@ class RecordCheckResult
                 'warning_message' => $outcome->warningMessage === null ? null : Str::limit($outcome->warningMessage, self::MAX_WARNING_LENGTH - 3, '...'),
             ]);
 
-            $transition = $monitor->is_paused ? null : $this->stateMachine->apply($monitor, $outcome);
+            $transition = $monitor->is_paused ? null : $this->stateMachine->apply($monitor, $outcome, $inMaintenance);
 
             $monitor->forceFill([
+                'maintenance_ends_at' => $maintenanceEndsAt,
                 'last_status_code' => $outcome->statusCode,
                 'last_latency_ms' => $outcome->latencyMs,
                 'last_checked_at' => $outcome->finishedAt,
@@ -68,7 +74,7 @@ class RecordCheckResult
                 $monitor->certificate_expires_at = $outcome->certificateExpiresAt;
             }
 
-            if (! $monitor->is_paused && ! $monitor->type->isPassive() && $this->awaitsConfirmation($monitor, $outcome)) {
+            if (! $monitor->is_paused && ! $inMaintenance && ! $monitor->type->isPassive() && $this->awaitsConfirmation($monitor, $outcome)) {
                 $this->scheduleConfirmationCheck($monitor);
             }
 
@@ -166,12 +172,15 @@ class RecordCheckResult
 
     private function streakStartedAt(Monitor $monitor, int $streakLength): CarbonInterface
     {
-        return $monitor->checkResults()
+        $recent = $monitor->checkResults()
             ->orderByDesc('started_at')
             ->orderByDesc('id')
             ->limit($streakLength)
-            ->get(['started_at'])
-            ->min('started_at');
+            ->get(['started_at', 'in_maintenance']);
+
+        $outsideMaintenance = $recent->takeUntil(fn (CheckResult $result) => $result->in_maintenance);
+
+        return ($outsideMaintenance->isEmpty() ? $recent : $outsideMaintenance)->min('started_at');
     }
 
     private function limit(?string $text): ?string

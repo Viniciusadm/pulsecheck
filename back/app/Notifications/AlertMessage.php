@@ -69,6 +69,20 @@ final readonly class AlertMessage
                 occurredAt: $incident->resolved_at ?? now(),
                 incident: $incident,
             ),
+            NotificationType::Reminder => new self(
+                event: 'monitor.still_down',
+                severity: AlertSeverity::Critical,
+                title: '🔴 '.__(':monitor is still DOWN', ['monitor' => $monitor->name]),
+                summary: __('Reminder #:count: the incident has not been acknowledged yet.', ['count' => $incident->reminder_count]),
+                fields: [
+                    __('Host') => $host,
+                    __('Cause') => (string) $incident->cause,
+                    __('Since') => self::formatTime($incident->started_at),
+                    __('Down for') => self::formatDuration($incident->duration_seconds),
+                ],
+                occurredAt: now(),
+                incident: $incident,
+            ),
             NotificationType::Degraded => new self(
                 event: 'monitor.degraded',
                 severity: AlertSeverity::Warning,
@@ -148,6 +162,8 @@ final readonly class AlertMessage
             'incident' => $this->incident === null ? null : [
                 'id' => $this->incident->id,
                 'kind' => $this->incident->kind->value,
+                'acknowledged_at' => $this->incident->acknowledged_at === null ? null : self::isoTime($this->incident->acknowledged_at),
+                'reminder_count' => $this->incident->reminder_count,
                 'cause' => $this->incident->cause,
                 'started_at' => self::isoTime($this->incident->started_at),
                 'resolved_at' => $this->incident->resolved_at === null ? null : self::isoTime($this->incident->resolved_at),

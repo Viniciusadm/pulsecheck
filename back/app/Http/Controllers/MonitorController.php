@@ -22,7 +22,8 @@ class MonitorController extends Controller
             ->visibleTo($request->user())
             ->with(['notificationChannels:id', 'notificationChannels.teams:id', 'teams:id'])
             ->when($status === 'paused', fn ($query) => $query->where('is_paused', true))
-            ->when($status !== null && $status !== 'paused', fn ($query) => $query->where('is_paused', false)->where('status', $status))
+            ->when($status === 'maintenance', fn ($query) => $query->where('is_paused', false)->whereNotNull('maintenance_ends_at'))
+            ->when($status !== null && ! in_array($status, ['paused', 'maintenance'], true), fn ($query) => $query->where('is_paused', false)->whereNull('maintenance_ends_at')->where('status', $status))
             ->orderByDesc('id')
             ->paginate(20)
             ->withQueryString();

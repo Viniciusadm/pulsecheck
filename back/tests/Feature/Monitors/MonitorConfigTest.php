@@ -39,6 +39,7 @@ class MonitorConfigTest extends TestCase
                         'allowed_intervals' => [1, 5, 10],
                         'heartbeat_intervals' => [5, 60],
                         'keyword_max_body_bytes' => 1048576,
+                        'reminder_intervals' => [15, 30, 60, 120, 240],
                         'default_interval' => 5,
                         'timeout_min' => 1,
                         'timeout_max' => 30,

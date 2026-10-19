@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['started_at', 'finished_at', 'latency_ms', 'status_code', 'is_success', 'is_degraded', 'error_type', 'error_message', 'warning_type', 'warning_message'])]
+#[Fillable(['started_at', 'finished_at', 'latency_ms', 'status_code', 'is_success', 'is_degraded', 'error_type', 'error_message', 'warning_type', 'warning_message', 'in_maintenance'])]
 #[WithoutTimestamps]
 class CheckResult extends Model
 {
@@ -29,6 +29,7 @@ class CheckResult extends Model
             'status_code' => 'integer',
             'is_success' => 'boolean',
             'is_degraded' => 'boolean',
+            'in_maintenance' => 'boolean',
             'error_type' => CheckErrorType::class,
             'warning_type' => WarningType::class,
         ];

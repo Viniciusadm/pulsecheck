@@ -17,6 +17,13 @@ class IncidentResource extends JsonResource
             'cause' => $this->cause,
             'state' => $this->state,
             'duration_seconds' => $this->duration_seconds,
+            'acknowledged_at' => $this->acknowledged_at,
+            'acknowledged_by' => $this->whenLoaded('acknowledger', fn () => $this->acknowledger === null ? null : [
+                'id' => $this->acknowledger->id,
+                'name' => $this->acknowledger->name,
+            ]),
+            'reminder_count' => $this->reminder_count,
+            'notes_count' => $this->whenCounted('notes'),
             'monitor' => $this->whenLoaded('monitor', fn () => [
                 'id' => $this->monitor->id,
                 'name' => $this->monitor->name,

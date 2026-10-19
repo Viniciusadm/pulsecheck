@@ -30,6 +30,8 @@ return [
 
     'successes_to_up' => (int) env('PULSECHECK_SUCCESSES_TO_UP', 2),
 
+    'reminder_intervals' => array_map('intval', explode(',', env('PULSECHECK_REMINDER_INTERVALS', '15,30,60,120,240'))),
+
     'degraded_to_confirm' => (int) env('PULSECHECK_DEGRADED_TO_CONFIRM', 2),
 
     'max_request_body_bytes' => 16384,

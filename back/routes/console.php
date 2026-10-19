@@ -13,6 +13,16 @@ Schedule::command('monitors:dispatch-due')
     ->withoutOverlapping()
     ->onOneServer();
 
+Schedule::command('maintenance:sync')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->onOneServer();
+
+Schedule::command('incidents:send-reminders')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->onOneServer();
+
 Schedule::call(fn () => touch(storage_path('framework/scheduler-heartbeat')))
     ->name('scheduler-heartbeat')
     ->everyMinute();

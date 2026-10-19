@@ -24,6 +24,7 @@ class MonitorDailyUptime extends Model
             'total_checks' => 'integer',
             'successful_checks' => 'integer',
             'degraded_checks' => 'integer',
+            'maintenance_checks' => 'integer',
             'latency_sum_ms' => 'integer',
             'latency_samples' => 'integer',
         ];
