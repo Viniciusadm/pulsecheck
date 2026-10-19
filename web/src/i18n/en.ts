@@ -319,6 +319,11 @@ export const en = {
       channelDisabled: '(disabled)',
       created: 'Monitor added. The first check runs within a minute.',
       saved: 'Changes saved.',
+      sections: {
+        general: 'Monitor',
+        check: 'Checks',
+        alerts: 'Alerts and access',
+      },
     },
     detail: {
       back: 'All monitors',

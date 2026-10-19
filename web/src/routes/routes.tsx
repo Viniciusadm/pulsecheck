@@ -1,6 +1,7 @@
 import { Navigate, type RouteObject } from 'react-router'
 import { DashboardPage } from '../features/dashboard/DashboardPage.tsx'
 import { MonitorDetailPage } from '../features/monitors/MonitorDetailPage.tsx'
+import { MonitorCreatePage, MonitorEditPage } from '../features/monitors/MonitorFormPage.tsx'
 import { MonitorsPage } from '../features/monitors/MonitorsPage.tsx'
 import { AppLayout } from '../layouts/AppLayout.tsx'
 import { AuthLayout } from '../layouts/AuthLayout.tsx'
@@ -59,7 +60,9 @@ export const routes: RouteObject[] = [
               { path: '/', element: <Navigate to="/dashboard" replace /> },
               { path: '/dashboard', element: <DashboardPage /> },
               { path: '/monitors', element: <MonitorsPage /> },
+              { path: '/monitors/new', element: <MonitorCreatePage /> },
               { path: '/monitors/:id', element: <MonitorDetailPage /> },
+              { path: '/monitors/:id/edit', element: <MonitorEditPage /> },
               { path: '/channels', element: <LazyPage><ChannelsPage /></LazyPage> },
               { path: '/maintenance', element: <LazyPage><MaintenancePage /></LazyPage> },
               { path: '/status-pages', element: <LazyPage><StatusPagesPage /></LazyPage> },

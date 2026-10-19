@@ -43,24 +43,25 @@ describe('MonitorsPage', () => {
   it('edits a monitor straight from the list', async () => {
     vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([makeMonitor()]))
     vi.mocked(monitorsApi.updateMonitor).mockResolvedValue(makeMonitor({ name: 'Shop API v2' }))
+    vi.mocked(monitorsApi.getMonitor).mockResolvedValue(makeMonitor())
     const user = userEvent.setup()
     const { router } = renderApp('/monitors')
 
     const [editButton] = await screen.findAllByRole('button', { name: 'Edit Shop API' })
     await user.click(editButton)
 
-    const dialog = await screen.findByRole('dialog', { name: 'Edit monitor' })
-    const nameField = within(dialog).getByLabelText('Name')
+    const form = await screen.findByRole('form', { name: 'Edit monitor' })
+    expect(router.state.location.pathname).toBe('/monitors/7/edit')
+    const nameField = within(form).getByLabelText('Name')
     expect(nameField).toHaveValue('Shop API')
 
     await user.clear(nameField)
     await user.type(nameField, 'Shop API v2')
-    await user.click(within(dialog).getByRole('button', { name: 'Save changes' }))
+    await user.click(within(form).getByRole('button', { name: 'Save changes' }))
 
     await waitFor(() => expect(monitorsApi.updateMonitor).toHaveBeenCalledWith(7, expect.objectContaining({ name: 'Shop API v2' })))
     expect(await screen.findByText('Changes saved.')).toBeInTheDocument()
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(router.state.location.pathname).toBe('/monitors')
+    expect(router.state.location.pathname).toBe('/monitors/7')
   })
 
   it('offers to go back when the page is past the last one', async () => {

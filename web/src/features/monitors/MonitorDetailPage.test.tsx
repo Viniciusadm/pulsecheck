@@ -106,17 +106,18 @@ describe('MonitorDetailPage', () => {
   it('edits the monitor from the detail page', async () => {
     vi.mocked(monitorsApi.updateMonitor).mockResolvedValue(makeMonitor({ interval_minutes: 10 }))
     const user = userEvent.setup()
-    renderApp('/monitors/7')
+    const { router } = renderApp('/monitors/7')
 
     await user.click(await screen.findByRole('button', { name: 'Edit' }))
 
-    const dialog = await screen.findByRole('dialog', { name: 'Edit monitor' })
-    await user.selectOptions(within(dialog).getByLabelText('Check every'), '10')
-    await user.click(within(dialog).getByRole('button', { name: 'Save changes' }))
+    const form = await screen.findByRole('form', { name: 'Edit monitor' })
+    expect(router.state.location.pathname).toBe('/monitors/7/edit')
+    await user.selectOptions(within(form).getByLabelText('Check every'), '10')
+    await user.click(within(form).getByRole('button', { name: 'Save changes' }))
 
     await waitFor(() => expect(monitorsApi.updateMonitor).toHaveBeenCalledWith(7, expect.objectContaining({ interval_minutes: 10 })))
     expect(await screen.findByText('Changes saved.')).toBeInTheDocument()
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/monitors/7')
   })
 
   it('asks for confirmation before deleting', async () => {

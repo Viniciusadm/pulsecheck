@@ -26,7 +26,6 @@ import { CheckHistory } from './CheckHistory.tsx'
 import { MonitorBadgeCard } from './MonitorBadgeCard.tsx'
 import { HeartbeatPanel } from './HeartbeatPanel.tsx'
 import { IncidentList } from './IncidentList.tsx'
-import { MonitorFormDialog } from './MonitorFormDialog.tsx'
 import { usePollingInterval } from './realtimeConnection.ts'
 import { UptimeBar } from './UptimeBar.tsx'
 import { useDeleteMonitor, usePauseMonitor, useResumeMonitor } from './useMonitorMutations.ts'
@@ -77,7 +76,6 @@ export function MonitorDetailPage() {
 
 function MonitorDetail({ monitor }: { monitor: Monitor }) {
   const [period, setPeriod] = useState<StatsPeriod>('24h')
-  const [isEditing, setIsEditing] = useState(false)
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -166,7 +164,7 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
           </div>
           {canManage && (
             <div className="flex flex-wrap gap-2">
-              <Button variant="secondary" onClick={() => setIsEditing(true)}>
+              <Button variant="secondary" onClick={() => navigate(`/monitors/${monitor.id}/edit`)}>
                 {t('monitors.detail.edit')}
               </Button>
               <Button variant="secondary" onClick={togglePause} isLoading={pauseMutation.isPending || resumeMutation.isPending}>
@@ -237,7 +235,6 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
 
       <p className="text-xs text-neutral-500">{t('monitors.detail.notice')}</p>
 
-      <MonitorFormDialog isOpen={isEditing} onClose={() => setIsEditing(false)} monitor={monitor} />
       <ConfirmDialog
         isOpen={isConfirmingDelete}
         title={t('monitors.detail.deleteTitle', { name: monitor.name })}

@@ -15,7 +15,6 @@ import { useToast } from '../../components/ui/toast.ts'
 import { t } from '../../i18n/index.ts'
 import { canManageResources } from '../../lib/permissions.ts'
 import { useAuth } from '../auth/AuthContext.ts'
-import { MonitorFormDialog } from '../monitors/MonitorFormDialog.tsx'
 import { AddWidgetDialog } from './AddWidgetDialog.tsx'
 import { addWidget, MAX_WIDGETS, removeWidget } from './layout.ts'
 import { useRefreshInterval } from './widgets/refresh.ts'
@@ -27,7 +26,6 @@ const WidgetGrid = lazy(() => import('./WidgetGrid.tsx').then((module) => ({ def
 
 export function DashboardPage() {
   const refetchInterval = useRefreshInterval()
-  const [isFormOpen, setIsFormOpen] = useState(false)
   const { user } = useAuth()
   const canManage = canManageResources(user)
   const navigate = useNavigate()
@@ -35,10 +33,6 @@ export function DashboardPage() {
   const layout = useQuery({ queryKey: queryKeys.dashboardLayout, queryFn: getDashboardLayout })
 
   const title = <h1 className="text-2xl font-semibold text-neutral-900">{t('dashboard.title')}</h1>
-
-  const formDialog = (
-    <MonitorFormDialog isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} onSaved={(monitor) => navigate(`/monitors/${monitor.id}`)} />
-  )
 
   if (summary.isPending || layout.isPending) {
     return (
@@ -74,9 +68,8 @@ export function DashboardPage() {
         <EmptyState
           title={t('dashboard.empty.title')}
           description={t('dashboard.empty.description')}
-          action={canManage ? <Button onClick={() => setIsFormOpen(true)}>{t('dashboard.empty.action')}</Button> : undefined}
+          action={canManage ? <Button onClick={() => navigate('/monitors/new')}>{t('dashboard.empty.action')}</Button> : undefined}
         />
-        {formDialog}
       </div>
     )
   }
@@ -86,9 +79,8 @@ export function DashboardPage() {
       <DashboardBoard
         layout={layout.data}
         title={title}
-        actions={canManage && <Button onClick={() => setIsFormOpen(true)}>{t('monitors.add')}</Button>}
+        actions={canManage && <Button onClick={() => navigate('/monitors/new')}>{t('monitors.add')}</Button>}
       />
-      {formDialog}
     </>
   )
 }

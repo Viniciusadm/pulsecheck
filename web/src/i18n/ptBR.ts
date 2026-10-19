@@ -321,6 +321,11 @@ export const ptBR = {
       channelDisabled: '(desativado)',
       created: 'Monitor adicionado. A primeira checagem acontece em até um minuto.',
       saved: 'Alterações salvas.',
+      sections: {
+        general: 'Monitor',
+        check: 'Checagens',
+        alerts: 'Alertas e acesso',
+      },
     },
     detail: {
       back: 'Todos os monitores',

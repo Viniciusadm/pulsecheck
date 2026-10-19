@@ -34,11 +34,11 @@ describe('DashboardPage', () => {
     vi.mocked(dashboardApi.getDashboardSummary).mockResolvedValue({ total: 0, up: 0, degraded: 0, down: 0, pending: 0, maintenance: 0, paused: 0 })
     const user = userEvent.setup()
 
-    renderApp('/dashboard')
+    const { router } = renderApp('/dashboard')
 
     expect(await screen.findByText('Nothing is being monitored yet')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Add your first monitor' }))
-    expect(await screen.findByRole('dialog', { name: 'Add monitor' })).toBeInTheDocument()
+    await waitFor(() => expect(router.state.location.pathname).toBe('/monitors/new'))
   })
 
   it('shows an error with a working retry', async () => {

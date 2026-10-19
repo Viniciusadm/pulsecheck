@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import type { Monitor } from '../../api/types.ts'
 import { StatusBadge } from '../../components/ui/Badge.tsx'
 import { Button } from '../../components/ui/Button.tsx'
@@ -9,7 +8,6 @@ import { formatLatency } from '../../lib/format.ts'
 import { displayStatus } from '../../lib/monitor.ts'
 import { canManageResources } from '../../lib/permissions.ts'
 import { useAuth } from '../auth/AuthContext.ts'
-import { MonitorFormDialog } from './MonitorFormDialog.tsx'
 
 function LastCheck({ value }: { value: string | null }) {
   if (value === null) {
@@ -19,16 +17,17 @@ function LastCheck({ value }: { value: string | null }) {
   return <RelativeTime value={value} />
 }
 
-function EditButton({ monitor, onEdit }: { monitor: Monitor; onEdit: (monitor: Monitor) => void }) {
+function EditButton({ monitor }: { monitor: Monitor }) {
+  const navigate = useNavigate()
+
   return (
-    <Button variant="secondary" onClick={() => onEdit(monitor)} aria-label={t('monitors.editMonitor', { name: monitor.name })}>
+    <Button variant="secondary" onClick={() => navigate(`/monitors/${monitor.id}/edit`)} aria-label={t('monitors.editMonitor', { name: monitor.name })}>
       {t('monitors.detail.edit')}
     </Button>
   )
 }
 
 export function MonitorList({ monitors }: { monitors: Monitor[] }) {
-  const [editingMonitor, setEditingMonitor] = useState<Monitor | null>(null)
   const { user } = useAuth()
   const canManage = canManageResources(user)
 
@@ -66,7 +65,7 @@ export function MonitorList({ monitors }: { monitors: Monitor[] }) {
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums text-neutral-700">{monitor.last_status_code ?? '—'}</td>
                 <td className="px-4 py-2 text-right">
-                  {canManage && <EditButton monitor={monitor} onEdit={setEditingMonitor} />}
+                  {canManage && <EditButton monitor={monitor} />}
                 </td>
               </tr>
             ))}
@@ -91,17 +90,10 @@ export function MonitorList({ monitors }: { monitors: Monitor[] }) {
                 <LastCheck value={monitor.last_checked_at} />
               </div>
             </Link>
-            {canManage && <EditButton monitor={monitor} onEdit={setEditingMonitor} />}
+            {canManage && <EditButton monitor={monitor} />}
           </li>
         ))}
       </ul>
-
-      <MonitorFormDialog
-        key={editingMonitor?.id}
-        isOpen={editingMonitor !== null}
-        monitor={editingMonitor ?? undefined}
-        onClose={() => setEditingMonitor(null)}
-      />
     </>
   )
 }
