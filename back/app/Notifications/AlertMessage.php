@@ -2,9 +2,11 @@
 
 namespace App\Notifications;
 
+use App\Enums\MonitorType;
 use App\Enums\NotificationType;
 use App\Models\Incident;
 use App\Models\InstanceSettings;
+use App\Models\Monitor;
 use Carbon\CarbonInterface;
 
 final readonly class AlertMessage
@@ -24,7 +26,7 @@ final readonly class AlertMessage
     public static function fromIncident(Incident $incident, NotificationType $type): self
     {
         $monitor = $incident->monitor;
-        $host = self::host($monitor->url);
+        $host = $monitor->displayTarget();
 
         return match ($type) {
             NotificationType::Down => new self(
@@ -36,6 +38,7 @@ final readonly class AlertMessage
                     __('Host') => $host,
                     __('Cause') => (string) $incident->cause,
                     __('Since') => self::formatTime($incident->started_at),
+                    ...self::typeFields($monitor),
                 ],
                 occurredAt: $incident->started_at,
                 incident: $incident,
@@ -139,7 +142,8 @@ final readonly class AlertMessage
             'monitor' => $monitor === null ? null : [
                 'id' => $monitor->id,
                 'name' => $monitor->name,
-                'host' => self::host($monitor->url),
+                'type' => $monitor->type->value,
+                'host' => $monitor->displayTarget(),
             ],
             'incident' => $this->incident === null ? null : [
                 'id' => $this->incident->id,
@@ -152,12 +156,13 @@ final readonly class AlertMessage
         ];
     }
 
-    private static function host(string $url): string
+    private static function typeFields(Monitor $monitor): array
     {
-        $host = parse_url($url, PHP_URL_HOST) ?? '';
-        $port = parse_url($url, PHP_URL_PORT);
-
-        return $port === null ? $host : "{$host}:{$port}";
+        return match ($monitor->type) {
+            MonitorType::Heartbeat => [__('Last ping') => $monitor->last_heartbeat_at === null ? __('Never') : self::formatTime($monitor->last_heartbeat_at)],
+            MonitorType::Ssl => $monitor->certificate_expires_at === null ? [] : [__('Certificate expires') => self::formatTime($monitor->certificate_expires_at)],
+            default => [],
+        };
     }
 
     private static function formatTime(CarbonInterface $moment): string

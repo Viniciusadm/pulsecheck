@@ -42,6 +42,7 @@ class AppServiceProvider extends ServiceProvider
         Route::pattern('notificationChannel', '[0-9]+');
         Route::pattern('user', '[0-9]+');
         Route::pattern('team', '[0-9]+');
+        Route::pattern('token', '[A-Za-z0-9]{40}');
     }
 
     private function configureGates(): void
@@ -90,6 +91,8 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('notification-channel-writes', fn (Request $request): Limit => Limit::perMinute(30)->by((string) $request->user()?->id ?: $request->ip()));
 
         RateLimiter::for('monitor-writes', fn (Request $request): Limit => Limit::perMinute(30)->by((string) $request->user()?->id ?: $request->ip()));
+
+        RateLimiter::for('heartbeat', fn (Request $request): Limit => Limit::perMinute(30)->by($request->route('token').'|'.$request->ip()));
 
         RateLimiter::for('dashboard-writes', fn (Request $request): Limit => Limit::perMinute(60)->by((string) $request->user()?->id ?: $request->ip()));
     }

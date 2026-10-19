@@ -25,7 +25,7 @@ describe('MonitorsPage', () => {
       setup_token_required: false,
       instance: { name: 'PulseCheck', timezone: 'UTC', locale: 'en' },
       available_locales: ['en'],
-      monitors: { allowed_intervals: [1, 5, 10], default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10 },
+      monitors: { allowed_intervals: [1, 5, 10], heartbeat_intervals: [5, 60, 1440], keyword_max_body_bytes: 1048576, default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10 },
       realtime: null,
     })
   })

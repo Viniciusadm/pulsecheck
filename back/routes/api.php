@@ -11,9 +11,11 @@ use App\Http\Controllers\DashboardLayoutController;
 use App\Http\Controllers\DashboardSlowestMonitorsController;
 use App\Http\Controllers\DashboardSummaryController;
 use App\Http\Controllers\DashboardUptimeTrendController;
+use App\Http\Controllers\HeartbeatController;
 use App\Http\Controllers\InstanceSettingsController;
 use App\Http\Controllers\MonitorCheckResultController;
 use App\Http\Controllers\MonitorController;
+use App\Http\Controllers\MonitorHeartbeatTokenController;
 use App\Http\Controllers\MonitorIncidentController;
 use App\Http\Controllers\MonitorLatencyController;
 use App\Http\Controllers\MonitorPauseController;
@@ -49,6 +51,10 @@ Route::prefix('auth')->name('auth.')->group(function () {
 });
 
 Route::get('config', PublicConfigController::class)->name('config');
+
+Route::match(['get', 'post', 'head'], 'heartbeat/{token}', HeartbeatController::class)
+    ->middleware('throttle:heartbeat')
+    ->name('heartbeat');
 
 Route::post('setup', SetupController::class)
     ->middleware(['throttle:setup', EnsureSetupIsPending::class])
@@ -118,6 +124,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/', [MonitorController::class, 'destroy'])->name('destroy');
             Route::post('pause', MonitorPauseController::class)->name('pause');
             Route::post('resume', MonitorResumeController::class)->name('resume');
+            Route::post('heartbeat-token', MonitorHeartbeatTokenController::class)->name('heartbeat-token');
         });
     });
 });

@@ -22,7 +22,7 @@ class ResumeMonitor
                 'consecutive_successes' => 0,
                 'consecutive_degraded' => 0,
                 'consecutive_healthy' => 0,
-                'next_check_at' => now(),
+                'next_check_at' => $monitor->initialCheckAt(),
             ])->save();
 
             return $monitor;

@@ -16,13 +16,13 @@ class MonitorStateMachine
 
         $previousStatus = $monitor->status;
 
-        if ($previousStatus !== MonitorStatus::Down && $monitor->consecutive_failures >= $this->failuresToDown()) {
+        if ($previousStatus !== MonitorStatus::Down && $monitor->consecutive_failures >= $this->failuresToDown($monitor)) {
             $monitor->status = MonitorStatus::Down;
 
             return Transition::WentDown;
         }
 
-        if (in_array($previousStatus, [MonitorStatus::Down, MonitorStatus::Pending], true) && $monitor->consecutive_successes >= $this->successesToUp()) {
+        if (in_array($previousStatus, [MonitorStatus::Down, MonitorStatus::Pending], true) && $monitor->consecutive_successes >= $this->successesToUp($monitor)) {
             $monitor->status = MonitorStatus::Up;
 
             return $previousStatus === MonitorStatus::Down ? Transition::Recovered : Transition::BecameUp;
@@ -34,7 +34,7 @@ class MonitorStateMachine
             return Transition::BecameDegraded;
         }
 
-        if ($previousStatus === MonitorStatus::Degraded && $monitor->consecutive_healthy >= $this->successesToUp()) {
+        if ($previousStatus === MonitorStatus::Degraded && $monitor->consecutive_healthy >= $this->successesToUp($monitor)) {
             $monitor->status = MonitorStatus::Up;
 
             return Transition::DegradationResolved;
@@ -52,14 +52,14 @@ class MonitorStateMachine
         };
     }
 
-    public function failuresToDown(): int
+    public function failuresToDown(?Monitor $monitor = null): int
     {
-        return max(1, (int) config('pulsecheck.failures_to_down'));
+        return $monitor?->type->isPassive() ? 1 : max(1, (int) config('pulsecheck.failures_to_down'));
     }
 
-    public function successesToUp(): int
+    public function successesToUp(?Monitor $monitor = null): int
     {
-        return max(1, (int) config('pulsecheck.successes_to_up'));
+        return $monitor?->type->isPassive() ? 1 : max(1, (int) config('pulsecheck.successes_to_up'));
     }
 
     public function degradedToConfirm(): int

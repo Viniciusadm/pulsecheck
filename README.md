@@ -9,6 +9,11 @@ Self-hosted uptime monitoring for one team or organization per deploy: PulseChec
 ## Features
 
 - **HTTP(S) monitors** checked every 1, 5 or 10 minutes with a configurable timeout (1–30 s). Each monitor can set the method, expected status codes (codes or ranges such as `200-299, 301`), whether redirects are followed, custom headers, a request body and basic or bearer authentication. Headers, body and credentials are stored encrypted and never shown again.
+- **Other monitor types**:
+  - **Keyword**: an HTTP(S) check that also requires the response body (first 1 MB) to contain, or not contain, a word.
+  - **TCP port**: checks that a host and port accept a connection, for example a database or mail server.
+  - **SSL certificate**: reads the HTTPS certificate, becomes `degraded` when it expires within the warning window (14 days by default) and goes `down` when it is expired or invalid.
+  - **Heartbeat**: for cron jobs and other scheduled work. The job calls a secret URL (`GET`, `POST` or `HEAD /api/heartbeat/{token}`) on every run, and the monitor goes `down` when no call arrives within the interval plus a grace period. Intervals go up to 24 hours (`PULSECHECK_HEARTBEAT_INTERVALS`). The URL is shown only to people who can edit the monitor and can be regenerated.
 - **Degraded status**: with a slow response limit set, responses slower than the limit mark the monitor `degraded` after 2 consecutive slow checks (`PULSECHECK_DEGRADED_TO_CONFIRM`). Degraded checks still count as available in uptime; the degradation gets its own incident and alerts.
 - **Stable status**: a monitor goes `down` after 2 consecutive failures and back `up` after 2 consecutive successes, so a single blip does not raise an alert. A result that contradicts the current status is confirmed after half the check interval (at least 1 minute) instead of a full one.
 - **Incidents** with cause, start, end and duration; one incident per outage.
@@ -264,7 +269,7 @@ Administrators and managers add notification channels on the **Channels** page a
 
 Slack, Discord and webhook deliveries go through the same SSRF guard as checks: private and internal addresses are refused, the connection is pinned to the validated IP and redirects are not followed. Webhook headers can carry credentials such as `Authorization`; `Host`, `Content-Type`, `Content-Length`, `Transfer-Encoding`, `Connection` and `User-Agent` are reserved.
 
-Webhook payload (version 1). `event` is `monitor.down`, `monitor.recovered`, `monitor.degraded`, `monitor.degradation_resolved`, `monitor.incident_closed` (the monitor URL or request options changed while an incident was open, so it was closed without a recovery check) or `test` (with `monitor` and `incident` set to `null`); `monitor.host` never contains the URL path or query string; `instance.name` is the name chosen at setup. Times in `text` use the instance time zone, while the ISO fields are always UTC. Any 2xx response counts as delivered.
+Webhook payload (version 1). `event` is `monitor.down`, `monitor.recovered`, `monitor.degraded`, `monitor.degradation_resolved`, `monitor.incident_closed` (the monitor URL or request options changed while an incident was open, so it was closed without a recovery check) or `test` (with `monitor` and `incident` set to `null`); `monitor.type` is `http`, `keyword`, `tcp`, `ssl` or `heartbeat`; `monitor.host` never contains the URL path or query string (it is `host:port` for TCP and `Heartbeat` for heartbeat monitors); `instance.name` is the name chosen at setup. Times in `text` use the instance time zone, while the ISO fields are always UTC. Any 2xx response counts as delivered.
 
 ```json
 {
@@ -275,7 +280,7 @@ Webhook payload (version 1). `event` is `monitor.down`, `monitor.recovered`, `mo
   "text": "🔴 Shop API is DOWN\nHost: shop.example.com\nCause: timeout: Operation timed out\nSince: 2026-10-17 12:00:00 UTC",
   "occurred_at": "2026-10-17T12:00:00Z",
   "instance": { "name": "Acme Ops" },
-  "monitor": { "id": 7, "name": "Shop API", "host": "shop.example.com" },
+  "monitor": { "id": 7, "name": "Shop API", "type": "http", "host": "shop.example.com" },
   "incident": {
     "id": 3,
     "kind": "outage",
@@ -316,6 +321,7 @@ Monitors make the server request user-supplied URLs, so every request goes throu
 - The connection is pinned to the validated IP with `CURLOPT_RESOLVE`, so the address that was checked is the address that is connected to; TLS SNI and the `Host` header keep the original name.
 - Redirects are followed manually (at most 5), and each hop is validated and pinned again. Environment proxy variables are ignored. The monitor timeout covers the whole redirect chain. A redirect to another scheme, host or port drops the monitor's custom headers and authentication; `303`, and `301`/`302` after a `POST`, switch to `GET` without a body.
 - Validation runs both when a monitor is saved and on every check.
+- TCP and SSL certificate monitors go through the same rules: the host is resolved and validated, and the socket connects to the validated IP (the certificate is still verified against the host name).
 
 What is **not** guaranteed:
 

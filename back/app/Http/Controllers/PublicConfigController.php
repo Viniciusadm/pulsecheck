@@ -22,6 +22,8 @@ class PublicConfigController extends Controller
                 'available_locales' => config('pulsecheck.locales'),
                 'monitors' => [
                     'allowed_intervals' => config('pulsecheck.allowed_intervals'),
+                    'heartbeat_intervals' => config('pulsecheck.heartbeat_allowed_intervals'),
+                    'keyword_max_body_bytes' => config('pulsecheck.keyword_max_body_bytes'),
                     'default_interval' => config('pulsecheck.default_interval'),
                     'timeout_min' => config('pulsecheck.timeout_min'),
                     'timeout_max' => config('pulsecheck.timeout_max'),

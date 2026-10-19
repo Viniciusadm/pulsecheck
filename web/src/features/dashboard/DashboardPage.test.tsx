@@ -84,7 +84,7 @@ describe('DashboardPage', () => {
 
   it('lists only the monitors that are down under needs attention', async () => {
     vi.mocked(monitorsApi.listMonitors).mockResolvedValue(
-      paginated([makeMonitor({ id: 8, name: 'Blog', url: 'https://blog.example.com', status: 'down', last_status_code: 503 })]),
+      paginated([makeMonitor({ id: 8, name: 'Blog', url: 'https://blog.example.com', display_target: 'blog.example.com', status: 'down', last_status_code: 503 })]),
     )
 
     renderApp('/dashboard')

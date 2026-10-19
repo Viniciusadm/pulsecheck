@@ -39,6 +39,12 @@ export async function updateMonitor(id: number, input: Partial<MonitorInput>) {
   return response.data.data
 }
 
+export async function rotateHeartbeatToken(id: number) {
+  const response = await http.post<DataResponse<Monitor>>(`/api/monitors/${id}/heartbeat-token`)
+
+  return response.data.data
+}
+
 export async function deleteMonitor(id: number) {
   await http.delete(`/api/monitors/${id}`)
 }

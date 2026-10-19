@@ -22,6 +22,7 @@ import { displayStatus } from '../../lib/monitor.ts'
 import { canManageResources } from '../../lib/permissions.ts'
 import { useAuth } from '../auth/AuthContext.ts'
 import { CheckHistory } from './CheckHistory.tsx'
+import { HeartbeatPanel } from './HeartbeatPanel.tsx'
 import { IncidentList } from './IncidentList.tsx'
 import { MonitorFormDialog } from './MonitorFormDialog.tsx'
 import { usePollingInterval } from './realtimeConnection.ts'
@@ -124,18 +125,28 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
               <h1 className="text-2xl font-semibold text-neutral-900">{monitor.name}</h1>
               <StatusBadge status={displayStatus(monitor)} />
             </div>
-            <a href={monitor.url} target="_blank" rel="noopener noreferrer" className="break-all text-primary-700 hover:underline">
-              {monitor.url}
-            </a>
+            {monitor.url ? (
+              <a href={monitor.url} target="_blank" rel="noopener noreferrer" className="break-all text-primary-700 hover:underline">
+                {monitor.url}
+              </a>
+            ) : (
+              <p className="break-all text-neutral-700">{monitor.display_target}</p>
+            )}
             <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-neutral-600">
+              <span className="font-medium text-neutral-700">{t(`monitors.types.${monitor.type}`)}</span>
               <span>{t('monitors.detail.interval', { minutes: monitor.interval_minutes })}</span>
-              <span>{t('monitors.detail.timeout', { seconds: monitor.timeout_seconds })}</span>
-              <span>
-                {t('monitors.detail.request', {
-                  method: monitor.options.method ?? 'GET',
-                  codes: (monitor.options.expected_status_codes ?? ['200-399']).join(', '),
-                })}
-              </span>
+              {monitor.type !== 'heartbeat' && <span>{t('monitors.detail.timeout', { seconds: monitor.timeout_seconds })}</span>}
+              {(monitor.type === 'http' || monitor.type === 'keyword') && (
+                <span>
+                  {t('monitors.detail.request', {
+                    method: monitor.options.method ?? 'GET',
+                    codes: (monitor.options.expected_status_codes ?? ['200-399']).join(', '),
+                  })}
+                </span>
+              )}
+              {monitor.certificate_expires_at && (
+                <span>{t('monitors.detail.certificateExpires', { date: formatDateTime(monitor.certificate_expires_at) })}</span>
+              )}
               {monitor.last_checked_at && (
                 <RelativeTime value={monitor.last_checked_at} format={(time) => t('monitors.detail.lastCheck', { time })} />
               )}
@@ -161,6 +172,8 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
           )}
         </div>
       </div>
+
+      {monitor.heartbeat_url && <HeartbeatPanel monitor={monitor} heartbeatUrl={monitor.heartbeat_url} />}
 
       <section className="flex flex-col gap-4" aria-labelledby="monitor-metrics">
         <div className="flex flex-wrap items-center justify-between gap-3">

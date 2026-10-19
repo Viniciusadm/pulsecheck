@@ -41,7 +41,9 @@ export type ValidationErrorResponse = {
 
 export type MonitorStatus = 'pending' | 'up' | 'degraded' | 'down'
 
-export type MonitorType = 'http'
+export type MonitorType = 'http' | 'keyword' | 'ssl' | 'tcp' | 'heartbeat'
+
+export type KeywordMode = 'contains' | 'not_contains'
 
 export type HttpMethod = 'GET' | 'HEAD' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
@@ -52,6 +54,13 @@ export type MonitorOptions = {
   follow_redirects?: boolean
   expected_status_codes?: string[]
   body_content_type?: string | null
+  keyword?: string | null
+  keyword_mode?: KeywordMode
+  case_sensitive?: boolean
+  warning_days?: number
+  host?: string | null
+  port?: number | null
+  grace_seconds?: number
 }
 
 export type MonitorSecretsInput = {
@@ -64,13 +73,17 @@ export type Monitor = {
   id: number
   name: string
   type: MonitorType
-  url: string
+  url: string | null
+  display_target: string
   options: MonitorOptions
   secrets_set: string[]
   auth_type: HttpAuthType
   interval_minutes: number
   timeout_seconds: number
   latency_threshold_ms: number | null
+  certificate_expires_at: string | null
+  last_heartbeat_at: string | null
+  heartbeat_url?: string
   status: MonitorStatus
   is_paused: boolean
   last_status_code: number | null
@@ -87,7 +100,7 @@ export type Monitor = {
 export type MonitorInput = {
   name: string
   type?: MonitorType
-  url: string
+  url?: string
   interval_minutes: number
   timeout_seconds?: number
   latency_threshold_ms?: number | null
@@ -104,6 +117,11 @@ export type CheckErrorType =
   | 'http_status'
   | 'blocked_destination'
   | 'too_many_redirects'
+  | 'keyword_missing'
+  | 'keyword_present'
+  | 'tls'
+  | 'certificate_expired'
+  | 'heartbeat_missed'
   | 'unknown'
 
 export type CheckResult = {
@@ -120,7 +138,7 @@ export type CheckResult = {
   warning_message: string | null
 }
 
-export type WarningType = 'slow_response'
+export type WarningType = 'slow_response' | 'certificate_expiring'
 
 export type IncidentKind = 'outage' | 'degradation'
 
@@ -254,6 +272,8 @@ export type AppConfig = {
   available_locales: string[]
   monitors: {
     allowed_intervals: number[]
+    heartbeat_intervals: number[]
+    keyword_max_body_bytes: number
     default_interval: number
     timeout_min: number
     timeout_max: number

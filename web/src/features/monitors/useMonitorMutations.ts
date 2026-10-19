@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createMonitor, deleteMonitor, pauseMonitor, resumeMonitor, updateMonitor } from '../../api/monitors.ts'
+import { createMonitor, deleteMonitor, pauseMonitor, resumeMonitor, rotateHeartbeatToken, updateMonitor } from '../../api/monitors.ts'
 import { queryKeys } from '../../api/queryKeys.ts'
 import type { Monitor, MonitorInput } from '../../api/types.ts'
 
@@ -38,6 +38,12 @@ export function useResumeMonitor(id: number) {
   const refresh = useRefreshMonitors()
 
   return useMutation({ mutationFn: () => resumeMonitor(id), onSuccess: refresh })
+}
+
+export function useRotateHeartbeatToken(id: number) {
+  const refresh = useRefreshMonitors()
+
+  return useMutation({ mutationFn: () => rotateHeartbeatToken(id), onSuccess: refresh })
 }
 
 export function useDeleteMonitor(id: number) {

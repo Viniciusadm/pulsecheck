@@ -7,6 +7,7 @@ use App\Models\NotificationChannel;
 use App\Models\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class CreateMonitor
 {
@@ -21,7 +22,12 @@ class CreateMonitor
                 'timeout_seconds' => config('pulsecheck.timeout_default'),
                 ...Arr::except($attributes, ['notification_channel_ids', 'team_ids']),
             ]);
-            $monitor->next_check_at = now();
+            $monitor->next_check_at = $monitor->initialCheckAt();
+
+            if ($monitor->type->isPassive()) {
+                $monitor->heartbeat_token = Str::random(40);
+            }
+
             $monitor->save();
             $monitor->notificationChannels()->sync($channelIds);
             $monitor->teams()->sync($attributes['team_ids'] ?? []);

@@ -18,6 +18,7 @@ class RouteMatrixAuthorizationTest extends TestCase
         'POST api/auth/reset-password',
         'GET api/config',
         'POST api/setup',
+        'GET api/heartbeat/{token}',
     ];
 
     public function test_every_private_api_route_requires_authentication(): void

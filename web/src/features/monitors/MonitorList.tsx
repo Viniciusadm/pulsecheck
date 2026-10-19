@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/Button.tsx'
 import { RelativeTime } from '../../components/ui/RelativeTime.tsx'
 import { t } from '../../i18n/index.ts'
 import { formatLatency } from '../../lib/format.ts'
-import { displayStatus, hostOf } from '../../lib/monitor.ts'
+import { displayStatus } from '../../lib/monitor.ts'
 import { canManageResources } from '../../lib/permissions.ts'
 import { useAuth } from '../auth/AuthContext.ts'
 import { MonitorFormDialog } from './MonitorFormDialog.tsx'
@@ -55,7 +55,7 @@ export function MonitorList({ monitors }: { monitors: Monitor[] }) {
                   <Link to={`/monitors/${monitor.id}`} className="font-semibold text-neutral-900 hover:text-primary-700 hover:underline">
                     {monitor.name}
                   </Link>
-                  <p className="text-xs text-neutral-500">{hostOf(monitor.url)}</p>
+                  <p className="text-xs text-neutral-500">{monitor.display_target}</p>
                 </td>
                 <td className="px-4 py-3">
                   <StatusBadge status={displayStatus(monitor)} />
@@ -81,7 +81,7 @@ export function MonitorList({ monitors }: { monitors: Monitor[] }) {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate font-semibold text-neutral-900">{monitor.name}</p>
-                  <p className="truncate text-xs text-neutral-500">{hostOf(monitor.url)}</p>
+                  <p className="truncate text-xs text-neutral-500">{monitor.display_target}</p>
                 </div>
                 <StatusBadge status={displayStatus(monitor)} />
               </div>

@@ -64,7 +64,11 @@ class RecordCheckResult
                 $monitor->last_failed_at = $outcome->finishedAt;
             }
 
-            if (! $monitor->is_paused && $this->awaitsConfirmation($monitor, $outcome)) {
+            if ($outcome->certificateExpiresAt !== null) {
+                $monitor->certificate_expires_at = $outcome->certificateExpiresAt;
+            }
+
+            if (! $monitor->is_paused && ! $monitor->type->isPassive() && $this->awaitsConfirmation($monitor, $outcome)) {
                 $this->scheduleConfirmationCheck($monitor);
             }
 
@@ -97,7 +101,7 @@ class RecordCheckResult
 
         $incident = $monitor->incidents()->create([
             'kind' => IncidentKind::Outage,
-            'started_at' => $this->streakStartedAt($monitor, $this->stateMachine->failuresToDown()),
+            'started_at' => $this->streakStartedAt($monitor, $this->stateMachine->failuresToDown($monitor)),
             'cause' => $this->limit($outcome->errorType?->value.': '.$outcome->errorMessage),
         ]);
 
@@ -112,7 +116,7 @@ class RecordCheckResult
             return;
         }
 
-        $incident->update(['resolved_at' => $this->streakStartedAt($monitor, $this->stateMachine->successesToUp())]);
+        $incident->update(['resolved_at' => $this->streakStartedAt($monitor, $this->stateMachine->successesToUp($monitor))]);
 
         MonitorRecovered::dispatch($monitor, $incident);
     }
@@ -136,7 +140,7 @@ class RecordCheckResult
             return;
         }
 
-        $incident->update(['resolved_at' => $this->streakStartedAt($monitor, $this->stateMachine->successesToUp())]);
+        $incident->update(['resolved_at' => $this->streakStartedAt($monitor, $this->stateMachine->successesToUp($monitor))]);
 
         MonitorDegradationResolved::dispatch($monitor, $incident);
     }

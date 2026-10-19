@@ -7,7 +7,9 @@ export const METHODS_WITHOUT_BODY: HttpMethod[] = ['GET', 'HEAD']
 
 export const AUTH_TYPES: HttpAuthType[] = ['none', 'basic', 'bearer']
 
-const DEFAULT_OPTIONS: Required<MonitorOptions> = {
+export type HttpRequestOptions = Required<Pick<MonitorOptions, 'method' | 'follow_redirects' | 'expected_status_codes' | 'body_content_type'>>
+
+const DEFAULT_OPTIONS: HttpRequestOptions = {
   method: 'GET',
   follow_redirects: true,
   expected_status_codes: ['200-399'],
@@ -29,7 +31,12 @@ export type HttpRequestState = {
 }
 
 export function initialHttpRequestState(monitor?: Monitor): HttpRequestState {
-  const options = { ...DEFAULT_OPTIONS, ...monitor?.options }
+  const options: HttpRequestOptions = {
+    method: monitor?.options.method ?? DEFAULT_OPTIONS.method,
+    follow_redirects: monitor?.options.follow_redirects ?? DEFAULT_OPTIONS.follow_redirects,
+    expected_status_codes: monitor?.options.expected_status_codes ?? DEFAULT_OPTIONS.expected_status_codes,
+    body_content_type: monitor?.options.body_content_type ?? DEFAULT_OPTIONS.body_content_type,
+  }
 
   return {
     method: options.method,
@@ -54,20 +61,13 @@ export function hasCustomRequest(monitor?: Monitor): boolean {
   return monitor.secrets_set.length > 0 || JSON.stringify(requestOptions(initialHttpRequestState(monitor))) !== JSON.stringify(requestOptions(initialHttpRequestState()))
 }
 
-export function requestOptions(state: HttpRequestState): Required<MonitorOptions> {
+export function requestOptions(state: HttpRequestState): HttpRequestOptions {
   return {
     method: state.method,
     follow_redirects: state.followRedirects,
     expected_status_codes: state.expectedStatus.split(',').map((code) => code.trim()).filter((code) => code !== ''),
     body_content_type: state.contentType.trim() === '' ? null : state.contentType.trim(),
   }
-}
-
-export function changedRequestOptions(state: HttpRequestState, monitor?: Monitor): MonitorOptions | undefined {
-  const options = requestOptions(state)
-  const current = requestOptions(initialHttpRequestState(monitor))
-
-  return JSON.stringify(options) === JSON.stringify(current) ? undefined : options
 }
 
 export function requestSecrets(state: HttpRequestState, monitor?: Monitor): MonitorSecretsInput | undefined {

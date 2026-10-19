@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\MonitorStatus;
 use App\Enums\MonitorType;
 use App\Models\Concerns\BelongsToTeams;
+use Carbon\CarbonInterface;
 use Database\Factories\MonitorFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['name', 'type', 'url', 'options', 'secrets', 'interval_minutes', 'timeout_seconds', 'latency_threshold_ms'])]
-#[Hidden(['secrets'])]
+#[Hidden(['secrets', 'heartbeat_token'])]
 class Monitor extends Model
 {
     /** @use HasFactory<MonitorFactory> */
@@ -53,6 +54,8 @@ class Monitor extends Model
             'last_checked_at' => 'datetime',
             'last_failed_at' => 'datetime',
             'next_check_at' => 'datetime',
+            'last_heartbeat_at' => 'datetime',
+            'certificate_expires_at' => 'datetime',
         ];
     }
 
@@ -66,6 +69,30 @@ class Monitor extends Model
     public function secret(string $key): mixed
     {
         return $this->secrets[$key] ?? null;
+    }
+
+    public function initialCheckAt(): CarbonInterface
+    {
+        return $this->type->isPassive()
+            ? now()->addMinutes($this->interval_minutes)->addSeconds((int) $this->option('grace_seconds'))
+            : now();
+    }
+
+    public function displayTarget(): string
+    {
+        return match (true) {
+            $this->type === MonitorType::Heartbeat => __('Heartbeat'),
+            $this->type === MonitorType::Tcp => $this->option('host').':'.$this->option('port'),
+            default => self::hostOf((string) $this->url),
+        };
+    }
+
+    public static function hostOf(string $url): string
+    {
+        $host = parse_url($url, PHP_URL_HOST) ?? '';
+        $port = parse_url($url, PHP_URL_PORT);
+
+        return $port === null ? $host : "{$host}:{$port}";
     }
 
     public function checkResults(): HasMany

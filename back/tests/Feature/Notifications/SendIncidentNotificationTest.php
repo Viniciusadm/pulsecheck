@@ -157,7 +157,7 @@ class SendIncidentNotificationTest extends TestCase
             'text' => "🔴 Shop <API> is DOWN\nHost: shop.example.com:8443\nCause: timeout: Operation timed out\nSince: 2026-10-17 12:00:00 UTC",
             'occurred_at' => '2026-10-17T12:00:00Z',
             'instance' => ['name' => 'PulseCheck'],
-            'monitor' => ['id' => $incident->monitor_id, 'name' => 'Shop <API>', 'host' => 'shop.example.com:8443'],
+            'monitor' => ['id' => $incident->monitor_id, 'name' => 'Shop <API>', 'type' => 'http', 'host' => 'shop.example.com:8443'],
             'incident' => [
                 'id' => $incident->id,
                 'kind' => 'outage',

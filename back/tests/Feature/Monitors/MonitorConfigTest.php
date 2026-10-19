@@ -14,6 +14,7 @@ class MonitorConfigTest extends TestCase
     {
         config([
             'pulsecheck.allowed_intervals' => [1, 5, 10],
+            'pulsecheck.heartbeat_allowed_intervals' => [5, 60],
             'pulsecheck.default_interval' => 5,
             'pulsecheck.timeout_min' => 1,
             'pulsecheck.timeout_max' => 30,
@@ -36,6 +37,8 @@ class MonitorConfigTest extends TestCase
                     'available_locales' => ['en', 'pt-BR'],
                     'monitors' => [
                         'allowed_intervals' => [1, 5, 10],
+                        'heartbeat_intervals' => [5, 60],
+                        'keyword_max_body_bytes' => 1048576,
                         'default_interval' => 5,
                         'timeout_min' => 1,
                         'timeout_max' => 30,

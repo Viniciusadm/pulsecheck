@@ -59,6 +59,21 @@ class UrlGuard
         return new ValidatedTarget($target->url, $target->scheme, $target->host, $target->port, $ips, $target->isIpLiteral);
     }
 
+    public function inspectEndpoint(string $host, int $port): ValidatedTarget
+    {
+        if ($port < 1 || $port > 65535) {
+            throw new UnsafeUrlException(UnsafeUrlReason::Invalid);
+        }
+
+        $isIpv6 = filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
+
+        if (! $isIpv6 && ($host === '' || preg_match('#[/?\#@:\[\]\s]#', $host))) {
+            throw new UnsafeUrlException(UnsafeUrlReason::Invalid);
+        }
+
+        return $this->inspect('http://'.($isIpv6 ? "[{$host}]" : $host).":{$port}/");
+    }
+
     public function validateSyntax(string $url): ValidatedTarget
     {
         if (strlen($url) > config('pulsecheck.max_url_length')) {

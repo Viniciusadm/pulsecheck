@@ -14,6 +14,8 @@ return [
 
     'default_interval' => (int) env('PULSECHECK_DEFAULT_INTERVAL', 5),
 
+    'heartbeat_allowed_intervals' => array_map('intval', explode(',', env('PULSECHECK_HEARTBEAT_INTERVALS', '1,5,10,15,30,60,360,720,1440'))),
+
     'timeout_min' => (int) env('PULSECHECK_TIMEOUT_MIN', 1),
 
     'timeout_max' => min((int) env('PULSECHECK_TIMEOUT_MAX', 30), 60),
@@ -31,6 +33,8 @@ return [
     'degraded_to_confirm' => (int) env('PULSECHECK_DEGRADED_TO_CONFIRM', 2),
 
     'max_request_body_bytes' => 16384,
+
+    'keyword_max_body_bytes' => 1048576,
 
     'allow_private_targets' => (bool) env('PULSECHECK_ALLOW_PRIVATE_TARGETS', false),
 

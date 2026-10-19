@@ -87,7 +87,7 @@ describe('MonitorFormDialog', () => {
 
     expect(await screen.findByText('Monitor added. The first check runs within a minute.')).toBeInTheDocument()
     expect(monitorsApi.createMonitor).toHaveBeenCalledWith(
-      { name: 'Docs', url: 'https://docs.example.com', interval_minutes: 5, timeout_seconds: 10, team_ids: [] },
+      { name: 'Docs', type: 'http', url: 'https://docs.example.com', interval_minutes: 5, timeout_seconds: 10, team_ids: [] },
     )
   })
 
@@ -101,7 +101,7 @@ describe('MonitorFormDialog', () => {
     await user.clear(within(dialog).getByLabelText('Timeout (seconds)'))
     await user.click(within(dialog).getByRole('button', { name: 'Add monitor' }))
 
-    expect(monitorsApi.createMonitor).toHaveBeenCalledWith({ name: 'Docs', url: 'https://docs.example.com', interval_minutes: 5, team_ids: [] })
+    expect(monitorsApi.createMonitor).toHaveBeenCalledWith({ name: 'Docs', type: 'http', url: 'https://docs.example.com', interval_minutes: 5, team_ids: [] })
   })
 
   it('pre-selects the default channels and sends only an explicit choice', async () => {
@@ -224,5 +224,51 @@ describe('MonitorFormDialog', () => {
     expect(input).not.toHaveProperty('options')
     expect(input).not.toHaveProperty('secrets')
     expect(input).not.toHaveProperty('latency_threshold_ms')
+  })
+
+  it('creates a TCP monitor without URL or request options', async () => {
+    vi.mocked(monitorsApi.createMonitor).mockResolvedValue(makeMonitor({ id: 42 }))
+    vi.mocked(monitorsApi.getMonitor).mockReturnValue(new Promise(() => {}))
+    const { user, dialog } = await openForm()
+
+    await user.selectOptions(within(dialog).getByLabelText('Type'), 'tcp')
+    expect(within(dialog).queryByLabelText('URL')).not.toBeInTheDocument()
+    expect(within(dialog).queryByText('Request options')).not.toBeInTheDocument()
+    await user.type(within(dialog).getByLabelText('Name'), 'Database')
+    await user.type(within(dialog).getByLabelText('Host'), 'db.example.com')
+    await user.type(within(dialog).getByLabelText('Port'), '5432')
+    await user.click(within(dialog).getByRole('button', { name: 'Add monitor' }))
+
+    await screen.findByText('Monitor added. The first check runs within a minute.')
+    expect(monitorsApi.createMonitor).toHaveBeenCalledWith({
+      name: 'Database',
+      type: 'tcp',
+      interval_minutes: 5,
+      timeout_seconds: 10,
+      options: { host: 'db.example.com', port: 5432 },
+      team_ids: [],
+    })
+  })
+
+  it('offers heartbeat intervals and hides the timeout for heartbeat monitors', async () => {
+    vi.mocked(monitorsApi.createMonitor).mockResolvedValue(makeMonitor({ id: 42 }))
+    vi.mocked(monitorsApi.getMonitor).mockReturnValue(new Promise(() => {}))
+    const { user, dialog } = await openForm()
+
+    await user.selectOptions(within(dialog).getByLabelText('Type'), 'heartbeat')
+    expect(within(dialog).queryByLabelText('Timeout (seconds)')).not.toBeInTheDocument()
+    expect(within(within(dialog).getByLabelText('Expect a call every')).getByRole('option', { name: '24 h' })).toBeInTheDocument()
+    await user.selectOptions(within(dialog).getByLabelText('Expect a call every'), '60')
+    await user.type(within(dialog).getByLabelText('Name'), 'Nightly backup')
+    await user.click(within(dialog).getByRole('button', { name: 'Add monitor' }))
+
+    await screen.findByText('Monitor added. The first check runs within a minute.')
+    expect(monitorsApi.createMonitor).toHaveBeenCalledWith({
+      name: 'Nightly backup',
+      type: 'heartbeat',
+      interval_minutes: 60,
+      options: { grace_seconds: 60 },
+      team_ids: [],
+    })
   })
 })

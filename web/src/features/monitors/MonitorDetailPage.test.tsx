@@ -34,7 +34,7 @@ describe('MonitorDetailPage', () => {
       setup_token_required: false,
       instance: { name: 'PulseCheck', timezone: 'UTC', locale: 'en' },
       available_locales: ['en'],
-      monitors: { allowed_intervals: [1, 5, 10], default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10 },
+      monitors: { allowed_intervals: [1, 5, 10], heartbeat_intervals: [5, 60, 1440], keyword_max_body_bytes: 1048576, default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10 },
       realtime: null,
     })
   })
@@ -156,5 +156,26 @@ describe('MonitorDetailPage', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(monitorsApi.deleteMonitor).not.toHaveBeenCalled()
+  })
+
+  it('shows the ping URL of a heartbeat monitor and regenerates it', async () => {
+    const heartbeat = makeMonitor({
+      type: 'heartbeat',
+      url: null,
+      display_target: 'Heartbeat',
+      heartbeat_url: 'https://pulse.example.com/api/heartbeat/abc',
+    })
+    vi.mocked(monitorsApi.getMonitor).mockResolvedValue(heartbeat)
+    vi.mocked(monitorsApi.rotateHeartbeatToken).mockResolvedValue({ ...heartbeat, heartbeat_url: 'https://pulse.example.com/api/heartbeat/new' })
+    const user = userEvent.setup()
+    renderApp('/monitors/7')
+
+    expect(await screen.findByText('https://pulse.example.com/api/heartbeat/abc')).toBeInTheDocument()
+    expect(screen.getByText('No call received yet')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Generate new URL' }))
+    await user.click(within(await screen.findByRole('dialog', { name: 'Generate a new URL?' })).getByRole('button', { name: 'Generate new URL' }))
+
+    expect(await screen.findByText('New URL generated.')).toBeInTheDocument()
+    expect(monitorsApi.rotateHeartbeatToken).toHaveBeenCalledWith(7)
   })
 })

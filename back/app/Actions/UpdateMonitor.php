@@ -34,7 +34,7 @@ class UpdateMonitor
             }
 
             if (($checkChanged || $intervalChanged) && ! $monitor->is_paused) {
-                $monitor->next_check_at = now();
+                $monitor->next_check_at = $monitor->initialCheckAt();
             }
 
             $monitor->save();

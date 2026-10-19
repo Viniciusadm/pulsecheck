@@ -22,6 +22,13 @@ class MonitorResource extends JsonResource
             'interval_minutes' => $this->interval_minutes,
             'timeout_seconds' => $this->timeout_seconds,
             'latency_threshold_ms' => $this->latency_threshold_ms,
+            'display_target' => $this->displayTarget(),
+            'certificate_expires_at' => $this->certificate_expires_at,
+            'last_heartbeat_at' => $this->last_heartbeat_at,
+            'heartbeat_url' => $this->when(
+                $this->heartbeat_token !== null && $request->user()?->can('update', $this->resource),
+                fn () => route('heartbeat', ['token' => $this->heartbeat_token]),
+            ),
             'status' => $this->status,
             'is_paused' => $this->is_paused,
             'last_status_code' => $this->last_status_code,

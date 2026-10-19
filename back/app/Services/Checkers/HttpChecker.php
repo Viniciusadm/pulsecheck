@@ -51,7 +51,7 @@ class HttpChecker implements MonitorChecker
     {
         return [
             'url' => ['required', 'string', new SafeUrl],
-            'options' => ['sometimes', 'array:method,follow_redirects,expected_status_codes,body_content_type'],
+            'options' => ['sometimes', 'array:'.implode(',', array_keys($this->defaultOptions()))],
             'options.method' => ['sometimes', 'string', Rule::in(self::METHODS)],
             'options.follow_redirects' => ['sometimes', 'boolean'],
             'options.expected_status_codes' => ['sometimes', 'array', 'min:1', 'max:20'],

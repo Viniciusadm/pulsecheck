@@ -7,7 +7,6 @@ import { StatusBadge } from '../../../components/ui/Badge.tsx'
 import { UpIcon } from '../../../components/ui/icons.tsx'
 import { RelativeTime } from '../../../components/ui/RelativeTime.tsx'
 import { t } from '../../../i18n/index.ts'
-import { hostOf } from '../../../lib/monitor.ts'
 import { QueryContent } from './QueryContent.tsx'
 import { useRefreshInterval } from './refresh.ts'
 
@@ -53,7 +52,7 @@ function AttentionList({ monitors }: { monitors: Monitor[] }) {
             <Link to={`/monitors/${monitor.id}`} className="font-semibold text-neutral-900 hover:text-primary-700 hover:underline">
               {monitor.name}
             </Link>
-            <p className="truncate text-xs text-neutral-500">{hostOf(monitor.url)}</p>
+            <p className="truncate text-xs text-neutral-500">{monitor.display_target}</p>
           </div>
           <div className="flex items-center gap-3 text-sm text-neutral-600">
             {monitor.last_status_code !== null && <span className="tabular-nums">HTTP {monitor.last_status_code}</span>}

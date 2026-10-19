@@ -19,6 +19,7 @@ final readonly class CheckOutcome
         public bool $isDegraded = false,
         public ?WarningType $warningType = null,
         public ?string $warningMessage = null,
+        public ?CarbonImmutable $certificateExpiresAt = null,
     ) {}
 
     public function withLatencyThreshold(?int $thresholdMs): self
@@ -38,6 +39,7 @@ final readonly class CheckOutcome
             true,
             WarningType::SlowResponse,
             __('Response time :actual ms exceeds :threshold ms.', ['actual' => $this->latencyMs, 'threshold' => $thresholdMs]),
+            $this->certificateExpiresAt,
         );
     }
 }

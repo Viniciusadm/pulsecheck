@@ -24,7 +24,7 @@ class StoreMonitorRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:100'],
             'type' => ['sometimes', Rule::enum(MonitorType::class)],
-            'interval_minutes' => ['sometimes', 'integer', Rule::in(config('pulsecheck.allowed_intervals'))],
+            'interval_minutes' => ['sometimes', 'integer', Rule::in($this->monitorType()->allowedIntervals())],
             'timeout_seconds' => ['sometimes', 'integer', 'between:'.config('pulsecheck.timeout_min').','.config('pulsecheck.timeout_max')],
             'latency_threshold_ms' => ['sometimes', 'nullable', 'integer', 'between:1,60000'],
             'notification_channel_ids' => ['sometimes', 'array'],
