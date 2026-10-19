@@ -5,10 +5,12 @@ namespace App\Security;
 use App\Security\Exceptions\DeadlineExceededException;
 use App\Security\Exceptions\TooManyRedirectsException;
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ResponseException;
 use GuzzleHttp\Handler\CurlHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Uri;
 use GuzzleHttp\Psr7\UriResolver;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 
 class SafeHttpClient
@@ -59,7 +61,7 @@ class SafeHttpClient
                 $options['body'] = $body;
             }
 
-            $response = $this->client->request($method, $target->url, $options);
+            $response = $this->requestWithBodyLimit($method, $target->url, $options, $request->maxBodyBytes);
             $location = $response->getHeaderLine('Location');
             $isRedirect = in_array($response->getStatusCode(), self::REDIRECT_STATUSES, true) && $location !== '';
 
@@ -90,6 +92,24 @@ class SafeHttpClient
         }
     }
 
+    private function requestWithBodyLimit(string $method, string $url, array $options, int $maxBodyBytes): ResponseInterface
+    {
+        $bodyLimitReached = false;
+        $options['progress'] = function (int $downloadSize, int $downloaded) use ($maxBodyBytes, &$bodyLimitReached): bool {
+            return $bodyLimitReached = $downloaded > $maxBodyBytes;
+        };
+
+        try {
+            return $this->client->request($method, $url, $options);
+        } catch (ResponseException $exception) {
+            if (! $bodyLimitReached) {
+                throw $exception;
+            }
+
+            return $exception->getResponse();
+        }
+    }
+
     private function redirectSwitchesToGet(int $statusCode, string $method): bool
     {
         return $statusCode === 303 || (in_array($statusCode, [301, 302], true) && $method === 'POST');
@@ -108,6 +128,10 @@ class SafeHttpClient
             $stream->close();
 
             return [null, false];
+        }
+
+        if ($stream->isSeekable()) {
+            $stream->rewind();
         }
 
         $body = '';

@@ -32,6 +32,11 @@ Schedule::command('uptime:rollup')
     ->withoutOverlapping()
     ->onOneServer();
 
+Schedule::command('metrics:rollup')
+    ->hourlyAt(2)
+    ->withoutOverlapping()
+    ->onOneServer();
+
 Schedule::command('model:prune')
     ->dailyAt('03:00')
     ->onOneServer();
