@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useState, type ComponentType, type SVGProps } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 import { logout } from '../api/auth.ts'
-import { BellIcon, CloseIcon, DashboardIcon, GlobeIcon, LogOutIcon, MaintenanceIcon, MenuIcon, MonitorsIcon, PulseIcon, SettingsIcon } from '../components/ui/icons.tsx'
+import { BellIcon, CloseIcon, DashboardIcon, GlobeIcon, LogOutIcon, MaintenanceIcon, MenuIcon, MonitorsIcon, PulseIcon, SettingsIcon, TeamIcon, UserIcon } from '../components/ui/icons.tsx'
 import { useAuth } from '../features/auth/AuthContext.ts'
 import { instanceName, useAppConfig } from '../features/config/ConfigContext.ts'
 import { useMonitorRealtime } from '../features/monitors/useMonitorRealtime.ts'
@@ -22,6 +22,8 @@ const navigation: NavigationItem[] = [
   { to: '/channels', label: 'nav.channels', icon: BellIcon },
   { to: '/maintenance', label: 'nav.maintenance', icon: MaintenanceIcon },
   { to: '/status-pages', label: 'nav.statusPages', icon: GlobeIcon },
+  { to: '/teams', label: 'nav.teams', icon: TeamIcon, isAdminOnly: true },
+  { to: '/users', label: 'nav.users', icon: UserIcon, isAdminOnly: true },
   { to: '/settings', label: 'nav.settings', icon: SettingsIcon, isAdminOnly: true },
 ]
 

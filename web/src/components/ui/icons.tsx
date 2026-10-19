@@ -135,6 +135,25 @@ export function SettingsIcon(props: IconProps) {
   )
 }
 
+export function UserIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="10" cy="6.5" r="3" />
+      <path d="M4 16.5a6 6 0 0 1 12 0" />
+    </Icon>
+  )
+}
+
+export function TeamIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="7.5" cy="7" r="2.5" />
+      <circle cx="14" cy="8" r="2" />
+      <path d="M2.5 16a5 5 0 0 1 10 0M12.5 12.25A4 4 0 0 1 18 16" />
+    </Icon>
+  )
+}
+
 export function BellIcon(props: IconProps) {
   return (
     <Icon {...props}>

@@ -19,6 +19,10 @@ import {
   SettingsPage,
   SetupPage,
   StatusPagesPage,
+  TeamCreatePage,
+  TeamEditPage,
+  TeamsPage,
+  UsersPage,
 } from './lazyPages.tsx'
 import { RedirectIfAuthenticated, RedirectIfSetupDone, RequireAuth, RequireSetup } from './guards.tsx'
 import { NotFoundPage } from './NotFoundPage.tsx'
@@ -70,6 +74,10 @@ export const routes: RouteObject[] = [
               { path: '/channels/:id', element: <LazyPage><NotificationChannelEditPage /></LazyPage> },
               { path: '/maintenance', element: <LazyPage><MaintenancePage /></LazyPage> },
               { path: '/status-pages', element: <LazyPage><StatusPagesPage /></LazyPage> },
+              { path: '/teams', element: <LazyPage><TeamsPage /></LazyPage> },
+              { path: '/teams/new', element: <LazyPage><TeamCreatePage /></LazyPage> },
+              { path: '/teams/:id', element: <LazyPage><TeamEditPage /></LazyPage> },
+              { path: '/users', element: <LazyPage><UsersPage /></LazyPage> },
               { path: '/settings', element: <LazyPage><SettingsPage /></LazyPage> },
             ],
           },

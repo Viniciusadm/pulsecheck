@@ -4,8 +4,6 @@ import { isAdmin } from '../../lib/permissions.ts'
 import { useAuth } from '../auth/AuthContext.ts'
 import { InstanceSection } from './InstanceSection.tsx'
 import { MailSection } from './MailSection.tsx'
-import { TeamsSection } from './TeamsSection.tsx'
-import { UsersSection } from './UsersSection.tsx'
 
 export function SettingsPage() {
   const { user } = useAuth()
@@ -19,8 +17,6 @@ export function SettingsPage() {
       <h1 className="text-2xl font-semibold text-neutral-900">{t('settings.title')}</h1>
       <InstanceSection />
       <MailSection />
-      <TeamsSection />
-      <UsersSection />
     </div>
   )
 }

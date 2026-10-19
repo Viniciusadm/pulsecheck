@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { Navigate } from 'react-router'
 import { fieldErrors, generalErrorMessage } from '../../api/errors.ts'
 import { queryKeys } from '../../api/queryKeys.ts'
 import type { User, UserRole } from '../../api/types.ts'
@@ -12,6 +13,7 @@ import { ErrorState } from '../../components/ui/ErrorState.tsx'
 import { Skeleton } from '../../components/ui/Skeleton.tsx'
 import { useToast } from '../../components/ui/toast.ts'
 import { t } from '../../i18n/index.ts'
+import { isAdmin } from '../../lib/permissions.ts'
 import { useAuth } from '../auth/AuthContext.ts'
 import { UserDialog } from './UserDialog.tsx'
 
@@ -29,20 +31,25 @@ function deleteErrorMessage(error: unknown): string {
   return errors.user ?? errors.role ?? generalErrorMessage(error) ?? t('common.genericError')
 }
 
-export function UsersSection() {
-  const users = useQuery({ queryKey: queryKeys.users, queryFn: listUsers })
+export function UsersPage() {
+  const { user } = useAuth()
+  const users = useQuery({ queryKey: queryKeys.users, queryFn: listUsers, enabled: isAdmin(user) })
   const [dialog, setDialog] = useState<DialogState>({ mode: 'closed' })
 
+  if (!isAdmin(user)) {
+    return <Navigate to="/dashboard" replace />
+  }
+
   return (
-    <section aria-labelledby="users-heading">
-      <Card className="flex max-w-3xl flex-col gap-6 px-5 py-6 sm:px-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex max-w-prose flex-col gap-1">
-            <h2 id="users-heading" className="text-lg font-semibold text-neutral-900">{t('settings.users.heading')}</h2>
-            <p className="text-neutral-600">{t('settings.users.description')}</p>
-          </div>
-          <Button onClick={() => setDialog({ mode: 'create' })}>{t('settings.users.add')}</Button>
+    <section aria-labelledby="users-heading" className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex max-w-prose flex-col gap-1">
+          <h1 id="users-heading" className="text-2xl font-semibold text-neutral-900">{t('settings.users.heading')}</h1>
+          <p className="text-neutral-600">{t('settings.users.description')}</p>
         </div>
+        <Button onClick={() => setDialog({ mode: 'create' })}>{t('settings.users.add')}</Button>
+      </div>
+      <Card className="flex flex-col gap-6 px-5 py-6 sm:px-6">
         {users.isPending && <Skeleton className="h-32" />}
         {users.isError && <ErrorState onRetry={() => void users.refetch()} />}
         {users.data && users.data.length > 0 && (
@@ -72,6 +79,7 @@ function UserRow({ user, onEdit }: { user: User; onEdit: () => void }) {
     onSuccess: () => {
       setIsConfirmingDelete(false)
       void queryClient.invalidateQueries({ queryKey: queryKeys.users })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.teams })
       showToast(t('settings.users.deleted'))
     },
     onError: (error) => {

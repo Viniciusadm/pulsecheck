@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 class TeamController extends Controller
 {
@@ -26,16 +27,19 @@ class TeamController extends Controller
         return TeamResource::collection($teams);
     }
 
+    public function show(Team $team): TeamResource
+    {
+        return $this->detailed($team);
+    }
+
     public function store(StoreTeamRequest $request): TeamResource
     {
-        return new TeamResource(Team::create($request->validated())->loadCount(['users', 'monitors']));
+        return $this->detailed($this->save(new Team, $request));
     }
 
     public function update(StoreTeamRequest $request, Team $team): TeamResource
     {
-        $team->update($request->validated());
-
-        return new TeamResource($team->loadCount(['users', 'monitors']));
+        return $this->detailed($this->save($team, $request));
     }
 
     public function destroy(Team $team): Response
@@ -43,5 +47,27 @@ class TeamController extends Controller
         $team->delete();
 
         return response()->noContent();
+    }
+
+    private function save(Team $team, StoreTeamRequest $request): Team
+    {
+        return DB::transaction(function () use ($team, $request) {
+            $team->fill(['name' => $request->validated('name')])->save();
+
+            if ($request->has('user_ids')) {
+                $team->users()->sync($request->validated('user_ids'));
+            }
+
+            if ($request->has('monitor_ids')) {
+                $team->monitors()->sync($request->validated('monitor_ids'));
+            }
+
+            return $team;
+        });
+    }
+
+    private function detailed(Team $team): TeamResource
+    {
+        return new TeamResource($team->load(['users:id', 'monitors:id'])->loadCount(['users', 'monitors']));
     }
 }

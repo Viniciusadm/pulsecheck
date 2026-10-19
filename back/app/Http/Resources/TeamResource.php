@@ -14,6 +14,8 @@ class TeamResource extends JsonResource
             'name' => $this->name,
             'users_count' => $this->whenCounted('users'),
             'monitors_count' => $this->whenCounted('monitors'),
+            'user_ids' => $this->whenLoaded('users', fn () => $this->users->modelKeys()),
+            'monitor_ids' => $this->whenLoaded('monitors', fn () => $this->monitors->modelKeys()),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

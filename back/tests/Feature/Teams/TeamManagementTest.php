@@ -31,6 +31,54 @@ class TeamManagementTest extends TestCase
         $this->assertDatabaseMissing('teams', ['id' => $teamId]);
     }
 
+    public function test_admin_manages_team_members_and_monitors(): void
+    {
+        $team = Team::factory()->create();
+        [$alice, $bob] = User::factory()->count(2)->create();
+        [$api, $site] = Monitor::factory()->count(2)->create();
+        $team->users()->attach($alice);
+        $team->monitors()->attach($api);
+        $this->actingAs(User::factory()->admin()->create())->fromSpa();
+
+        $this->getJson("/api/teams/{$team->id}")
+            ->assertOk()
+            ->assertJsonPath('data.user_ids', [$alice->id])
+            ->assertJsonPath('data.monitor_ids', [$api->id]);
+
+        $this->putJson("/api/teams/{$team->id}", ['name' => $team->name, 'user_ids' => [$bob->id], 'monitor_ids' => [$api->id, $site->id]])
+            ->assertOk()
+            ->assertJsonPath('data.user_ids', [$bob->id])
+            ->assertJsonPath('data.users_count', 1)
+            ->assertJsonPath('data.monitors_count', 2);
+
+        $this->putJson("/api/teams/{$team->id}", ['name' => 'Renamed'])->assertOk();
+
+        $this->assertEqualsCanonicalizing([$bob->id], $team->users()->pluck('users.id')->all());
+        $this->assertEqualsCanonicalizing([$api->id, $site->id], $team->monitors()->pluck('monitors.id')->all());
+    }
+
+    public function test_admin_creates_a_team_with_members_and_monitors(): void
+    {
+        $member = User::factory()->create();
+        $monitor = Monitor::factory()->create();
+        $this->actingAs(User::factory()->admin()->create())->fromSpa();
+
+        $this->postJson('/api/teams', ['name' => 'Ops', 'user_ids' => [$member->id], 'monitor_ids' => [$monitor->id]])
+            ->assertCreated()
+            ->assertJsonPath('data.user_ids', [$member->id])
+            ->assertJsonPath('data.monitor_ids', [$monitor->id]);
+    }
+
+    public function test_admins_cannot_be_team_members(): void
+    {
+        $team = Team::factory()->create();
+        $admin = User::factory()->admin()->create();
+        $this->actingAs($admin)->fromSpa();
+
+        $this->putJson("/api/teams/{$team->id}", ['name' => $team->name, 'user_ids' => [$admin->id]])
+            ->assertJsonValidationErrors('user_ids.0');
+    }
+
     public function test_team_names_are_unique(): void
     {
         $team = Team::factory()->create(['name' => 'Backend']);
@@ -50,6 +98,7 @@ class TeamManagementTest extends TestCase
             $this->actingAs($user)->fromSpa();
 
             $this->postJson('/api/teams', ['name' => 'Ops'])->assertForbidden();
+            $this->getJson("/api/teams/{$team->id}")->assertForbidden();
             $this->putJson("/api/teams/{$team->id}", ['name' => 'Ops'])->assertForbidden();
             $this->deleteJson("/api/teams/{$team->id}")->assertForbidden();
         }

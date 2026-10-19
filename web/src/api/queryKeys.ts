@@ -25,5 +25,6 @@ export const queryKeys = {
   alertPreview: (event: string, messageFormat: string) => ['notification-channels', 'preview', event, messageFormat] as const,
   users: ['users'] as const,
   teams: ['teams'] as const,
+  team: (id: number) => ['teams', id] as const,
   mailSettings: ['mail-settings'] as const,
 }

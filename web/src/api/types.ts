@@ -479,12 +479,16 @@ export type Team = {
   name: string
   users_count?: number
   monitors_count?: number
+  user_ids?: number[]
+  monitor_ids?: number[]
   created_at: string
   updated_at: string
 }
 
 export type TeamInput = {
   name: string
+  user_ids?: number[]
+  monitor_ids?: number[]
 }
 
 export type SetupInput = {

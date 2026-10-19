@@ -7,6 +7,12 @@ export async function listTeams() {
   return response.data.data
 }
 
+export async function getTeam(id: number) {
+  const response = await http.get<DataResponse<Team>>(`/api/teams/${id}`)
+
+  return response.data.data
+}
+
 export async function createTeam(input: TeamInput) {
   const response = await http.post<DataResponse<Team>>('/api/teams', input)
 

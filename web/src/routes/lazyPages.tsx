@@ -14,6 +14,10 @@ export const PublicStatusPage = lazy(() => import('../features/statusPages/Publi
 export const StatusPagesPage = lazy(() => import('../features/statusPages/StatusPagesPage.tsx').then((module) => ({ default: module.StatusPagesPage })))
 export const ResetPasswordPage = lazy(() => import('../features/auth/ResetPasswordPage.tsx').then((module) => ({ default: module.ResetPasswordPage })))
 export const SettingsPage = lazy(() => import('../features/settings/SettingsPage.tsx').then((module) => ({ default: module.SettingsPage })))
+export const TeamsPage = lazy(() => import('../features/teams/TeamsPage.tsx').then((module) => ({ default: module.TeamsPage })))
+export const TeamCreatePage = lazy(() => import('../features/teams/TeamFormPage.tsx').then((module) => ({ default: module.TeamCreatePage })))
+export const TeamEditPage = lazy(() => import('../features/teams/TeamFormPage.tsx').then((module) => ({ default: module.TeamEditPage })))
+export const UsersPage = lazy(() => import('../features/users/UsersPage.tsx').then((module) => ({ default: module.UsersPage })))
 export const SetupPage = lazy(() => import('../features/setup/SetupPage.tsx').then((module) => ({ default: module.SetupPage })))
 
 export function LazyPage({ children }: { children: ReactNode }) {

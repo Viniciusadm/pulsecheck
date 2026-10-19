@@ -121,6 +121,7 @@ Route::middleware('auth:sanctum')->group(function () {
         });
 
         Route::post('teams', [TeamController::class, 'store'])->name('teams.store');
+        Route::get('teams/{team}', [TeamController::class, 'show'])->name('teams.show');
         Route::match(['put', 'patch'], 'teams/{team}', [TeamController::class, 'update'])->name('teams.update');
         Route::delete('teams/{team}', [TeamController::class, 'destroy'])->name('teams.destroy');
 

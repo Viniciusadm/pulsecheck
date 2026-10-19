@@ -14,11 +14,11 @@ vi.mock('../../api/users.ts')
 
 const grace = makeUser()
 
-async function usersSection() {
+async function usersPage() {
   return within((await screen.findByRole('heading', { name: 'Users' })).closest('section')!)
 }
 
-describe('UsersSection', () => {
+describe('UsersPage', () => {
   beforeEach(() => {
     vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(ada)
     vi.mocked(teamsApi.listTeams).mockResolvedValue([makeTeam({ id: 1, name: 'Platform' }), makeTeam({ id: 2, name: 'Commerce' })])
@@ -26,8 +26,8 @@ describe('UsersSection', () => {
   })
 
   it('lists users with their role and marks the current account', async () => {
-    renderApp('/settings')
-    const section = await usersSection()
+    renderApp('/users')
+    const section = await usersPage()
 
     const adaRow = (await section.findByText('Ada Lovelace')).closest('li')!
     expect(within(adaRow).getByText('Administrator')).toBeInTheDocument()
@@ -42,8 +42,8 @@ describe('UsersSection', () => {
   it('creates a user with an initial password and role', async () => {
     vi.mocked(usersApi.createUser).mockResolvedValue(makeUser({ id: 3, name: 'Alan Turing' }))
     const user = userEvent.setup()
-    renderApp('/settings')
-    const section = await usersSection()
+    renderApp('/users')
+    const section = await usersPage()
 
     await user.click(section.getByRole('button', { name: 'Add user' }))
     const dialog = await screen.findByRole('dialog', { name: 'Add user' })
@@ -69,8 +69,8 @@ describe('UsersSection', () => {
   it('edits a user without sending a password when it is left blank', async () => {
     vi.mocked(usersApi.updateUser).mockResolvedValue({ ...grace, role: 'admin' })
     const user = userEvent.setup()
-    renderApp('/settings')
-    const section = await usersSection()
+    renderApp('/users')
+    const section = await usersPage()
 
     await user.click(await section.findByRole('button', { name: 'Edit: Grace Hopper' }))
     const dialog = await screen.findByRole('dialog', { name: 'Edit Grace Hopper' })
@@ -93,8 +93,8 @@ describe('UsersSection', () => {
       axiosError(422, { message: 'Invalid.', errors: { role: ['There must be at least one administrator.'] } }),
     )
     const user = userEvent.setup()
-    renderApp('/settings')
-    const section = await usersSection()
+    renderApp('/users')
+    const section = await usersPage()
 
     await user.click(await section.findByRole('button', { name: 'Edit: Ada Lovelace' }))
     const dialog = await screen.findByRole('dialog', { name: 'Edit Ada Lovelace' })
@@ -108,8 +108,8 @@ describe('UsersSection', () => {
   it('deletes a user after confirmation', async () => {
     vi.mocked(usersApi.deleteUser).mockResolvedValue()
     const user = userEvent.setup()
-    renderApp('/settings')
-    const section = await usersSection()
+    renderApp('/users')
+    const section = await usersPage()
 
     await user.click(await section.findByRole('button', { name: 'Delete: Grace Hopper' }))
     const dialog = await screen.findByRole('dialog', { name: 'Delete Grace Hopper?' })
@@ -124,8 +124,8 @@ describe('UsersSection', () => {
       axiosError(422, { message: 'Invalid.', errors: { user: ['You cannot delete the last administrator.'] } }),
     )
     const user = userEvent.setup()
-    renderApp('/settings')
-    const section = await usersSection()
+    renderApp('/users')
+    const section = await usersPage()
 
     await user.click(await section.findByRole('button', { name: 'Delete: Grace Hopper' }))
     const dialog = await screen.findByRole('dialog', { name: 'Delete Grace Hopper?' })
@@ -137,8 +137,8 @@ describe('UsersSection', () => {
   it('gives a manager access to specific teams', async () => {
     vi.mocked(usersApi.updateUser).mockResolvedValue({ ...grace, role: 'manager', team_ids: [2] })
     const user = userEvent.setup()
-    renderApp('/settings')
-    const section = await usersSection()
+    renderApp('/users')
+    const section = await usersPage()
 
     await user.click(await section.findByRole('button', { name: 'Edit: Grace Hopper' }))
     const dialog = await screen.findByRole('dialog', { name: 'Edit Grace Hopper' })
@@ -153,8 +153,8 @@ describe('UsersSection', () => {
   it('uses the all monitors shortcut instead of picking teams', async () => {
     vi.mocked(usersApi.updateUser).mockResolvedValue({ ...grace, can_view_all_monitors: true })
     const user = userEvent.setup()
-    renderApp('/settings')
-    const section = await usersSection()
+    renderApp('/users')
+    const section = await usersPage()
 
     await user.click(await section.findByRole('button', { name: 'Edit: Grace Hopper' }))
     const dialog = await screen.findByRole('dialog', { name: 'Edit Grace Hopper' })
@@ -171,8 +171,8 @@ describe('UsersSection', () => {
 
   it('hides team access for administrators', async () => {
     const user = userEvent.setup()
-    renderApp('/settings')
-    const section = await usersSection()
+    renderApp('/users')
+    const section = await usersPage()
 
     await user.click(await section.findByRole('button', { name: 'Edit: Ada Lovelace' }))
     const dialog = await screen.findByRole('dialog', { name: 'Edit Ada Lovelace' })
