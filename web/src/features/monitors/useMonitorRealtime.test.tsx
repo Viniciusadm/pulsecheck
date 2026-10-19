@@ -5,10 +5,10 @@ import * as configApi from '../../api/config.ts'
 import * as dashboardApi from '../../api/dashboard.ts'
 import * as monitorsApi from '../../api/monitors.ts'
 import * as realtimeApi from '../../api/realtime.ts'
-import type { Monitor } from '../../api/types.ts'
+import type { Incident, Monitor } from '../../api/types.ts'
 import { queryKeys } from '../../api/queryKeys.ts'
 import { mockDashboardApi } from '../../test/dashboardMocks.ts'
-import { ada, makeConfig, makeMonitor, paginated } from '../../test/fixtures.ts'
+import { ada, makeConfig, makeMonitor, openIncident, paginated } from '../../test/fixtures.ts'
 import { renderApp } from '../../test/renderApp.tsx'
 
 vi.mock('../../api/auth.ts')
@@ -16,15 +16,18 @@ vi.mock('../../api/dashboard.ts')
 vi.mock('../../api/monitors.ts')
 vi.mock('../../api/realtime.ts')
 
-type Listener = (event: { monitor: Omit<Monitor, 'notification_channel_ids'> }) => void
+type Listener = (event: { monitor: Omit<Monitor, 'notification_channel_ids'> } | { incident: Incident }) => void
 
 function fakeEcho() {
   const listeners = new Map<string, Listener>()
-  const privateChannel = vi.fn(() => ({
+  const channel = {
     listen: (event: string, listener: Listener) => {
       listeners.set(event, listener)
+
+      return channel
     },
-  }))
+  }
+  const privateChannel = vi.fn(() => channel)
   const disconnect = vi.fn()
   const connector = { onConnectionChange: vi.fn(() => () => {}) }
 
@@ -36,7 +39,7 @@ function fakeEcho() {
 describe('useMonitorRealtime', () => {
   beforeEach(() => {
     vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(ada)
-    vi.mocked(dashboardApi.getDashboardSummary).mockResolvedValue({ total: 1, up: 1, degraded: 0, down: 0, pending: 0, paused: 0 })
+    vi.mocked(dashboardApi.getDashboardSummary).mockResolvedValue({ total: 1, up: 1, degraded: 0, down: 0, pending: 0, maintenance: 0, paused: 0 })
     mockDashboardApi()
     vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([makeMonitor()]))
   })
@@ -76,5 +79,18 @@ describe('useMonitorRealtime', () => {
 
     expect(await screen.findAllByRole('link', { name: 'Shop API' })).not.toHaveLength(0)
     expect(realtimeApi.createEcho).not.toHaveBeenCalled()
+  })
+
+  it('refreshes incidents when an incident is acknowledged elsewhere', async () => {
+    const echo = fakeEcho()
+    vi.mocked(configApi.getAppConfig).mockResolvedValue(makeConfig({ realtime: { key: 'public-key' } }))
+    renderApp('/dashboard')
+
+    await waitFor(() => expect(echo.listeners.has('.incident.updated')).toBe(true))
+    const summaryCalls = vi.mocked(dashboardApi.getDashboardSummary).mock.calls.length
+
+    echo.listeners.get('.incident.updated')?.({ incident: { ...openIncident, acknowledged_at: '2026-10-17T10:05:00Z' } })
+
+    await waitFor(() => expect(vi.mocked(dashboardApi.getDashboardSummary).mock.calls.length).toBeGreaterThan(summaryCalls))
   })
 })

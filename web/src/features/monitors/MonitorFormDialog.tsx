@@ -60,6 +60,7 @@ function MonitorForm({ isOpen, onClose, onSaved, monitor, config }: MonitorFormD
     interval_minutes: monitor?.interval_minutes ?? config?.monitors.default_interval ?? 5,
     timeout_seconds: String(monitor?.timeout_seconds ?? config?.monitors.timeout_default ?? 10),
     latency_threshold_ms: monitor?.latency_threshold_ms == null ? '' : String(monitor.latency_threshold_ms),
+    reminder_interval_minutes: monitor?.reminder_interval_minutes ?? null,
   })
   const [type, setType] = useState<MonitorType>(monitor?.type ?? 'http')
   const [request, setRequest] = useState(() => initialHttpRequestState(monitor))
@@ -113,6 +114,10 @@ function MonitorForm({ isOpen, onClose, onSaved, monitor, config }: MonitorFormD
 
     if (latencyThresholdMs !== (monitor?.latency_threshold_ms ?? null)) {
       input.latency_threshold_ms = latencyThresholdMs
+    }
+
+    if (form.reminder_interval_minutes !== (monitor?.reminder_interval_minutes ?? null)) {
+      input.reminder_interval_minutes = form.reminder_interval_minutes
     }
 
     const options = changedTypeOptions(type, request, target, monitor)
@@ -243,6 +248,21 @@ function MonitorForm({ isOpen, onClose, onSaved, monitor, config }: MonitorFormD
             error={errors.latency_threshold_ms}
           />
         )}
+        <SelectField
+          label={t('monitors.form.reminderInterval')}
+          name="reminder_interval_minutes"
+          hint={t('monitors.form.reminderHint')}
+          value={form.reminder_interval_minutes ?? ''}
+          onChange={(event) => setForm({ ...form, reminder_interval_minutes: event.target.value === '' ? null : Number(event.target.value) })}
+          error={errors.reminder_interval_minutes}
+        >
+          <option value="">{t('monitors.form.reminderOff')}</option>
+          {(config?.monitors.reminder_intervals ?? []).map((minutes) => (
+            <option key={minutes} value={minutes}>
+              {t('monitors.form.reminderOption', { minutes })}
+            </option>
+          ))}
+        </SelectField>
         {definition.usesRequest && <HttpRequestFields state={request} onChange={setRequest} monitor={monitor} errors={errors} />}
         <TeamPicker teams={teams.data} selectedIds={teamIds} onChange={setSelectedTeamIds} error={teamIdsError(errors)} />
         <ChannelPicker

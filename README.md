@@ -16,7 +16,9 @@ Self-hosted uptime monitoring for one team or organization per deploy: PulseChec
   - **Heartbeat**: for cron jobs and other scheduled work. The job calls a secret URL (`GET`, `POST` or `HEAD /api/heartbeat/{token}`) on every run, and the monitor goes `down` when no call arrives within the interval plus a grace period. Intervals go up to 24 hours (`PULSECHECK_HEARTBEAT_INTERVALS`). The URL is shown only to people who can edit the monitor and can be regenerated.
 - **Degraded status**: with a slow response limit set, responses slower than the limit mark the monitor `degraded` after 2 consecutive slow checks (`PULSECHECK_DEGRADED_TO_CONFIRM`). Degraded checks still count as available in uptime; the degradation gets its own incident and alerts.
 - **Stable status**: a monitor goes `down` after 2 consecutive failures and back `up` after 2 consecutive successes, so a single blip does not raise an alert. A result that contradicts the current status is confirmed after half the check interval (at least 1 minute) instead of a full one.
-- **Incidents** with cause, start, end and duration; one incident per outage.
+- **Incidents** with cause, start, end and duration; one incident per outage. Anyone who can see the monitor can **acknowledge** an open incident and add **notes**; both update live for everyone looking at it.
+- **Repeated alerts**: each monitor can repeat the down alert every 15, 30, 60, 120 or 240 minutes (`PULSECHECK_REMINDER_INTERVALS`) until the incident is acknowledged or resolved.
+- **Maintenance windows**: one-off or weekly (with time zone, and windows that cross midnight), for chosen monitors or whole teams. During a window checks keep running, but no incident or alert is created and uptime leaves the period out. A failure that continues after the window opens the incident from the first check after it.
 - **Metrics**: uptime per period (24 h, 7 d, 30 d), average and 95th percentile response time, latency chart and a 30-day availability bar that tells "no data" apart from "100%".
 - **Check history** with date filters and pagination.
 - **Notification channels** on down and recovery: Telegram, Slack, Discord, email and a generic JSON webhook for anything else. Each monitor picks its channels; every channel has a test button, and secrets (tokens, webhook URLs, headers) are stored encrypted and never shown again.
@@ -269,7 +271,7 @@ Administrators and managers add notification channels on the **Channels** page a
 
 Slack, Discord and webhook deliveries go through the same SSRF guard as checks: private and internal addresses are refused, the connection is pinned to the validated IP and redirects are not followed. Webhook headers can carry credentials such as `Authorization`; `Host`, `Content-Type`, `Content-Length`, `Transfer-Encoding`, `Connection` and `User-Agent` are reserved.
 
-Webhook payload (version 1). `event` is `monitor.down`, `monitor.recovered`, `monitor.degraded`, `monitor.degradation_resolved`, `monitor.incident_closed` (the monitor URL or request options changed while an incident was open, so it was closed without a recovery check) or `test` (with `monitor` and `incident` set to `null`); `monitor.type` is `http`, `keyword`, `tcp`, `ssl` or `heartbeat`; `monitor.host` never contains the URL path or query string (it is `host:port` for TCP and `Heartbeat` for heartbeat monitors); `instance.name` is the name chosen at setup. Times in `text` use the instance time zone, while the ISO fields are always UTC. Any 2xx response counts as delivered.
+Webhook payload (version 1). `event` is `monitor.down`, `monitor.still_down` (a repeated alert), `monitor.recovered`, `monitor.degraded`, `monitor.degradation_resolved`, `monitor.incident_closed` (the monitor URL or request options changed while an incident was open, so it was closed without a recovery check) or `test` (with `monitor` and `incident` set to `null`); `monitor.type` is `http`, `keyword`, `tcp`, `ssl` or `heartbeat`; `monitor.host` never contains the URL path or query string (it is `host:port` for TCP and `Heartbeat` for heartbeat monitors); `instance.name` is the name chosen at setup. Times in `text` use the instance time zone, while the ISO fields are always UTC. Any 2xx response counts as delivered.
 
 ```json
 {
@@ -284,6 +286,8 @@ Webhook payload (version 1). `event` is `monitor.down`, `monitor.recovered`, `mo
   "incident": {
     "id": 3,
     "kind": "outage",
+    "acknowledged_at": null,
+    "reminder_count": 0,
     "cause": "timeout: Operation timed out",
     "started_at": "2026-10-17T12:00:00Z",
     "resolved_at": null,
@@ -292,7 +296,7 @@ Webhook payload (version 1). `event` is `monitor.down`, `monitor.recovered`, `mo
 }
 ```
 
-`severity` is `critical` for `monitor.down`, `warning` for `monitor.degraded`, `resolved` for `monitor.recovered`, `monitor.degradation_resolved` and `monitor.incident_closed`, and `info` for `test`. `incident.kind` is `outage` or `degradation`. On recovery or closing, `resolved_at` and `duration_seconds` are filled.
+`severity` is `critical` for `monitor.down` and `monitor.still_down`, `warning` for `monitor.degraded`, `resolved` for `monitor.recovered`, `monitor.degradation_resolved` and `monitor.incident_closed`, and `info` for `test`. `incident.kind` is `outage` or `degradation`. On recovery or closing, `resolved_at` and `duration_seconds` are filled.
 
 ## Uptime
 
@@ -301,6 +305,7 @@ uptime % = successful_checks / total_checks × 100   (within the period)
 ```
 
 - With no checks in the period, uptime is shown as **No data**, never 100%.
+- Checks made during a maintenance window are left out of uptime, response times and dashboard charts; the daily bar marks those days.
 - Time without checks (monitor paused, PulseCheck itself down) is not counted as available; it has no data.
 - Every value comes with `total_checks` and `successful_checks`, so it can be verified.
 - A check succeeds when the final response (after redirects, unless they are turned off) has an expected status, 200 to 399 by default. Slow checks over the monitor's limit still succeed; they are counted separately as degraded.

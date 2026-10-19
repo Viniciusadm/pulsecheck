@@ -271,4 +271,18 @@ describe('MonitorFormDialog', () => {
       team_ids: [],
     })
   })
+
+  it('sends the reminder interval only when chosen', async () => {
+    vi.mocked(monitorsApi.createMonitor).mockResolvedValue(makeMonitor({ id: 42 }))
+    vi.mocked(monitorsApi.getMonitor).mockReturnValue(new Promise(() => {}))
+    const { user, dialog } = await openForm()
+
+    await user.type(within(dialog).getByLabelText('Name'), 'Docs')
+    await user.type(within(dialog).getByLabelText('URL'), 'https://docs.example.com')
+    await user.selectOptions(within(dialog).getByLabelText('Repeat the alert while down'), '30')
+    await user.click(within(dialog).getByRole('button', { name: 'Add monitor' }))
+
+    await screen.findByText('Monitor added. The first check runs within a minute.')
+    expect(monitorsApi.createMonitor).toHaveBeenCalledWith(expect.objectContaining({ reminder_interval_minutes: 30 }))
+  })
 })

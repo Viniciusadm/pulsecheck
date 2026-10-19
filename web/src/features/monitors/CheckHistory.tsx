@@ -107,6 +107,9 @@ export function CheckHistory({ monitorId }: { monitorId: number }) {
                     {!check.is_success && (
                       <Badge className="bg-status-down-soft text-status-down">{t('monitors.checks.failure')}</Badge>
                     )}
+                    {check.in_maintenance && (
+                      <Badge className="ml-1.5 bg-status-maintenance-soft text-status-maintenance">{t('monitors.checks.maintenance')}</Badge>
+                    )}
                   </td>
                   <td className="px-4 py-2.5 text-right tabular-nums text-neutral-700">{check.status_code ?? '—'}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums text-neutral-700">{formatLatency(check.latency_ms)}</td>

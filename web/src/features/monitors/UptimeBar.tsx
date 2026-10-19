@@ -7,7 +7,7 @@ const NO_DATA_PATTERN = 'repeating-linear-gradient(135deg, #e1e5ea 0 3px, #f4f6f
 
 function dayClass(day: UptimeDay): string {
   if (day.uptime_percentage === null) {
-    return ''
+    return day.maintenance_checks > 0 ? 'bg-status-maintenance' : ''
   }
 
   if (day.uptime_percentage === 100) {
@@ -21,7 +21,9 @@ function dayLabel(day: UptimeDay): string {
   const date = formatShortDate(day.date)
 
   if (day.uptime_percentage === null) {
-    return t('monitors.detail.dailyUptimeNoData', { date })
+    const label = t('monitors.detail.dailyUptimeNoData', { date })
+
+    return day.maintenance_checks > 0 ? `${label} · ${t('status.maintenance')}` : label
   }
 
   const label = t('monitors.detail.dailyUptimeDay', { date, uptime: formatPercentage(day.uptime_percentage), total: day.total_checks })
@@ -82,7 +84,7 @@ export function UptimeBar({ days }: { days: UptimeDay[] }) {
             onBlur={() => setHighlightedIndex(null)}
             onMouseEnter={() => setHighlightedIndex(index)}
             className={`flex-1 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 ${dayClass(day)}`}
-            style={day.uptime_percentage === null ? { backgroundImage: NO_DATA_PATTERN } : undefined}
+            style={day.uptime_percentage === null && day.maintenance_checks === 0 ? { backgroundImage: NO_DATA_PATTERN } : undefined}
           />
         ))}
       </ol>
@@ -106,6 +108,12 @@ export function UptimeBar({ days }: { days: UptimeDay[] }) {
           <span className="size-3 rounded-sm" style={{ backgroundImage: NO_DATA_PATTERN }} aria-hidden="true" />
           {t('monitors.detail.legendNoData')}
         </span>
+        {days.some((day) => day.uptime_percentage === null && day.maintenance_checks > 0) && (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-3 rounded-sm bg-status-maintenance" aria-hidden="true" />
+            {t('status.maintenance')}
+          </span>
+        )}
       </div>
     </div>
   )

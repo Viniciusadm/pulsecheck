@@ -3,13 +3,15 @@ import { useEffect } from 'react'
 import { getAppConfig } from '../../api/config.ts'
 import { queryKeys } from '../../api/queryKeys.ts'
 import type { createEcho } from '../../api/realtime.ts'
-import type { Monitor } from '../../api/types.ts'
+import type { Incident, Monitor } from '../../api/types.ts'
 import { useAuth } from '../auth/AuthContext.ts'
 import { setRealtimeConnected } from './realtimeConnection.ts'
 
 const REFRESH_DEBOUNCE_MS = 500
 
 type MonitorCheckedEvent = { monitor: Omit<Monitor, 'notification_channel_ids'> }
+
+type IncidentUpdatedEvent = { incident: Incident }
 
 export function useMonitorRealtime() {
   const { user } = useAuth()
@@ -51,11 +53,22 @@ export function useMonitorRealtime() {
 
         echo = realtime.createEcho(realtimeKey)
         stopWatchingConnection = echo.connector.onConnectionChange((status) => setRealtimeConnected(status === 'connected'))
-        echo.private(`users.${userId}.monitors`).listen('.monitor.checked', ({ monitor }: MonitorCheckedEvent) => {
-          queryClient.setQueryData<Monitor>(queryKeys.monitor(monitor.id), (current) => (current ? { ...current, ...monitor } : current))
-          checkedMonitorIds.add(monitor.id)
-          refreshTimer ??= setTimeout(refresh, REFRESH_DEBOUNCE_MS)
-        })
+        echo
+          .private(`users.${userId}.monitors`)
+          .listen('.monitor.checked', ({ monitor }: MonitorCheckedEvent) => {
+            queryClient.setQueryData<Monitor>(queryKeys.monitor(monitor.id), (current) => (current ? { ...current, ...monitor } : current))
+            checkedMonitorIds.add(monitor.id)
+            refreshTimer ??= setTimeout(refresh, REFRESH_DEBOUNCE_MS)
+          })
+          .listen('.incident.updated', ({ incident }: IncidentUpdatedEvent) => {
+            void queryClient.invalidateQueries({ queryKey: queryKeys.incidentNotes(incident.id) })
+
+            if (incident.monitor) {
+              checkedMonitorIds.add(incident.monitor.id)
+            }
+
+            refreshTimer ??= setTimeout(refresh, REFRESH_DEBOUNCE_MS)
+          })
       })
       .catch(() => setRealtimeConnected(false))
 

@@ -15,6 +15,15 @@ export function StatusSummaryWidget() {
   return <QueryContent query={summary}>{(data) => <SummaryCards summary={data} />}</QueryContent>
 }
 
+function summaryNote(summary: DashboardSummary): string | null {
+  const notes = [
+    summary.pending > 0 ? t('dashboard.summary.pending', { count: summary.pending }) : null,
+    summary.maintenance > 0 ? t('dashboard.summary.maintenance', { count: summary.maintenance }) : null,
+  ].filter((note) => note !== null)
+
+  return notes.length === 0 ? null : notes.join(' · ')
+}
+
 function SummaryCards({ summary }: { summary: DashboardSummary }) {
   const cards = [
     {
@@ -23,7 +32,7 @@ function SummaryCards({ summary }: { summary: DashboardSummary }) {
       icon: null,
       tone: 'text-neutral-900',
       to: '/monitors',
-      note: summary.pending > 0 ? t('dashboard.summary.pending', { count: summary.pending }) : null,
+      note: summaryNote(summary),
     },
     { label: t('dashboard.summary.up'), value: summary.up, icon: <UpIcon />, tone: 'text-status-up', to: '/monitors?status=up', note: null },
     { label: t('dashboard.summary.degraded'), value: summary.degraded, icon: <DegradedIcon />, tone: 'text-status-degraded', to: '/monitors?status=degraded', note: null },

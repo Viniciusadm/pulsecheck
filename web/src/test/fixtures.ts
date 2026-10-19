@@ -43,7 +43,7 @@ export function makeConfig(overrides: Partial<AppConfig> = {}): AppConfig {
     setup_token_required: false,
     instance: { name: 'Acme', timezone: 'UTC', locale: 'en' },
     available_locales: ['en'],
-    monitors: { allowed_intervals: [1, 5, 10], heartbeat_intervals: [5, 60, 1440], keyword_max_body_bytes: 1048576, default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10 },
+    monitors: { allowed_intervals: [1, 5, 10], heartbeat_intervals: [5, 60, 1440], keyword_max_body_bytes: 1048576, reminder_intervals: [15, 30, 60], default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10 },
     realtime: null,
     ...overrides,
   }
@@ -66,6 +66,9 @@ export function makeMonitor(overrides: Partial<Monitor> = {}): Monitor {
     last_heartbeat_at: null,
     status: 'up',
     is_paused: false,
+    is_in_maintenance: false,
+    maintenance_ends_at: null,
+    reminder_interval_minutes: null,
     last_status_code: 200,
     last_latency_ms: 182,
     last_checked_at: new Date(Date.now() - 120_000).toISOString(),
@@ -91,6 +94,9 @@ export const openIncident: Incident = {
   cause: 'timeout: Connection timed out after 10000 milliseconds',
   state: 'open',
   duration_seconds: 600,
+  acknowledged_at: null,
+  acknowledged_by: null,
+  reminder_count: 0,
   monitor: { id: 7, name: 'Shop API' },
 }
 
@@ -112,8 +118,8 @@ export function makeStats(overrides: Partial<MonitorStats> = {}): MonitorStats {
 export const emptyLatency: LatencySeries = { period: '24h', bucket_minutes: 15, buckets: [] }
 
 export const emptyUptimeDays: UptimeDay[] = [
-  { date: '2026-10-16', total_checks: 0, successful_checks: 0, degraded_checks: 0, uptime_percentage: null },
-  { date: '2026-10-17', total_checks: 0, successful_checks: 0, degraded_checks: 0, uptime_percentage: null },
+  { date: '2026-10-16', total_checks: 0, successful_checks: 0, degraded_checks: 0, maintenance_checks: 0, uptime_percentage: null },
+  { date: '2026-10-17', total_checks: 0, successful_checks: 0, degraded_checks: 0, maintenance_checks: 0, uptime_percentage: null },
 ]
 
 export function makeTeam(overrides: Partial<Team> = {}): Team {

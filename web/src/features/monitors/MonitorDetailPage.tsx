@@ -21,6 +21,7 @@ import { formatDateTime, formatLatency, formatPercentage, formatTime } from '../
 import { displayStatus } from '../../lib/monitor.ts'
 import { canManageResources } from '../../lib/permissions.ts'
 import { useAuth } from '../auth/AuthContext.ts'
+import { MonitorMaintenanceSection } from '../maintenance/MonitorMaintenanceSection.tsx'
 import { CheckHistory } from './CheckHistory.tsx'
 import { HeartbeatPanel } from './HeartbeatPanel.tsx'
 import { IncidentList } from './IncidentList.tsx'
@@ -144,6 +145,11 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
                   })}
                 </span>
               )}
+              {monitor.maintenance_ends_at && (
+                <span className="font-medium text-status-maintenance">
+                  {t('monitors.detail.inMaintenance', { time: formatDateTime(monitor.maintenance_ends_at) })}
+                </span>
+              )}
               {monitor.certificate_expires_at && (
                 <span>{t('monitors.detail.certificateExpires', { date: formatDateTime(monitor.certificate_expires_at) })}</span>
               )}
@@ -221,6 +227,8 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
         {incidents.data && incidents.data.data.length === 0 && <p className="text-neutral-600">{t('monitors.incidents.empty')}</p>}
         {incidents.data && incidents.data.data.length > 0 && <IncidentList incidents={incidents.data.data} />}
       </section>
+
+      <MonitorMaintenanceSection monitorId={monitor.id} canManage={canManage} />
 
       <CheckHistory monitorId={monitor.id} />
 

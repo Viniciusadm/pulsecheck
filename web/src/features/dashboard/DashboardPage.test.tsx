@@ -17,7 +17,7 @@ describe('DashboardPage', () => {
   beforeEach(() => {
     vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(ada)
     mockDashboardApi()
-    vi.mocked(dashboardApi.getDashboardSummary).mockResolvedValue({ total: 3, up: 1, degraded: 0, down: 1, pending: 0, paused: 1 })
+    vi.mocked(dashboardApi.getDashboardSummary).mockResolvedValue({ total: 3, up: 1, degraded: 0, down: 1, pending: 0, maintenance: 0, paused: 1 })
     vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([]))
   })
 
@@ -31,7 +31,7 @@ describe('DashboardPage', () => {
   })
 
   it('invites the user to add a first monitor when there are none', async () => {
-    vi.mocked(dashboardApi.getDashboardSummary).mockResolvedValue({ total: 0, up: 0, degraded: 0, down: 0, pending: 0, paused: 0 })
+    vi.mocked(dashboardApi.getDashboardSummary).mockResolvedValue({ total: 0, up: 0, degraded: 0, down: 0, pending: 0, maintenance: 0, paused: 0 })
     const user = userEvent.setup()
 
     renderApp('/dashboard')
@@ -73,7 +73,7 @@ describe('DashboardPage', () => {
   })
 
   it('notes pending monitors inside the total card', async () => {
-    vi.mocked(dashboardApi.getDashboardSummary).mockResolvedValue({ total: 3, up: 0, degraded: 0, down: 0, pending: 3, paused: 0 })
+    vi.mocked(dashboardApi.getDashboardSummary).mockResolvedValue({ total: 3, up: 0, degraded: 0, down: 0, pending: 3, maintenance: 0, paused: 0 })
 
     renderApp('/dashboard')
 

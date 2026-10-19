@@ -3,17 +3,21 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as authApi from '../../api/auth.ts'
 import * as configApi from '../../api/config.ts'
+import * as incidentsApi from '../../api/incidents.ts'
+import * as maintenanceApi from '../../api/maintenanceWindows.ts'
 import * as monitorsApi from '../../api/monitors.ts'
 import * as channelsApi from '../../api/notificationChannels.ts'
 import * as teamsApi from '../../api/teams.ts'
 import { axiosError } from '../../test/axiosErrors.ts'
 import { formatTime } from '../../lib/format.ts'
-import { ada, emptyLatency, emptyUptimeDays, makeMonitor, makeStats, makeUser, paginated } from '../../test/fixtures.ts'
+import { ada, emptyLatency, emptyUptimeDays, makeMonitor, makeStats, makeUser, openIncident, paginated } from '../../test/fixtures.ts'
 import { renderApp } from '../../test/renderApp.tsx'
 
 vi.mock('../../api/auth.ts')
 vi.mock('../../api/config.ts')
 vi.mock('../../api/monitors.ts')
+vi.mock('../../api/incidents.ts')
+vi.mock('../../api/maintenanceWindows.ts')
 vi.mock('../../api/notificationChannels.ts')
 vi.mock('../../api/teams.ts')
 
@@ -27,6 +31,7 @@ describe('MonitorDetailPage', () => {
     vi.mocked(monitorsApi.listMonitorIncidents).mockResolvedValue(paginated([]))
     vi.mocked(monitorsApi.listChecks).mockResolvedValue({ data: [], meta: { per_page: 50, next_cursor: null, prev_cursor: null } })
     vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([]))
+    vi.mocked(maintenanceApi.listMaintenanceWindows).mockResolvedValue(paginated([]))
     vi.mocked(channelsApi.listNotificationChannels).mockResolvedValue([])
     vi.mocked(teamsApi.listTeams).mockResolvedValue([])
     vi.mocked(configApi.getAppConfig).mockResolvedValue({
@@ -34,7 +39,7 @@ describe('MonitorDetailPage', () => {
       setup_token_required: false,
       instance: { name: 'PulseCheck', timezone: 'UTC', locale: 'en' },
       available_locales: ['en'],
-      monitors: { allowed_intervals: [1, 5, 10], heartbeat_intervals: [5, 60, 1440], keyword_max_body_bytes: 1048576, default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10 },
+      monitors: { allowed_intervals: [1, 5, 10], heartbeat_intervals: [5, 60, 1440], keyword_max_body_bytes: 1048576, reminder_intervals: [15, 30, 60], default_interval: 5, timeout_min: 1, timeout_max: 30, timeout_default: 10 },
       realtime: null,
     })
   })
@@ -88,8 +93,8 @@ describe('MonitorDetailPage', () => {
 
   it('marks days without data differently from full uptime', async () => {
     vi.mocked(monitorsApi.getUptimeHistory).mockResolvedValue([
-      { date: '2026-10-16', total_checks: 0, successful_checks: 0, degraded_checks: 0, uptime_percentage: null },
-      { date: '2026-10-17', total_checks: 288, successful_checks: 288, degraded_checks: 0, uptime_percentage: 100 },
+      { date: '2026-10-16', total_checks: 0, successful_checks: 0, degraded_checks: 0, maintenance_checks: 0, uptime_percentage: null },
+      { date: '2026-10-17', total_checks: 288, successful_checks: 288, degraded_checks: 0, maintenance_checks: 0, uptime_percentage: 100 },
     ])
 
     renderApp('/monitors/7')
@@ -177,5 +182,36 @@ describe('MonitorDetailPage', () => {
 
     expect(await screen.findByText('New URL generated.')).toBeInTheDocument()
     expect(monitorsApi.rotateHeartbeatToken).toHaveBeenCalledWith(7)
+  })
+
+  it('acknowledges an open incident and adds a note', async () => {
+    vi.mocked(monitorsApi.listMonitorIncidents).mockResolvedValue(paginated([{ ...openIncident, notes_count: 0 }]))
+    vi.mocked(incidentsApi.acknowledgeIncident).mockResolvedValue({ ...openIncident, acknowledged_at: new Date().toISOString(), acknowledged_by: { id: 1, name: 'Ada Lovelace' } })
+    vi.mocked(incidentsApi.listIncidentNotes).mockResolvedValue([])
+    vi.mocked(incidentsApi.createIncidentNote).mockResolvedValue({ id: 1, body: 'Restarted', user: { id: 1, name: 'Ada Lovelace' }, can_delete: true, created_at: new Date().toISOString() })
+    const user = userEvent.setup()
+    renderApp('/monitors/7')
+
+    await user.click(await screen.findByRole('button', { name: 'Acknowledge' }))
+    expect(await screen.findByText('Incident acknowledged. Reminders stop.')).toBeInTheDocument()
+    expect(incidentsApi.acknowledgeIncident).toHaveBeenCalledWith(3)
+
+    await user.click(screen.getByRole('button', { name: 'Notes (0)' }))
+    expect(await screen.findByText('No notes yet.')).toBeInTheDocument()
+    await user.type(screen.getByLabelText('Add a note'), 'Restarted')
+    await user.click(screen.getByRole('button', { name: 'Add note' }))
+
+    await vi.waitFor(() => expect(incidentsApi.createIncidentNote).toHaveBeenCalledWith(3, 'Restarted'))
+  })
+
+  it('shows who acknowledged an incident instead of the button', async () => {
+    vi.mocked(monitorsApi.listMonitorIncidents).mockResolvedValue(
+      paginated([{ ...openIncident, acknowledged_at: new Date().toISOString(), acknowledged_by: { id: 2, name: 'Grace Hopper' }, reminder_count: 2 }]),
+    )
+    renderApp('/monitors/7')
+
+    expect(await screen.findByText(/Acknowledged by Grace Hopper/)).toBeInTheDocument()
+    expect(screen.getByText('2 reminders sent')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Acknowledge' })).not.toBeInTheDocument()
   })
 })

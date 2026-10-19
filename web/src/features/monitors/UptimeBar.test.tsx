@@ -5,9 +5,9 @@ import type { UptimeDay } from '../../api/types.ts'
 import { UptimeBar } from './UptimeBar.tsx'
 
 const days: UptimeDay[] = [
-  { date: '2026-10-16', uptime_percentage: 100, total_checks: 10, successful_checks: 10, degraded_checks: 0 },
-  { date: '2026-10-17', uptime_percentage: 90, total_checks: 10, successful_checks: 9, degraded_checks: 0 },
-  { date: '2026-10-18', uptime_percentage: null, total_checks: 0, successful_checks: 0, degraded_checks: 0 },
+  { date: '2026-10-16', uptime_percentage: 100, total_checks: 10, successful_checks: 10, degraded_checks: 0, maintenance_checks: 0 },
+  { date: '2026-10-17', uptime_percentage: 90, total_checks: 10, successful_checks: 9, degraded_checks: 0, maintenance_checks: 0 },
+  { date: '2026-10-18', uptime_percentage: null, total_checks: 0, successful_checks: 0, degraded_checks: 0, maintenance_checks: 0 },
 ]
 
 describe('UptimeBar', () => {

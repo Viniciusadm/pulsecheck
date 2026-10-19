@@ -75,6 +75,14 @@ export function DegradedIcon(props: IconProps) {
   )
 }
 
+export function MaintenanceIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12.5 3.5a3.5 3.5 0 0 0-3.3 4.7L3.75 13.6a1.5 1.5 0 0 0 2.1 2.1l5.45-5.45a3.5 3.5 0 0 0 4.6-4.6l-2.15 2.15-1.9-.45-.45-1.9 2.15-2.15a3.5 3.5 0 0 0-1.05-.2Z" />
+    </Icon>
+  )
+}
+
 export function MenuIcon(props: IconProps) {
   return (
     <Icon {...props}>
