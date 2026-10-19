@@ -70,6 +70,28 @@ class MonitorRequestOptionsTest extends TestCase
             ->assertJsonPath('data.latency_threshold_ms', null);
     }
 
+    public function test_saved_secrets_can_be_cleared_explicitly(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $id = $this->actingAs($admin)->fromSpa()
+            ->postJson('/api/monitors', $this->payload([
+                'options' => ['method' => 'POST'],
+                'secrets' => ['headers' => ['X-Api-Key' => 'abc'], 'body' => '{}'],
+            ]))
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->actingAs($admin)->fromSpa()
+            ->patchJson("/api/monitors/{$id}", ['clear_secrets' => ['body']])
+            ->assertOk()
+            ->assertJsonPath('data.secrets_set', ['headers']);
+        $this->assertNull(Monitor::findOrFail($id)->secret('body'));
+
+        $this->actingAs($admin)->fromSpa()
+            ->patchJson("/api/monitors/{$id}", ['clear_secrets' => ['password']])
+            ->assertJsonValidationErrors('clear_secrets.0');
+    }
+
     public static function invalidPayloads(): array
     {
         return [

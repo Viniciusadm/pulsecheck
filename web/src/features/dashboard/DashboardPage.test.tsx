@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as authApi from '../../api/auth.ts'
 import * as dashboardApi from '../../api/dashboard.ts'
 import * as monitorsApi from '../../api/monitors.ts'
+import { queryKeys } from '../../api/queryKeys.ts'
 import { axiosError } from '../../test/axiosErrors.ts'
 import { mockDashboardApi } from '../../test/dashboardMocks.ts'
 import { ada, emptyLatency, makeDashboardLayout, makeMonitor, openIncident, paginated } from '../../test/fixtures.ts'
@@ -50,6 +51,18 @@ describe('DashboardPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong on our side')
     await user.click(screen.getByRole('button', { name: 'Try again' }))
     expect(await screen.findByRole('heading', { name: 'Needs attention' })).toBeInTheDocument()
+  })
+
+  it('keeps the board on screen when a background refresh fails', async () => {
+    const { queryClient } = renderApp('/dashboard')
+
+    expect(await screen.findByRole('region', { name: 'Status summary' })).toBeInTheDocument()
+    vi.mocked(dashboardApi.getDashboardSummary).mockRejectedValue(axiosError(502))
+    await queryClient.refetchQueries({ queryKey: queryKeys.summary })
+
+    await waitFor(() => expect(queryClient.getQueryState(queryKeys.summary)?.status).toBe('error'))
+    expect(screen.getByRole('region', { name: 'Status summary' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument()
   })
 
   it('renders every widget of the saved layout', async () => {

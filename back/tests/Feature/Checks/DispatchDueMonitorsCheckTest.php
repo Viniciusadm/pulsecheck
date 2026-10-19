@@ -98,6 +98,7 @@ class DispatchDueMonitorsCheckTest extends TestCase
         $this->assertNotNull($event);
         $this->assertSame('* * * * *', $event->expression);
         $this->assertTrue($event->withoutOverlapping);
+        $this->assertSame(5, $event->expiresAt);
         $this->assertTrue($event->onOneServer);
     }
 

@@ -47,7 +47,7 @@ export function DashboardPage() {
     )
   }
 
-  if (summary.isError || layout.isError) {
+  if (!summary.data || !layout.data) {
     return (
       <div className="flex flex-col gap-6">
         {title}

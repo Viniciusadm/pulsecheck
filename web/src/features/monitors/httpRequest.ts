@@ -22,6 +22,7 @@ export type HttpRequestState = {
   followRedirects: boolean
   contentType: string
   body: string
+  isClearingBody: boolean
   authType: HttpAuthType
   username: string
   password: string
@@ -44,6 +45,7 @@ export function initialHttpRequestState(monitor?: Monitor): HttpRequestState {
     followRedirects: options.follow_redirects,
     contentType: options.body_content_type ?? '',
     body: '',
+    isClearingBody: false,
     authType: monitor?.auth_type ?? 'none',
     username: '',
     password: '',
@@ -88,6 +90,10 @@ export function requestSecrets(state: HttpRequestState, monitor?: Monitor): Moni
   }
 
   return Object.keys(secrets).length === 0 ? undefined : secrets
+}
+
+export function clearedRequestSecrets(state: HttpRequestState): string[] | undefined {
+  return state.isClearingBody && state.body === '' ? ['body'] : undefined
 }
 
 function requestAuth(state: HttpRequestState, monitor?: Monitor): MonitorSecretsInput['auth'] | undefined {

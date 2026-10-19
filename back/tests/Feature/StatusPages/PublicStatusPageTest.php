@@ -11,6 +11,7 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Concerns\CreatesCheckResults;
 use Tests\TestCase;
@@ -90,6 +91,31 @@ class PublicStatusPageTest extends TestCase
         $this->getJson('/api/public/status-pages/acme')
             ->assertJsonPath('data.monitors.0.latency_ms', 240)
             ->assertJsonPath('data.incidents', []);
+    }
+
+    public function test_uptime_and_latency_of_all_monitors_are_loaded_in_batch(): void
+    {
+        $rolledUp = Monitor::factory()->up()->create();
+        $this->checkAt($rolledUp, CarbonImmutable::parse('2026-10-15 10:00:00'), isSuccess: false, latencyMs: null);
+        $this->checkAt($rolledUp, CarbonImmutable::parse('2026-10-16 10:00:00'));
+        $this->artisan('uptime:rollup')->assertSuccessful();
+        $this->checkAt($rolledUp, now()->subHour(), latencyMs: 300);
+        $rawOnly = Monitor::factory()->up()->create();
+        $this->checkAt($rawOnly, CarbonImmutable::parse('2026-10-16 10:00:00'), latencyMs: 50);
+        $silent = Monitor::factory()->up()->create();
+        $this->page([$rolledUp, $rawOnly, $silent], ['show_latency' => true]);
+        Monitor::factory()->count(5)->create()->each(fn (Monitor $monitor) => StatusPage::query()->sole()->monitors()->attach($monitor, ['sort_order' => 10]));
+        DB::enableQueryLog();
+
+        $monitors = collect($this->getJson('/api/public/status-pages/acme')->assertOk()->json('data.monitors'))->keyBy('key');
+
+        $this->assertLessThanOrEqual(8, count(DB::getQueryLog()));
+        $this->assertSame(66.67, $monitors[1]['uptime_percentage']);
+        $this->assertSame(300, $monitors[1]['latency_ms']);
+        $this->assertSame(['date' => '2026-10-15', 'uptime_percentage' => 0], $monitors[1]['days'][27]);
+        $this->assertSame(100, $monitors[2]['uptime_percentage']);
+        $this->assertNull($monitors[2]['latency_ms']);
+        $this->assertNull($monitors[3]['uptime_percentage']);
     }
 
     public static function overallStatuses(): array

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { listMaintenanceWindows } from '../../api/maintenanceWindows.ts'
 import { queryKeys } from '../../api/queryKeys.ts'
@@ -13,10 +13,17 @@ import { MaintenanceWindowList } from './MaintenanceWindowList.tsx'
 type DialogState = { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; window: MaintenanceWindow }
 
 export function MonitorMaintenanceSection({ monitorId, canManage }: { monitorId: number; canManage: boolean }) {
+  const [page, setPage] = useState(1)
   const windows = useQuery({
-    queryKey: queryKeys.monitorMaintenanceWindows(monitorId),
-    queryFn: () => listMaintenanceWindows({ monitor_id: monitorId }),
+    queryKey: queryKeys.monitorMaintenanceWindows(monitorId, page),
+    queryFn: () => listMaintenanceWindows({ monitor_id: monitorId, page }),
+    placeholderData: keepPreviousData,
   })
+  const isPageOutOfRange = windows.data?.data.length === 0 && page > 1
+
+  if (isPageOutOfRange && !windows.isPlaceholderData) {
+    setPage(page - 1)
+  }
   const [dialog, setDialog] = useState<DialogState>({ mode: 'closed' })
 
   return (
@@ -32,10 +39,10 @@ export function MonitorMaintenanceSection({ monitorId, canManage }: { monitorId:
         )}
       </div>
       {windows.isPending && <Skeleton className="h-16" />}
-      {windows.isError && <ErrorState onRetry={() => void windows.refetch()} />}
-      {windows.data?.data.length === 0 && <p className="text-neutral-600">{t('monitors.detail.maintenanceEmpty')}</p>}
+      {windows.isError && !windows.data && <ErrorState onRetry={() => void windows.refetch()} />}
+      {windows.data?.data.length === 0 && page === 1 && <p className="text-neutral-600">{t('monitors.detail.maintenanceEmpty')}</p>}
       {windows.data && windows.data.data.length > 0 && (
-        <MaintenanceWindowList windows={windows.data.data} canManage={canManage} onEdit={(window) => setDialog({ mode: 'edit', window })} />
+        <MaintenanceWindowList windows={windows.data} canManage={canManage} onEdit={(window) => setDialog({ mode: 'edit', window })} onPageChange={setPage} />
       )}
       {dialog.mode !== 'closed' && (
         <MaintenanceWindowDialog

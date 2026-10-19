@@ -25,7 +25,14 @@ trait BelongsToTeams
 
     public function isVisibleTo(User $user): bool
     {
-        return $user->canViewEverything()
-            || $this->teams()->whereIn('teams.id', $user->teams()->select('teams.id'))->exists();
+        if ($user->canViewEverything()) {
+            return true;
+        }
+
+        if ($this->relationLoaded('teams')) {
+            return array_intersect($this->teams->modelKeys(), $user->teams->modelKeys()) !== [];
+        }
+
+        return $this->teams()->whereIn('teams.id', $user->teams()->select('teams.id'))->exists();
     }
 }

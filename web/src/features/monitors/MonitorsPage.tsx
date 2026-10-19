@@ -70,7 +70,7 @@ export function MonitorsPage() {
       </SelectField>
 
       {monitors.isPending && <Skeleton className="h-64" />}
-      {monitors.isError && <ErrorState onRetry={() => void monitors.refetch()} />}
+      {monitors.isError && !monitors.data && <ErrorState onRetry={() => void monitors.refetch()} />}
       {monitors.data && monitors.data.data.length === 0 && page > 1 && (
         <div className="flex flex-col items-start gap-3">
           <p className="text-neutral-600">{t('monitors.pageOutOfRange')}</p>

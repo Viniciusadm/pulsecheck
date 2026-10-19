@@ -19,11 +19,11 @@ class UpdateMonitor
     {
         return DB::transaction(function () use ($user, $monitor, $attributes): Monitor {
             $monitor = Monitor::query()->lockForUpdate()->findOrFail($monitor->id);
-            if (array_key_exists('secrets', $attributes)) {
-                $attributes['secrets'] = SecretMerger::merge($monitor->secrets ?? [], $attributes['secrets'] ?? [], $monitor->type->checker()->secretKeys());
+            if (array_key_exists('secrets', $attributes) || array_key_exists('clear_secrets', $attributes)) {
+                $attributes['secrets'] = SecretMerger::merge($monitor->secrets ?? [], $attributes['secrets'] ?? [], $monitor->type->checker()->secretKeys(), $attributes['clear_secrets'] ?? []);
             }
 
-            $monitor->fill(Arr::except($attributes, ['notification_channel_ids', 'team_ids']));
+            $monitor->fill(Arr::except($attributes, ['notification_channel_ids', 'team_ids', 'clear_secrets']));
 
             $checkChanged = $monitor->isDirty(['url', 'options', 'secrets']);
             $intervalChanged = $monitor->isDirty('interval_minutes');

@@ -23,7 +23,7 @@ import { canManageResources } from '../../lib/permissions.ts'
 import { useAuth } from '../auth/AuthContext.ts'
 import { TeamPicker } from '../teams/TeamPicker.tsx'
 import { HttpRequestFields } from './HttpRequestFields.tsx'
-import { initialHttpRequestState, requestSecrets } from './httpRequest.ts'
+import { clearedRequestSecrets, initialHttpRequestState, requestSecrets } from './httpRequest.ts'
 import { MonitorTargetFields } from './MonitorTargetFields.tsx'
 import { changedTypeOptions, initialTargetState, monitorTypeOrder, monitorTypes } from './monitorTypes.ts'
 import { initialTeamIds, teamIdsError } from '../teams/teamSelection.ts'
@@ -181,6 +181,12 @@ function MonitorForm({ monitor, config }: { monitor?: Monitor; config?: AppConfi
 
     if (secrets) {
       input.secrets = secrets
+    }
+
+    const clearedSecrets = monitor && definition.usesRequest ? clearedRequestSecrets(request) : undefined
+
+    if (clearedSecrets) {
+      input.clear_secrets = clearedSecrets
     }
 
     if (selectedChannelIds !== null) {

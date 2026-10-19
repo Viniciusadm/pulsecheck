@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Enums\MonitorType;
 use App\Models\Monitor;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class UpdateMonitorRequest extends StoreMonitorRequest
 {
@@ -17,6 +18,8 @@ class UpdateMonitorRequest extends StoreMonitorRequest
                     : ['sometimes', ...array_filter($rules, fn (mixed $rule) => $rule !== 'sometimes')])
                 ->all(),
             'type' => ['prohibited'],
+            'clear_secrets' => ['sometimes', 'array'],
+            'clear_secrets.*' => ['string', 'distinct', Rule::in($this->monitorType()->checker()->secretKeys())],
         ];
     }
 

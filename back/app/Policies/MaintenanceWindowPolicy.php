@@ -23,7 +23,7 @@ class MaintenanceWindowPolicy
             return $visibility;
         }
 
-        return $user->canManageResources()
+        return $window->isManageableBy($user)
             ? Response::allow()
             : Response::deny();
     }

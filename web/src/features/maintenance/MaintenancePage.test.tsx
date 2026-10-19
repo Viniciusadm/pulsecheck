@@ -30,6 +30,7 @@ function makeWindow(overrides: Partial<MaintenanceWindow> = {}): MaintenanceWind
     monitors: [{ id: 7, name: 'Shop API' }],
     monitor_ids: [7],
     team_ids: [],
+    can_manage: true,
     active_until: null,
     next_starts_at: '2026-10-19T23:00:00Z',
     created_at: '2026-10-17T12:00:00Z',
@@ -79,6 +80,30 @@ describe('MaintenancePage', () => {
       monitor_ids: [7],
       team_ids: [],
     })
+  })
+
+  it('hides management actions on windows shared with targets outside the user scope', async () => {
+    vi.mocked(maintenanceApi.listMaintenanceWindows).mockResolvedValue(paginated([makeWindow(), makeWindow({ id: 5, name: 'Shared window', can_manage: false })]))
+    renderApp('/maintenance')
+
+    expect(await screen.findByText('Shared window')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Edit Nightly backup' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Edit Shared window' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Delete Shared window' })).not.toBeInTheDocument()
+  })
+
+  it('pages through the windows', async () => {
+    vi.mocked(maintenanceApi.listMaintenanceWindows).mockImplementation(async ({ page = 1 } = {}) => ({
+      data: [makeWindow({ id: page, name: `Window ${page}` })],
+      meta: { current_page: page, last_page: 2, per_page: 20, total: 21 },
+    }))
+    renderApp('/maintenance')
+
+    expect(await screen.findByText('Window 1')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }))
+
+    expect(await screen.findByText('Window 2')).toBeInTheDocument()
+    expect(maintenanceApi.listMaintenanceWindows).toHaveBeenLastCalledWith({ page: 2 })
   })
 
   it('hides management actions from members', async () => {

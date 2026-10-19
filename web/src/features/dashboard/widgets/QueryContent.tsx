@@ -13,7 +13,7 @@ export function QueryContent<T>({ query, children }: QueryContentProps<T>) {
     return <Skeleton className="h-full min-h-24" />
   }
 
-  if (query.isError) {
+  if (query.data === undefined) {
     return <ErrorState onRetry={() => void query.refetch()} />
   }
 

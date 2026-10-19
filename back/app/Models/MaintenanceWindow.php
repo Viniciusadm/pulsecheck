@@ -72,4 +72,20 @@ class MaintenanceWindow extends Model
     {
         return static::query()->visibleTo($user)->whereKey($this->id)->exists();
     }
+
+    public function isManageableBy(User $user): bool
+    {
+        if (! $user->canManageResources()) {
+            return false;
+        }
+
+        if ($user->canViewEverything()) {
+            return true;
+        }
+
+        $this->loadMissing(['teams:id', 'monitors:id', 'monitors.teams:id']);
+
+        return array_diff($this->teams->modelKeys(), $user->teams->modelKeys()) === []
+            && $this->monitors->every(fn (Monitor $monitor) => $monitor->isVisibleTo($user));
+    }
 }

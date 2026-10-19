@@ -45,10 +45,10 @@ export function MonitorDetailPage() {
     enabled: isValidId,
   })
 
-  if (!isValidId || monitor.isError) {
-    const isNotFound = !isValidId || (isAxiosError(monitor.error) && monitor.error.response?.status === 404)
+  const isNotFound = !isValidId || (isAxiosError(monitor.error) && monitor.error.response?.status === 404)
 
-    return isNotFound ? (
+  if (isNotFound) {
+    return (
       <EmptyState
         title={t('monitors.detail.notFound')}
         action={
@@ -57,21 +57,23 @@ export function MonitorDetailPage() {
           </Link>
         }
       />
-    ) : (
-      <ErrorState onRetry={() => void monitor.refetch()} />
     )
   }
 
-  if (monitor.isPending) {
-    return (
-      <div className="flex flex-col gap-6" aria-busy="true">
-        <Skeleton className="h-24" />
-        <Skeleton className="h-64" />
-      </div>
-    )
+  if (monitor.data) {
+    return <MonitorDetail key={monitor.data.id} monitor={monitor.data} />
   }
 
-  return <MonitorDetail monitor={monitor.data} />
+  if (monitor.isError) {
+    return <ErrorState onRetry={() => void monitor.refetch()} />
+  }
+
+  return (
+    <div className="flex flex-col gap-6" aria-busy="true">
+      <Skeleton className="h-24" />
+      <Skeleton className="h-64" />
+    </div>
+  )
 }
 
 function MonitorDetail({ monitor }: { monitor: Monitor }) {
@@ -194,12 +196,12 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
         </div>
 
         {stats.isPending && <Skeleton className="h-24" />}
-        {stats.isError && <ErrorState onRetry={() => void stats.refetch()} />}
+        {stats.isError && !stats.data && <ErrorState onRetry={() => void stats.refetch()} />}
         {stats.data && <StatsCards stats={stats.data} />}
 
         <Card className="px-4 py-4">
           {latency.isPending && <Skeleton className="h-56" />}
-          {latency.isError && <ErrorState onRetry={() => void latency.refetch()} />}
+          {latency.isError && !latency.data && <ErrorState onRetry={() => void latency.refetch()} />}
           {latency.data && (
             <Suspense fallback={<Skeleton className="h-56" />}>
               <LatencyChart series={latency.data} thresholdMs={monitor.latency_threshold_ms} />
@@ -213,7 +215,7 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
           {t('monitors.detail.dailyUptime')}
         </h2>
         {uptimeHistory.isPending && <Skeleton className="h-10" />}
-        {uptimeHistory.isError && <ErrorState onRetry={() => void uptimeHistory.refetch()} />}
+        {uptimeHistory.isError && !uptimeHistory.data && <ErrorState onRetry={() => void uptimeHistory.refetch()} />}
         {uptimeHistory.data && <UptimeBar days={uptimeHistory.data} />}
       </section>
 
@@ -222,7 +224,7 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
           {t('monitors.incidents.heading')}
         </h2>
         {incidents.isPending && <Skeleton className="h-24" />}
-        {incidents.isError && <ErrorState onRetry={() => void incidents.refetch()} />}
+        {incidents.isError && !incidents.data && <ErrorState onRetry={() => void incidents.refetch()} />}
         {incidents.data && incidents.data.data.length === 0 && <p className="text-neutral-600">{t('monitors.incidents.empty')}</p>}
         {incidents.data && incidents.data.data.length > 0 && <IncidentList incidents={incidents.data.data} />}
       </section>

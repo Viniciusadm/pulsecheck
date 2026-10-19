@@ -81,6 +81,7 @@ type MailFormState = {
   from_address: string
   from_name: string
   config: Record<string, string>
+  clearedSecrets: string[]
 }
 
 function formFrom(settings: MailSettings): MailFormState {
@@ -92,6 +93,7 @@ function formFrom(settings: MailSettings): MailFormState {
     from_address: settings.from_address ?? '',
     from_name: settings.from_name ?? '',
     config: { ...driverDefaults[driver], ...config },
+    clearedSecrets: [],
   }
 }
 
@@ -163,7 +165,7 @@ function MailForm({ settings }: { settings: MailSettings }) {
 
   const changeDriver = (driver: MailDriver) => {
     const config = settings.driver === driver ? formFrom(settings).config : driverDefaults[driver]
-    setForm({ ...form, driver, config })
+    setForm({ ...form, driver, config, clearedSecrets: [] })
   }
 
   const changeConfig = (key: string, value: string) => {
@@ -179,6 +181,7 @@ function MailForm({ settings }: { settings: MailSettings }) {
         from_address: form.from_address.trim(),
         from_name: form.from_name.trim() || null,
         config: payloadConfig(form),
+        ...(form.clearedSecrets.length > 0 ? { clear_secrets: form.clearedSecrets } : {}),
       })
     }
   }
@@ -208,8 +211,12 @@ function MailForm({ settings }: { settings: MailSettings }) {
           field={field}
           value={form.config[field.key] ?? ''}
           isSecretSet={savedSecrets.includes(field.key)}
+          isClearing={form.clearedSecrets.includes(field.key)}
           error={errors[`config.${field.key}`]}
           onChange={(value) => changeConfig(field.key, value)}
+          onClearingChange={(isClearing) =>
+            setForm({ ...form, clearedSecrets: isClearing ? [...form.clearedSecrets, field.key] : form.clearedSecrets.filter((key) => key !== field.key) })
+          }
         />
       ))}
       <TextField
@@ -284,11 +291,13 @@ type MailConfigFieldProps = {
   field: MailField
   value: string
   isSecretSet: boolean
+  isClearing: boolean
   error?: string
   onChange: (value: string) => void
+  onClearingChange: (isClearing: boolean) => void
 }
 
-function MailConfigField({ field, value, isSecretSet, error, onChange }: MailConfigFieldProps) {
+function MailConfigField({ field, value, isSecretSet, isClearing, error, onChange, onClearingChange }: MailConfigFieldProps) {
   const label = t(field.label)
   const optionalHint = field.isOptional ? t('settings.mail.optional') : undefined
 
@@ -305,16 +314,33 @@ function MailConfigField({ field, value, isSecretSet, error, onChange }: MailCon
   }
 
   if (field.kind === 'secret') {
+    const canClear = isSecretSet && field.isOptional === true && value === ''
+
     return (
-      <PasswordField
-        label={label}
-        name={field.key}
-        autoComplete="off"
-        value={value}
-        hint={isSecretSet ? t('settings.mail.secretKeep') : optionalHint}
-        onChange={(event) => onChange(event.target.value)}
-        error={error}
-      />
+      <div className="flex flex-col gap-1.5">
+        <PasswordField
+          label={label}
+          name={field.key}
+          autoComplete="off"
+          value={value}
+          hint={isSecretSet && !isClearing ? t('settings.mail.secretKeep') : optionalHint}
+          onChange={(event) => onChange(event.target.value)}
+          error={error}
+        />
+        {canClear && !isClearing && (
+          <Button variant="ghost" className="self-start" onClick={() => onClearingChange(true)}>
+            {t('settings.mail.removeSecret')}
+          </Button>
+        )}
+        {canClear && isClearing && (
+          <p className="text-xs text-neutral-500">
+            {t('settings.mail.secretWillBeRemoved')}{' '}
+            <button type="button" className="font-semibold text-primary-700 underline" onClick={() => onClearingChange(false)}>
+              {t('settings.mail.keepSecret')}
+            </button>
+          </p>
+        )}
+      </div>
     )
   }
 

@@ -4,10 +4,10 @@ namespace App\Support;
 
 class SecretMerger
 {
-    public static function merge(array $stored, array $incoming, array $secretKeys): array
+    public static function merge(array $stored, array $incoming, array $secretKeys, array $clearedKeys = []): array
     {
         $preserved = collect($secretKeys)
-            ->filter(fn (string $key) => ($incoming[$key] ?? null) === null && array_key_exists($key, $stored))
+            ->filter(fn (string $key) => ($incoming[$key] ?? null) === null && array_key_exists($key, $stored) && ! in_array($key, $clearedKeys, true))
             ->mapWithKeys(fn (string $key) => [$key => $stored[$key]])
             ->all();
 

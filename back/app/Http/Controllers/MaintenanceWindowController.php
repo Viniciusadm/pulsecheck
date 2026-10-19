@@ -25,7 +25,7 @@ class MaintenanceWindowController extends Controller
         $windows = MaintenanceWindow::query()
             ->visibleTo($request->user())
             ->when(isset($validated['monitor_id']), fn ($query) => $monitor === null ? $query->whereRaw('false') : $query->affecting($monitor))
-            ->with(['monitors:id,name', 'teams:id'])
+            ->with(['monitors:id,name', 'monitors.teams:id', 'teams:id'])
             ->orderByDesc('id')
             ->paginate(20)
             ->withQueryString();
@@ -37,19 +37,19 @@ class MaintenanceWindowController extends Controller
     {
         $window = $saveMaintenanceWindow->save($request->user(), new MaintenanceWindow, $request->validated());
 
-        return new MaintenanceWindowResource($window->load(['monitors:id,name', 'teams:id']));
+        return new MaintenanceWindowResource($window->load(['monitors:id,name', 'monitors.teams:id', 'teams:id']));
     }
 
     public function show(MaintenanceWindow $maintenanceWindow): MaintenanceWindowResource
     {
-        return new MaintenanceWindowResource($maintenanceWindow->load(['monitors:id,name', 'teams:id']));
+        return new MaintenanceWindowResource($maintenanceWindow->load(['monitors:id,name', 'monitors.teams:id', 'teams:id']));
     }
 
     public function update(UpdateMaintenanceWindowRequest $request, MaintenanceWindow $maintenanceWindow, SaveMaintenanceWindow $saveMaintenanceWindow): MaintenanceWindowResource
     {
         $window = $saveMaintenanceWindow->save($request->user(), $maintenanceWindow, $request->validated());
 
-        return new MaintenanceWindowResource($window->load(['monitors:id,name', 'teams:id']));
+        return new MaintenanceWindowResource($window->load(['monitors:id,name', 'monitors.teams:id', 'teams:id']));
     }
 
     public function destroy(MaintenanceWindow $maintenanceWindow, SaveMaintenanceWindow $saveMaintenanceWindow): Response

@@ -227,6 +227,27 @@ describe('MonitorFormPage', () => {
     expect(input).not.toHaveProperty('latency_threshold_ms')
   })
 
+  it('removes a saved body only when asked', async () => {
+    const monitor = makeMonitor({
+      options: { method: 'POST', follow_redirects: true, expected_status_codes: ['200'], body_content_type: null },
+      secrets_set: ['body'],
+    })
+    vi.mocked(monitorsApi.getMonitor).mockResolvedValue(monitor)
+    vi.mocked(monitorsApi.updateMonitor).mockResolvedValue(monitor)
+    const user = userEvent.setup()
+    renderApp('/monitors/7/edit')
+    const form = await screen.findByRole('form', { name: 'Edit monitor' })
+
+    await user.click(within(form).getByRole('button', { name: 'Remove saved body' }))
+    expect(within(form).getByText('The saved body will be removed when you save.')).toBeInTheDocument()
+    await user.click(within(form).getByRole('button', { name: 'Save changes' }))
+
+    await screen.findByText('Changes saved.')
+    const input = vi.mocked(monitorsApi.updateMonitor).mock.calls[0][1]
+    expect(input.clear_secrets).toEqual(['body'])
+    expect(input).not.toHaveProperty('secrets')
+  })
+
   it('creates a TCP monitor without URL or request options', async () => {
     vi.mocked(monitorsApi.createMonitor).mockResolvedValue(makeMonitor({ id: 42 }))
     vi.mocked(monitorsApi.getMonitor).mockReturnValue(new Promise(() => {}))

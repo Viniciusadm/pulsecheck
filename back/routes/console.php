@@ -10,17 +10,17 @@ Artisan::command('inspire', function () {
 
 Schedule::command('monitors:dispatch-due')
     ->everyMinute()
-    ->withoutOverlapping()
+    ->withoutOverlapping(5)
     ->onOneServer();
 
 Schedule::command('maintenance:sync')
     ->everyMinute()
-    ->withoutOverlapping()
+    ->withoutOverlapping(5)
     ->onOneServer();
 
 Schedule::command('incidents:send-reminders')
     ->everyMinute()
-    ->withoutOverlapping()
+    ->withoutOverlapping(5)
     ->onOneServer();
 
 Schedule::call(fn () => touch(storage_path('framework/scheduler-heartbeat')))
@@ -29,12 +29,12 @@ Schedule::call(fn () => touch(storage_path('framework/scheduler-heartbeat')))
 
 Schedule::command('uptime:rollup')
     ->hourly()
-    ->withoutOverlapping()
+    ->withoutOverlapping(30)
     ->onOneServer();
 
 Schedule::command('metrics:rollup')
     ->hourlyAt(2)
-    ->withoutOverlapping()
+    ->withoutOverlapping(30)
     ->onOneServer();
 
 Schedule::command('model:prune')

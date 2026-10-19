@@ -30,7 +30,10 @@ class PublicStatusPagePresenter
         $monitors = $statusPage->monitors()->get()->values();
         $keys = $monitors->mapWithKeys(fn (Monitor $monitor, int $index) => [$monitor->id => $index + 1]);
 
-        $entries = $monitors->map(fn (Monitor $monitor) => $this->monitorEntry($statusPage, $monitor, $keys[$monitor->id]));
+        $dailyUptimes = $this->uptimeCalculator->dailyForMonitors($monitors->modelKeys(), $statusPage->uptime_days);
+        $latencies = $statusPage->show_latency ? $this->uptimeCalculator->averageLatencies($monitors->modelKeys(), now()->subDay(), now()) : [];
+
+        $entries = $monitors->map(fn (Monitor $monitor) => $this->monitorEntry($statusPage, $monitor, $keys[$monitor->id], $dailyUptimes[$monitor->id], $latencies[$monitor->id] ?? null));
 
         return [
             'name' => $statusPage->name,
@@ -43,9 +46,8 @@ class PublicStatusPagePresenter
         ];
     }
 
-    private function monitorEntry(StatusPage $statusPage, Monitor $monitor, int $key): array
+    private function monitorEntry(StatusPage $statusPage, Monitor $monitor, int $key, array $days, ?int $latencyMs): array
     {
-        $days = $this->uptimeCalculator->daily($monitor, $statusPage->uptime_days);
         $totalChecks = array_sum(array_column($days, 'total_checks'));
         $successfulChecks = array_sum(array_column($days, 'successful_checks'));
 
@@ -54,7 +56,7 @@ class PublicStatusPagePresenter
             'name' => $monitor->pivot->display_name ?: $monitor->name,
             'status' => self::publicStatus($monitor),
             'uptime_percentage' => UptimeCalculator::percentage($successfulChecks, $totalChecks),
-            'latency_ms' => $statusPage->show_latency ? $this->uptimeCalculator->stats($monitor, now()->subDay(), now())['average_latency_ms'] : null,
+            'latency_ms' => $statusPage->show_latency ? $latencyMs : null,
             'days' => array_map(fn (array $day) => ['date' => $day['date'], 'uptime_percentage' => $day['uptime_percentage']], $days),
         ];
     }

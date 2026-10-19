@@ -22,6 +22,8 @@ class UpdateMailSettingsRequest extends FormRequest
             'from_address' => ['required', 'string', 'max:255', 'email:rfc'],
             'from_name' => ['nullable', 'string', 'max:100'],
             'config' => ['present', 'array'],
+            'clear_secrets' => ['sometimes', 'array'],
+            'clear_secrets.*' => ['string', 'distinct', Rule::in($this->clearableSecretKeys())],
             ...$this->configRules(),
         ];
     }
@@ -42,6 +44,13 @@ class UpdateMailSettingsRequest extends FormRequest
     public function config(): array
     {
         return Arr::only($this->validated('config'), array_keys($this->driver()->rules()));
+    }
+
+    public function clearableSecretKeys(): array
+    {
+        $driver = $this->driver();
+
+        return $driver === null ? [] : array_values(array_diff($driver->secretKeys(), $driver->requiredSecretKeys()));
     }
 
     private function configRules(): array

@@ -10,10 +10,11 @@ import { Button } from '../../components/ui/Button.tsx'
 import { ErrorState } from '../../components/ui/ErrorState.tsx'
 import { Skeleton } from '../../components/ui/Skeleton.tsx'
 import { t } from '../../i18n/index.ts'
-import { formatDateTime, formatLatency } from '../../lib/format.ts'
+import { formatDateTime, formatLatency, getDisplayTimeZone } from '../../lib/format.ts'
+import { browserTimeZone, zonedInputToIso } from '../../lib/timeZones.ts'
 
 function toIso(localValue: string): string {
-  return localValue === '' ? '' : new Date(localValue).toISOString()
+  return localValue === '' ? '' : zonedInputToIso(localValue, getDisplayTimeZone() ?? browserTimeZone())
 }
 
 export function CheckHistory({ monitorId }: { monitorId: number }) {

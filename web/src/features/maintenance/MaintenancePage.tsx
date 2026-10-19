@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { listMaintenanceWindows } from '../../api/maintenanceWindows.ts'
 import { queryKeys } from '../../api/queryKeys.ts'
@@ -19,7 +19,13 @@ type DialogState = { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; win
 export function MaintenancePage() {
   const { user } = useAuth()
   const canManage = canManageResources(user)
-  const windows = useQuery({ queryKey: queryKeys.maintenanceWindows, queryFn: () => listMaintenanceWindows() })
+  const [page, setPage] = useState(1)
+  const windows = useQuery({ queryKey: queryKeys.maintenanceWindowList(page), queryFn: () => listMaintenanceWindows({ page }), placeholderData: keepPreviousData })
+  const isPageOutOfRange = windows.data?.data.length === 0 && page > 1
+
+  if (isPageOutOfRange && !windows.isPlaceholderData) {
+    setPage(page - 1)
+  }
   const [dialog, setDialog] = useState<DialogState>({ mode: 'closed' })
   const addButton = canManage ? <Button onClick={() => setDialog({ mode: 'create' })}>{t('maintenance.add')}</Button> : undefined
 
@@ -34,10 +40,10 @@ export function MaintenancePage() {
       </div>
       <Card className="flex flex-col gap-6 px-5 py-6 sm:px-6">
         {windows.isPending && <Skeleton className="h-40" />}
-        {windows.isError && <ErrorState onRetry={() => void windows.refetch()} />}
-        {windows.data?.data.length === 0 && <EmptyState title={t('maintenance.empty')} action={addButton} />}
+        {windows.isError && !windows.data && <ErrorState onRetry={() => void windows.refetch()} />}
+        {windows.data?.data.length === 0 && page === 1 && <EmptyState title={t('maintenance.empty')} action={addButton} />}
         {windows.data && windows.data.data.length > 0 && (
-          <MaintenanceWindowList windows={windows.data.data} canManage={canManage} onEdit={(window) => setDialog({ mode: 'edit', window })} />
+          <MaintenanceWindowList windows={windows.data} canManage={canManage} onEdit={(window) => setDialog({ mode: 'edit', window })} onPageChange={setPage} />
         )}
       </Card>
       {dialog.mode !== 'closed' && (

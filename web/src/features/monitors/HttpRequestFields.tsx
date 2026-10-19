@@ -1,5 +1,6 @@
 import { useId } from 'react'
 import type { Monitor } from '../../api/types.ts'
+import { Button } from '../../components/ui/Button.tsx'
 import { HeaderRowsEditor } from '../../components/ui/HeaderRowsEditor.tsx'
 import { inputClassName } from '../../components/ui/inputClassName.ts'
 import { PasswordField } from '../../components/ui/PasswordField.tsx'
@@ -20,7 +21,7 @@ export function HttpRequestFields({ state, onChange, monitor, errors }: HttpRequ
   const set = (changes: Partial<HttpRequestState>) => onChange({ ...state, ...changes })
   const errorFor = (prefix: string) => Object.entries(errors).find(([field]) => field === prefix || field.startsWith(`${prefix}.`))?.[1]
   const isAuthSaved = monitor !== undefined && monitor.auth_type !== 'none' && monitor.auth_type === state.authType
-  const isBodySaved = monitor?.secrets_set.includes('body') ?? false
+  const isBodySaved = (monitor?.secrets_set.includes('body') ?? false) && !state.isClearingBody
   const acceptsBody = !METHODS_WITHOUT_BODY.includes(state.method)
   const bodyError = errors['secrets.body']
 
@@ -100,6 +101,19 @@ export function HttpRequestFields({ state, onChange, monitor, errors }: HttpRequ
               {bodyError && (
                 <p id={`${bodyId}-error`} className="text-xs font-medium text-status-down">
                   {bodyError}
+                </p>
+              )}
+              {isBodySaved && state.body === '' && (
+                <Button variant="ghost" className="self-start" onClick={() => set({ isClearingBody: true })}>
+                  {t('monitors.form.removeBody')}
+                </Button>
+              )}
+              {state.isClearingBody && state.body === '' && (
+                <p className="text-xs text-neutral-500">
+                  {t('monitors.form.bodyWillBeRemoved')}{' '}
+                  <button type="button" className="font-semibold text-primary-700 underline" onClick={() => set({ isClearingBody: false })}>
+                    {t('monitors.form.keepBody')}
+                  </button>
                 </p>
               )}
             </div>

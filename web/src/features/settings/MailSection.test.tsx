@@ -99,6 +99,20 @@ describe('MailSection', () => {
     )
   })
 
+  it('removes the saved smtp password when asked', async () => {
+    vi.mocked(mailApi.getMailSettings).mockResolvedValue(smtpSettings)
+    vi.mocked(mailApi.updateMailSettings).mockResolvedValue({ ...smtpSettings, secrets_set: [] })
+    const user = userEvent.setup()
+    renderApp('/settings')
+    const section = await mailSection()
+
+    await user.click(await section.findByRole('button', { name: 'Remove saved value' }))
+    await user.click(section.getByRole('button', { name: 'Save changes' }))
+
+    expect(await screen.findByText('Mail settings saved.')).toBeInTheDocument()
+    expect(mailApi.updateMailSettings).toHaveBeenCalledWith(expect.objectContaining({ clear_secrets: ['password'] }), expect.anything())
+  })
+
   it('shows validation errors next to the fields', async () => {
     vi.mocked(mailApi.updateMailSettings).mockRejectedValue(
       axiosError(422, { message: 'Invalid.', errors: { 'config.host': ['The host field is required.'] } }),

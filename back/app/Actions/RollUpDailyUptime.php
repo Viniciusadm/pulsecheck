@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Models\MonitorDailyUptime;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -11,6 +12,12 @@ class RollUpDailyUptime
     {
         $to = CarbonImmutable::now('UTC')->startOfDay();
         $from = $to->subDays($days);
+        $latestDate = MonitorDailyUptime::query()->max('date');
+
+        if ($latestDate !== null) {
+            $catchUpFrom = CarbonImmutable::parse($latestDate, 'UTC')->addDay()->max($to->subDays((int) config('pulsecheck.history_retention_days')));
+            $from = $from->min($catchUpFrom);
+        }
 
         return DB::affectingStatement(<<<'SQL'
             INSERT INTO monitor_daily_uptimes (monitor_id, date, total_checks, successful_checks, degraded_checks, maintenance_checks, latency_sum_ms, latency_samples)

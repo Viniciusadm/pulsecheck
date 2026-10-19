@@ -64,6 +64,24 @@ class MailSettingsApiTest extends TestCase
         $this->assertSame('smtp.acme.test', $config['host']);
     }
 
+    public function test_optional_secret_can_be_cleared_explicitly(): void
+    {
+        MailSettings::create(['driver' => MailDriver::Smtp, 'from_address' => 'a@acme.test', 'config' => ['host' => 'old.test', 'port' => 25, 'password' => 'old']]);
+        $this->actingAs(User::factory()->admin()->create())->fromSpa();
+
+        $this->putJson('/api/settings/mail', [...$this->smtpPayload(['password' => null]), 'clear_secrets' => ['password']])
+            ->assertOk()
+            ->assertJsonPath('data.secrets_set', []);
+        $this->assertArrayNotHasKey('password', MailSettings::sole()->config);
+
+        $this->putJson('/api/settings/mail', [
+            'driver' => 'postmark',
+            'from_address' => 'a@acme.test',
+            'config' => ['token' => 'tok'],
+            'clear_secrets' => ['token'],
+        ])->assertJsonValidationErrors('clear_secrets.0');
+    }
+
     public function test_changing_driver_replaces_the_config_and_requires_the_new_secret(): void
     {
         MailSettings::create(['driver' => MailDriver::Smtp, 'from_address' => 'a@acme.test', 'config' => ['host' => 'old.test', 'port' => 25, 'password' => 'old']]);

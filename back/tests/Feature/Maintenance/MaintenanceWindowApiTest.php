@@ -14,6 +14,7 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class MaintenanceWindowApiTest extends TestCase
@@ -135,19 +136,54 @@ class MaintenanceWindowApiTest extends TestCase
             ->assertJsonValidationErrors('monitor_ids.0');
     }
 
-    public function test_updating_keeps_monitors_outside_the_users_scope(): void
+    public function test_windows_with_targets_outside_the_users_scope_are_read_only(): void
     {
+        $otherTeam = Team::factory()->create();
         $otherMonitor = Monitor::factory()->create();
-        $otherMonitor->teams()->attach(Team::factory()->create());
-        $window = MaintenanceWindow::factory()->create();
-        $window->monitors()->attach([$this->monitor->id, $otherMonitor->id]);
+        $otherMonitor->teams()->attach($otherTeam);
+        $sharedByMonitor = MaintenanceWindow::factory()->create();
+        $sharedByMonitor->monitors()->attach([$this->monitor->id, $otherMonitor->id]);
+        $sharedByTeam = MaintenanceWindow::factory()->create();
+        $sharedByTeam->monitors()->attach($this->monitor);
+        $sharedByTeam->teams()->attach($otherTeam);
+        $own = MaintenanceWindow::factory()->create();
+        $own->monitors()->attach($this->monitor);
+        $manager = $this->teamUser();
 
-        $this->actingAs($this->teamUser())->fromSpa()
-            ->putJson("/api/maintenance-windows/{$window->id}", $this->oneOff(['monitor_ids' => []]))
+        $this->actingAs($manager)->fromSpa()
+            ->putJson("/api/maintenance-windows/{$sharedByMonitor->id}", $this->oneOff(['monitor_ids' => []]))
+            ->assertForbidden();
+        $this->actingAs($manager)->fromSpa()->deleteJson("/api/maintenance-windows/{$sharedByTeam->id}")->assertForbidden();
+
+        $windows = collect($this->actingAs($manager)->fromSpa()->getJson('/api/maintenance-windows')->assertOk()->json('data'))->keyBy('id');
+        $this->assertFalse($windows[$sharedByMonitor->id]['can_manage']);
+        $this->assertFalse($windows[$sharedByTeam->id]['can_manage']);
+        $this->assertTrue($windows[$own->id]['can_manage']);
+        $this->assertSame([$this->monitor->id], $windows[$sharedByMonitor->id]['monitor_ids']);
+        $this->assertSame([], $windows[$sharedByTeam->id]['team_ids']);
+
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
+            ->putJson("/api/maintenance-windows/{$sharedByMonitor->id}", $this->oneOff(['monitor_ids' => [$otherMonitor->id]]))
             ->assertOk()
-            ->assertJsonPath('data.monitor_ids', []);
+            ->assertJsonPath('data.can_manage', true);
+        $this->actingAs($manager)->fromSpa()->deleteJson("/api/maintenance-windows/{$own->id}")->assertNoContent();
+        $this->assertSame([$otherMonitor->id], $sharedByMonitor->monitors()->pluck('monitors.id')->all());
+    }
 
-        $this->assertSame([$otherMonitor->id], $window->monitors()->pluck('monitors.id')->all());
+    public function test_listing_windows_does_not_query_visibility_per_monitor(): void
+    {
+        $manager = $this->teamUser();
+        foreach (range(1, 3) as $index) {
+            $window = MaintenanceWindow::factory()->create();
+            $window->monitors()->attach(Monitor::factory()->count(3)->create()->each(fn (Monitor $monitor) => $monitor->teams()->attach($this->team)));
+        }
+
+        $this->actingAs($manager)->fromSpa();
+        DB::enableQueryLog();
+
+        $this->getJson('/api/maintenance-windows')->assertOk()->assertJsonCount(3, 'data');
+
+        $this->assertLessThanOrEqual(8, count(DB::getQueryLog()));
     }
 
     public function test_filtering_by_monitor_includes_team_windows(): void

@@ -142,6 +142,23 @@ describe('MonitorDetailPage', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/monitors'))
   })
 
+  it('reads the history period in the instance time zone', async () => {
+    vi.mocked(configApi.getAppConfig).mockResolvedValue({
+      ...(await configApi.getAppConfig()),
+      instance: { name: 'PulseCheck', timezone: 'Asia/Tokyo', locale: 'en' },
+    })
+    const user = userEvent.setup()
+    renderApp('/monitors/7')
+
+    await user.type(await screen.findByLabelText('From'), '2026-10-17T10:00')
+    await user.type(screen.getByLabelText('To'), '2026-10-17T12:00')
+    await user.click(screen.getByRole('button', { name: 'Apply' }))
+
+    await waitFor(() =>
+      expect(monitorsApi.listChecks).toHaveBeenLastCalledWith(7, { from: '2026-10-17T01:00:00.000Z', to: '2026-10-17T03:00:00.000Z', cursor: null }),
+    )
+  })
+
   it('shows why an invalid history period was rejected', async () => {
     vi.mocked(monitorsApi.listChecks).mockRejectedValue(
       axiosError(422, { message: 'Invalid.', errors: { from: ['The period cannot be longer than 90 days.'] } }),

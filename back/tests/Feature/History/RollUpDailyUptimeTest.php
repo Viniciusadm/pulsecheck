@@ -60,6 +60,22 @@ class RollUpDailyUptimeTest extends TestCase
         $this->assertSame(1, $row->successful_checks);
     }
 
+    public function test_catches_up_on_days_missed_while_the_scheduler_was_down(): void
+    {
+        $monitor = Monitor::factory()->create();
+        $this->checkAt($monitor, CarbonImmutable::parse('2026-10-10 10:00:00'));
+        $this->artisan('uptime:rollup', ['--days' => 10])->assertSuccessful();
+        $this->checkAt($monitor, CarbonImmutable::parse('2026-10-12 10:00:00'));
+        $this->checkAt($monitor, CarbonImmutable::parse('2026-10-16 10:00:00'));
+
+        $this->artisan('uptime:rollup')->assertSuccessful();
+
+        $this->assertSame(
+            ['2026-10-10', '2026-10-12', '2026-10-16'],
+            MonitorDailyUptime::query()->orderBy('date')->pluck('date')->map->toDateString()->all(),
+        );
+    }
+
     public function test_daily_history_keeps_rolled_up_days_after_results_are_pruned(): void
     {
         config(['pulsecheck.history_retention_days' => 30]);

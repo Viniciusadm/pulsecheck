@@ -111,6 +111,7 @@ export type MonitorInput = {
   reminder_interval_minutes?: number | null
   options?: MonitorOptions
   secrets?: MonitorSecretsInput
+  clear_secrets?: string[]
   notification_channel_ids?: number[]
   team_ids?: number[]
 }
@@ -243,6 +244,7 @@ export type MaintenanceWindow = {
   monitors: { id: number; name: string }[]
   monitor_ids: number[]
   team_ids: number[]
+  can_manage: boolean
   active_until: string | null
   next_starts_at: string | null
   created_at: string
@@ -395,6 +397,7 @@ export type MailSettingsInput = {
   from_address: string
   from_name: string | null
   config: MailConfig
+  clear_secrets?: string[]
 }
 
 export type AppConfig = {

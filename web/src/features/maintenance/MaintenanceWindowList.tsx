@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { generalErrorMessage } from '../../api/errors.ts'
-import type { MaintenanceWindow } from '../../api/types.ts'
+import type { MaintenanceWindow, PaginatedResponse } from '../../api/types.ts'
 import { Badge } from '../../components/ui/Badge.tsx'
 import { Button } from '../../components/ui/Button.tsx'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog.tsx'
@@ -12,18 +12,34 @@ import { scheduleSummary } from './maintenanceSummary.ts'
 import { useDeleteMaintenanceWindow } from './useMaintenanceWindowMutations.ts'
 
 type MaintenanceWindowListProps = {
-  windows: MaintenanceWindow[]
+  windows: PaginatedResponse<MaintenanceWindow>
   canManage: boolean
   onEdit: (window: MaintenanceWindow) => void
+  onPageChange: (page: number) => void
 }
 
-export function MaintenanceWindowList({ windows, canManage, onEdit }: MaintenanceWindowListProps) {
+export function MaintenanceWindowList({ windows, canManage, onEdit, onPageChange }: MaintenanceWindowListProps) {
+  const { current_page: page, last_page: lastPage } = windows.meta
+
   return (
-    <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
-      {windows.map((window) => (
-        <MaintenanceWindowRow key={window.id} window={window} canManage={canManage} onEdit={() => onEdit(window)} />
-      ))}
-    </ul>
+    <div className="flex flex-col gap-4">
+      <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
+        {windows.data.map((window) => (
+          <MaintenanceWindowRow key={window.id} window={window} canManage={canManage && window.can_manage} onEdit={() => onEdit(window)} />
+        ))}
+      </ul>
+      {lastPage > 1 && (
+        <nav className="flex items-center justify-between gap-3" aria-label={t('monitors.pagination.page', { page, total: lastPage })}>
+          <Button variant="secondary" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+            {t('monitors.pagination.previous')}
+          </Button>
+          <span className="text-neutral-600">{t('monitors.pagination.page', { page, total: lastPage })}</span>
+          <Button variant="secondary" disabled={page >= lastPage} onClick={() => onPageChange(page + 1)}>
+            {t('monitors.pagination.next')}
+          </Button>
+        </nav>
+      )}
+    </div>
   )
 }
 

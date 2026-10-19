@@ -1,10 +1,11 @@
-import { screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as authApi from '../../api/auth.ts'
 import * as dashboardApi from '../../api/dashboard.ts'
 import { axiosError } from '../../test/axiosErrors.ts'
-import { ada } from '../../test/fixtures.ts'
+import { queryKeys } from '../../api/queryKeys.ts'
+import { ada, makeConfig } from '../../test/fixtures.ts'
 import { renderApp } from '../../test/renderApp.tsx'
 
 vi.mock('../../api/auth.ts')
@@ -131,6 +132,21 @@ describe('authentication', () => {
 
     expect(await screen.findByRole('heading', { name: 'Log in' })).toBeInTheDocument()
     await waitFor(() => expect(router.state.location.pathname).toBe('/login'))
+  })
+
+  it('keeps following instance settings changes after logging out', async () => {
+    vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(ada)
+    vi.mocked(authApi.logout).mockResolvedValue()
+    const { queryClient } = renderApp('/dashboard')
+    const user = userEvent.setup()
+
+    const [logOutButton] = await screen.findAllByRole('button', { name: 'Log out' })
+    await user.click(logOutButton)
+    expect(await screen.findByRole('heading', { name: 'Log in' })).toBeInTheDocument()
+
+    act(() => queryClient.setQueryData(queryKeys.config, makeConfig({ instance: { name: 'Renamed Co', timezone: 'UTC', locale: 'en' } })))
+
+    expect(await screen.findAllByText('Renamed Co')).not.toHaveLength(0)
   })
 
   it('resets the password with the token from the link and confirms on the login page', async () => {

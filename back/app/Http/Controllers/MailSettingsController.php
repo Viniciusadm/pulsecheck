@@ -23,7 +23,7 @@ class MailSettingsController extends Controller
         $config = $request->config();
 
         if ($settings->exists && $settings->driver === $driver) {
-            $config = SecretMerger::merge($settings->config ?? [], $config, $driver->secretKeys());
+            $config = SecretMerger::merge($settings->config ?? [], $config, $driver->secretKeys(), $request->validated('clear_secrets', []));
         }
 
         $settings->fill([
