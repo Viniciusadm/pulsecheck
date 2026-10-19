@@ -122,7 +122,7 @@ All variables live in the `.env` file next to `docker-compose.yml` (template: [`
 | `QUEUE_CONNECTION` / `CACHE_STORE` / `SESSION_DRIVER` | no | `database` | Set all three to `redis` to use Redis (see below). |
 | `REDIS_PASSWORD` | only with Redis | empty | Password required by the `redis` service. |
 | `REVERB_APP_KEY` / `REVERB_APP_SECRET` | no | `pulsecheck` / derived from `APP_KEY` | Credentials shared by the API and the `reverb` service. The key is public (sent to the browser); the secret signs channel subscriptions. |
-| `MAIL_MAILER` | no | `log` | `smtp` to send password reset emails. With `log`, emails (including reset links, which are valid for 60 minutes) are written to the container logs: anyone who can read the logs could use them. Configure SMTP in production. |
+| `MAIL_MAILER` | no | `log` | `smtp` to send password reset emails. With `log`, emails (including reset links, which are valid for 60 minutes) are written to the container logs: anyone who can read the logs could use them. Configure SMTP in production, or set up the mail service in **Settings › Email** (SMTP, Mailgun, Postmark, Resend or Amazon SES): settings saved there take priority over every `MAIL_*` variable. |
 | `MAIL_SCHEME`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` | with SMTP | empty, `587` | SMTP connection (`MAIL_SCHEME=smtps` for port 465). |
 | `MAIL_FROM_ADDRESS` / `MAIL_FROM_NAME` | no | `no-reply@example.com` / `PulseCheck` | Sender of password reset emails. |
 | `PULSECHECK_SETUP_TOKEN` | no | empty | Token the first-run setup requires. When empty, one is generated and printed in the app logs. |

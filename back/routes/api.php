@@ -15,6 +15,8 @@ use App\Http\Controllers\HeartbeatController;
 use App\Http\Controllers\IncidentAcknowledgementController;
 use App\Http\Controllers\IncidentNoteController;
 use App\Http\Controllers\InstanceSettingsController;
+use App\Http\Controllers\MailSettingsController;
+use App\Http\Controllers\MailSettingsTestController;
 use App\Http\Controllers\MaintenanceWindowController;
 use App\Http\Controllers\MonitorBadgeTokenController;
 use App\Http\Controllers\MonitorCheckResultController;
@@ -110,6 +112,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::middleware('can:manage-users')->group(function () {
         Route::put('instance', [InstanceSettingsController::class, 'update'])->name('instance.update');
+
+        Route::prefix('settings/mail')->name('settings.mail.')->group(function () {
+            Route::get('/', [MailSettingsController::class, 'show'])->name('show');
+            Route::put('/', [MailSettingsController::class, 'update'])->name('update');
+            Route::delete('/', [MailSettingsController::class, 'destroy'])->name('destroy');
+            Route::post('test', MailSettingsTestController::class)->middleware('throttle:notification-test')->name('test');
+        });
 
         Route::post('teams', [TeamController::class, 'store'])->name('teams.store');
         Route::match(['put', 'patch'], 'teams/{team}', [TeamController::class, 'update'])->name('teams.update');

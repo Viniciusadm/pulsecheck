@@ -69,5 +69,9 @@
     "uptime :days d": "uptime :days d",
     "Use a status code from 100 to 599 or a range such as 200-299.": "Use um código de status de 100 a 599 ou uma faixa como 200-299.",
     "You cannot delete your own account.": "Você não pode excluir a própria conta.",
-    "Example API": "API de exemplo"
+    "Example API": "API de exemplo",
+    "Test email": "Email de teste",
+    "Test email sent to :email.": "Email de teste enviado para :email.",
+    "The test email could not be sent. Check the mail settings and try again.": "Não foi possível enviar o email de teste. Verifique as configurações de email e tente novamente.",
+    "If you are reading this, the mail settings of :name are working.": "Se você está lendo isto, as configurações de email de :name estão funcionando."
 }

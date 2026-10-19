@@ -2,11 +2,16 @@
 
 namespace App\Providers;
 
+use App\Mail\InstanceMailConfigurator;
 use App\Models\InstanceSettings;
+use App\Models\MailSettings;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Mail\Factory as MailFactory;
 use Illuminate\Http\Request;
+use Illuminate\Queue\Events\JobProcessing;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
@@ -22,6 +27,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(InstanceSettings::CURRENT_BINDING, fn (): ?InstanceSettings => InstanceSettings::query()->first());
+        $this->app->scoped(MailSettings::CURRENT_BINDING, fn (): ?MailSettings => MailSettings::query()->first());
+        $this->app->singleton(InstanceMailConfigurator::class);
     }
 
     /**
@@ -34,6 +41,21 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
         $this->configureRouteBindings();
         $this->configureGates();
+        $this->configureInstanceMailer();
+    }
+
+    private function configureInstanceMailer(): void
+    {
+        $this->app->afterResolving('mail.manager', function (MailFactory $manager): void {
+            $this->app->make(InstanceMailConfigurator::class)->apply($manager);
+        });
+
+        Event::listen(JobProcessing::class, function (): void {
+            if ($this->app->resolved('mail.manager')) {
+                MailSettings::forgetCurrent();
+                $this->app->make(InstanceMailConfigurator::class)->apply($this->app->make('mail.manager'));
+            }
+        });
     }
 
     private function configureRouteBindings(): void

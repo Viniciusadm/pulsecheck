@@ -376,6 +376,27 @@ export type InstanceSettings = {
   locale: string
 }
 
+export type MailDriver = 'smtp' | 'mailgun' | 'postmark' | 'resend' | 'ses'
+
+export type MailConfig = Record<string, string | number | null>
+
+export type MailSettings = {
+  source: 'panel' | 'environment'
+  environment_driver: string
+  driver: MailDriver | null
+  from_address: string | null
+  from_name: string | null
+  config: MailConfig
+  secrets_set: string[]
+}
+
+export type MailSettingsInput = {
+  driver: MailDriver
+  from_address: string
+  from_name: string | null
+  config: MailConfig
+}
+
 export type AppConfig = {
   setup_required: boolean
   setup_token_required: boolean
