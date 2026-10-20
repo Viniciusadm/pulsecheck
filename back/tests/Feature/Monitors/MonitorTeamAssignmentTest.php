@@ -83,6 +83,36 @@ class MonitorTeamAssignmentTest extends TestCase
         $this->assertEqualsCanonicalizing([$foreignTeam->id, $secondTeam->id], $monitor->teams()->pluck('teams.id')->all());
     }
 
+    public function test_hidden_teams_are_not_exposed_and_resending_the_shown_teams_works(): void
+    {
+        $foreignTeam = Team::factory()->create();
+        $monitor = Monitor::factory()->create();
+        $monitor->teams()->attach([$this->team->id, $foreignTeam->id]);
+        $this->actingAs($this->manager)->fromSpa();
+
+        $teamIds = $this->getJson("/api/monitors/{$monitor->id}")->assertOk()->assertJsonPath('data.team_ids', [$this->team->id])->json('data.team_ids');
+        $this->putJson("/api/monitors/{$monitor->id}", ['team_ids' => $teamIds])->assertOk();
+
+        $this->assertEqualsCanonicalizing([$this->team->id, $foreignTeam->id], $monitor->teams()->pluck('teams.id')->all());
+    }
+
+    public function test_default_channels_of_other_teams_are_not_attached(): void
+    {
+        $otherTeam = Team::factory()->create();
+        $ownDefault = NotificationChannel::factory()->create(['is_default' => true]);
+        $ownDefault->teams()->attach($this->team);
+        $otherDefault = NotificationChannel::factory()->create(['is_default' => true]);
+        $otherDefault->teams()->attach($otherTeam);
+        $globalDefault = NotificationChannel::factory()->create(['is_default' => true]);
+
+        $channelIds = $this->actingAs(User::factory()->admin()->create())->fromSpa()
+            ->postJson('/api/monitors', $this->payload(['team_ids' => [$this->team->id]]))
+            ->assertCreated()
+            ->json('data.notification_channel_ids');
+
+        $this->assertEqualsCanonicalizing([$ownDefault->id, $globalDefault->id], $channelIds);
+    }
+
     public function test_only_visible_notification_channels_can_be_attached(): void
     {
         $visible = NotificationChannel::factory()->create();

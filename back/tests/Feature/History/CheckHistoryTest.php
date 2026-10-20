@@ -6,6 +6,7 @@ use App\Models\Monitor;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Concerns\CreatesCheckResults;
 use Tests\TestCase;
@@ -73,6 +74,25 @@ class CheckHistoryTest extends TestCase
         $secondPage->assertJsonCount(10, 'data');
         $this->assertNull($secondPage->json('meta.next_cursor'));
         $this->assertEmpty(array_intersect($firstPage->json('data.*.id'), $secondPage->json('data.*.id')));
+    }
+
+    public function test_cursor_pages_are_bounded_by_an_indexable_condition_and_keep_ties(): void
+    {
+        $monitor = Monitor::factory()->create();
+        foreach (range(1, 55) as $index) {
+            $this->checkAt($monitor, now()->subMinutes(5));
+        }
+
+        $this->actingAs(User::factory()->admin()->create())->fromSpa();
+        $firstPage = $this->getJson("/api/monitors/{$monitor->id}/checks")->assertOk();
+        DB::enableQueryLog();
+        $secondPage = $this->getJson("/api/monitors/{$monitor->id}/checks?cursor={$firstPage->json('meta.next_cursor')}")->assertOk();
+        $backToFirst = $this->getJson("/api/monitors/{$monitor->id}/checks?cursor={$secondPage->json('meta.prev_cursor')}")->assertOk();
+
+        $secondPage->assertJsonCount(5, 'data');
+        $this->assertEmpty(array_intersect($firstPage->json('data.*.id'), $secondPage->json('data.*.id')));
+        $this->assertSame($firstPage->json('data.*.id'), $backToFirst->json('data.*.id'));
+        $this->assertTrue(collect(DB::getQueryLog())->contains(fn (array $query) => str_contains($query['query'], '"started_at" <= ?')));
     }
 
     public function test_does_not_leak_other_monitors_results(): void

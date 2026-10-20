@@ -20,7 +20,7 @@ Self-hosted uptime monitoring for one team or organization per deploy: PulseChec
 - **Repeated alerts**: each monitor can repeat the down alert every 15, 30, 60, 120 or 240 minutes (`PULSECHECK_REMINDER_INTERVALS`) until the incident is acknowledged or resolved.
 - **Maintenance windows**: one-off or weekly (with time zone, and windows that cross midnight), for chosen monitors or whole teams. During a window checks keep running, but no incident or alert is created and uptime leaves the period out. A failure that continues after the window opens the incident from the first check after it.
 - **Customizable dashboard**: each person arranges their own dashboard with resizable charts (status summary and distribution, monitors needing attention, recent incidents and incident timeline, uptime and latency trends, slowest monitors, error breakdown, latency of one monitor) and can reset it to the default layout.
-- **Metrics**: uptime per period (24 h, 7 d, 30 d), average and 95th percentile response time, latency chart and a 30-day availability bar that tells "no data" apart from "100%".
+- **Metrics**: uptime per period (24 h, 7 d, 30 d), average and 95th percentile response time, latency chart and a 30-day availability bar (days counted in UTC) that tells "no data" apart from "100%".
 - **Languages**: the interface, alerts and validation messages written by PulseCheck follow the instance language (English or Portuguese).
 - **Check history** with date filters and pagination.
 - **Monitor forms on their own pages** (`/monitors/new`, `/monitors/{id}/edit`), with the form grouped in sections.

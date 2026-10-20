@@ -17,6 +17,8 @@ class SslCertificateChecker implements MonitorChecker
 {
     use DescribesEndpointFailures;
 
+    private const MIN_RETRY_SECONDS = 0.5;
+
     private const HTTPS_PORT = 443;
 
     public function __construct(private SafeSocketConnector $connector) {}
@@ -52,7 +54,7 @@ class SslCertificateChecker implements MonitorChecker
             $certificate = $this->connector->certificate($host, $port, $monitor->timeout_seconds);
         } catch (SocketProbeException $exception) {
             return $exception->kind === SocketProbeException::TLS
-                ? $this->invalidCertificateOutcome($startedAt, $exception, $monitor, $host, $port)
+                ? $this->invalidCertificateOutcome($startedAt, $exception, $monitor, $host, $port, $monitor->timeout_seconds - (hrtime(true) - $startedAtNs) / 1e9)
                 : $this->failedOutcome($startedAt, $exception, $monitor);
         } catch (Throwable $exception) {
             return $this->failedOutcome($startedAt, $exception, $monitor);
@@ -83,10 +85,12 @@ class SslCertificateChecker implements MonitorChecker
         );
     }
 
-    private function invalidCertificateOutcome(CarbonImmutable $startedAt, SocketProbeException $exception, Monitor $monitor, string $host, int $port): CheckOutcome
+    private function invalidCertificateOutcome(CarbonImmutable $startedAt, SocketProbeException $exception, Monitor $monitor, string $host, int $port, float $remainingSeconds): CheckOutcome
     {
         try {
-            $expiresAt = $this->expiresAt($this->connector->certificate($host, $port, $monitor->timeout_seconds, verify: false));
+            $expiresAt = $remainingSeconds >= self::MIN_RETRY_SECONDS
+                ? $this->expiresAt($this->connector->certificate($host, $port, $remainingSeconds, verify: false))
+                : null;
         } catch (Throwable) {
             $expiresAt = null;
         }

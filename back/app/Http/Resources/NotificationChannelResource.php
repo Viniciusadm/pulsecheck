@@ -27,7 +27,7 @@ class NotificationChannelResource extends JsonResource
             'config' => (object) ($request->user()?->canManageResources() ? Arr::except($config, $secretKeys) : []),
             'secrets_set' => array_values(array_filter($secretKeys, fn (string $key) => ! empty($config[$key]))),
             'monitors_count' => $this->whenCounted('monitors'),
-            'team_ids' => $this->teams->modelKeys(),
+            'team_ids' => $request->user()?->scopedTeamIds($this->teams->modelKeys()) ?? [],
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

@@ -27,7 +27,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(InstanceSettings::CURRENT_BINDING, fn (): ?InstanceSettings => InstanceSettings::query()->first());
-        $this->app->scoped(MailSettings::CURRENT_BINDING, fn (): ?MailSettings => MailSettings::query()->first());
+        $this->app->scoped(MailSettings::CURRENT_BINDING, fn (): ?MailSettings => MailSettings::query()->oldest('id')->first());
         $this->app->singleton(InstanceMailConfigurator::class);
     }
 

@@ -166,6 +166,8 @@ class MonitorTypeCheckersTest extends TestCase
         $this->assertSame(CheckErrorType::CertificateExpired, $outcome->errorType);
         $this->assertSame('The certificate expired on 2026-10-15.', $outcome->errorMessage);
         $this->assertFalse($this->socketProbes[1]['ssl']['verify_peer']);
+        $this->assertSame(10.0, (float) $this->socketProbes[0]['timeout']);
+        $this->assertLessThan(10.0, $this->socketProbes[1]['timeout']);
     }
 
     public function test_untrusted_certificate_fails_as_tls_error(): void

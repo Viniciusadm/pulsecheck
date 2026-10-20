@@ -63,6 +63,11 @@ class User extends Authenticatable
         return $this->role === UserRole::Admin || $this->role === UserRole::Manager;
     }
 
+    public function scopedTeamIds(array $teamIds): array
+    {
+        return $this->canViewEverything() ? $teamIds : array_values(array_intersect($teamIds, $this->teams->modelKeys()));
+    }
+
     public function visibleTeamIds(): array
     {
         $teams = $this->canViewEverything() ? Team::query() : $this->teams();

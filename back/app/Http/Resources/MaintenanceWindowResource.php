@@ -13,7 +13,6 @@ class MaintenanceWindowResource extends JsonResource
     {
         $schedule = app(MaintenanceSchedule::class);
         $user = $request->user();
-        $teamIds = $user->canViewEverything() ? $this->teams->modelKeys() : array_values(array_intersect($this->teams->modelKeys(), $user->teams->modelKeys()));
         $monitors = $this->monitors->filter(fn (Monitor $monitor) => $monitor->isVisibleTo($user))->values();
 
         return [
@@ -28,7 +27,7 @@ class MaintenanceWindowResource extends JsonResource
             'timezone' => $this->timezone,
             'monitors' => $monitors->map(fn (Monitor $monitor) => ['id' => $monitor->id, 'name' => $monitor->name])->all(),
             'monitor_ids' => $monitors->modelKeys(),
-            'team_ids' => $teamIds,
+            'team_ids' => $user->scopedTeamIds($this->teams->modelKeys()),
             'can_manage' => $this->resource->isManageableBy($user),
             'active_until' => $schedule->activeUntil($this->resource, now()),
             'next_starts_at' => $schedule->nextStart($this->resource, now()),

@@ -409,6 +409,7 @@ export const en = {
       legendPartial: '95% to 99.9%',
       legendLow: 'Below 95%',
       legendNoData: 'No data',
+      legendUtc: 'Days in UTC',
       notice: 'Results reflect checks performed from this server. They do not guarantee the site was reachable for everyone.',
       notFound: 'This monitor does not exist or was deleted.',
     },

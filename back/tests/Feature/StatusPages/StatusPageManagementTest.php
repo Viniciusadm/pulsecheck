@@ -73,6 +73,16 @@ class StatusPageManagementTest extends TestCase
         ];
     }
 
+    public function test_a_slug_taken_by_a_concurrent_request_is_a_validation_error(): void
+    {
+        StatusPage::creating(fn (StatusPage $page) => StatusPage::query()->doesntExist() && StatusPage::factory()->createQuietly(['slug' => $page->slug]));
+
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
+            ->postJson('/api/status-pages', ['name' => 'Acme', 'slug' => 'acme'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('slug');
+    }
+
     #[DataProvider('invalidPayloads')]
     public function test_invalid_pages_are_rejected(array $overrides, string $field): void
     {

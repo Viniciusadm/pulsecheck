@@ -128,6 +128,20 @@ describe('MonitorFormPage', () => {
     expect(monitorsApi.createMonitor).toHaveBeenCalledWith(expect.objectContaining({ notification_channel_ids: [1, 2] }))
   })
 
+  it('pre-selects only the default channels that apply to the chosen teams', async () => {
+    vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(makeUser({ role: 'manager', team_ids: [3] }))
+    vi.mocked(teamsApi.listTeams).mockResolvedValue([makeTeam({ id: 3, name: 'Platform' })])
+    vi.mocked(channelsApi.listNotificationChannels).mockResolvedValue([
+      makeChannel({ id: 1, name: 'Platform phone', is_default: true, team_ids: [3] }),
+      makeChannel({ id: 2, name: 'Billing Slack', type: 'slack', is_default: true, team_ids: [4] }),
+    ])
+    vi.mocked(monitorsApi.getMonitor).mockReturnValue(new Promise(() => {}))
+    const { form } = await openForm()
+
+    expect(await within(form).findByRole('checkbox', { name: /Platform phone/ })).toBeChecked()
+    expect(within(form).getByRole('checkbox', { name: /Billing Slack/ })).not.toBeChecked()
+  })
+
   it('links to the channels page when there are no channels', async () => {
     const { form } = await openForm()
 

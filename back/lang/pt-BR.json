@@ -73,5 +73,7 @@
     "Test email": "Email de teste",
     "Test email sent to :email.": "Email de teste enviado para :email.",
     "The test email could not be sent. Check the mail settings and try again.": "Não foi possível enviar o email de teste. Verifique as configurações de email e tente novamente.",
-    "If you are reading this, the mail settings of :name are working.": "Se você está lendo isto, as configurações de email de :name estão funcionando."
+    "If you are reading this, the mail settings of :name are working.": "Se você está lendo isto, as configurações de email de :name estão funcionando.",
+    "A team with this name already exists.": "Já existe um time com esse nome.",
+    "This address is already in use.": "Esse endereço já está em uso."
 }

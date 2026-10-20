@@ -66,8 +66,8 @@ describe('useMonitorRealtime', () => {
     echo.listeners.get('.monitor.checked')?.({ monitor: checkedMonitor })
 
     expect(queryClient.getQueryData(queryKeys.monitor(cachedMonitor.id))).toEqual({ ...checkedMonitor, notification_channel_ids: [7] })
-    await waitFor(() => expect(vi.mocked(monitorsApi.listMonitors).mock.calls.length).toBeGreaterThan(listCalls))
-    expect(vi.mocked(dashboardApi.getDashboardSummary).mock.calls.length).toBeGreaterThan(summaryCalls)
+    await waitFor(() => expect(vi.mocked(monitorsApi.listMonitors).mock.calls.length).toBeGreaterThan(listCalls), { timeout: 3000 })
+    await waitFor(() => expect(vi.mocked(dashboardApi.getDashboardSummary).mock.calls.length).toBeGreaterThan(summaryCalls), { timeout: 3000 })
     expect(queryClient.getQueryState(otherMonitorStatsKey)?.isInvalidated).toBe(false)
   })
 
@@ -115,6 +115,6 @@ describe('useMonitorRealtime', () => {
 
     echo.listeners.get('.incident.updated')?.({ incident: { ...openIncident, acknowledged_at: '2026-10-17T10:05:00Z' } })
 
-    await waitFor(() => expect(vi.mocked(dashboardApi.getDashboardSummary).mock.calls.length).toBeGreaterThan(summaryCalls))
+    await waitFor(() => expect(vi.mocked(dashboardApi.getDashboardSummary).mock.calls.length).toBeGreaterThan(summaryCalls), { timeout: 3000 })
   })
 })

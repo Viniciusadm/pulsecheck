@@ -90,6 +90,16 @@ class TeamManagementTest extends TestCase
         $this->putJson("/api/teams/{$team->id}", ['name' => 'Backend'])->assertOk();
     }
 
+    public function test_a_name_taken_by_a_concurrent_request_is_a_validation_error(): void
+    {
+        Team::creating(fn (Team $team) => Team::query()->doesntExist() && Team::factory()->createQuietly(['name' => $team->name]));
+
+        $this->actingAs(User::factory()->admin()->create())->fromSpa()
+            ->postJson('/api/teams', ['name' => 'Ops'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('name');
+    }
+
     public function test_managers_and_members_cannot_manage_teams(): void
     {
         $team = Team::factory()->create();

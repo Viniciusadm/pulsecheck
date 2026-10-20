@@ -4,10 +4,12 @@ namespace Tests\Feature\Monitors;
 
 use App\Enums\MonitorStatus;
 use App\Enums\MonitorType;
+use App\Actions\RecordCheckResult;
 use App\Events\MonitorChecked;
 use App\Jobs\RunMonitorCheck;
 use App\Models\Monitor;
 use App\Models\User;
+use App\Services\Checkers\HeartbeatChecker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -164,6 +166,19 @@ class MonitorTypesApiTest extends TestCase
 
         $this->assertSame(MonitorStatus::Up, $monitor->fresh()->status);
         $this->assertSame(0, $monitor->incidents()->whereNull('resolved_at')->count());
+    }
+
+    public function test_a_missed_window_is_discarded_when_a_ping_arrived_while_checking(): void
+    {
+        $monitor = Monitor::factory()->up()->create(['type' => MonitorType::Heartbeat, 'url' => null, 'heartbeat_token' => str_repeat('g', 40), 'interval_minutes' => 5, 'last_heartbeat_at' => now()->subMinutes(10)]);
+        $outcome = app(HeartbeatChecker::class)->check($monitor);
+        $this->postJson('/api/heartbeat/'.str_repeat('g', 40))->assertOk();
+
+        $this->assertNull(app(RecordCheckResult::class)->handle($monitor, $outcome));
+
+        $this->assertSame(MonitorStatus::Up, $monitor->fresh()->status);
+        $this->assertSame(0, $monitor->incidents()->count());
+        $this->assertSame(0, $monitor->checkResults()->where('is_success', false)->count());
     }
 
     public function test_token_rotation_invalidates_the_old_url(): void

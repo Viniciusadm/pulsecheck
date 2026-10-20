@@ -27,4 +27,10 @@ describe('UptimeBar', () => {
     expect(items[0]).toHaveFocus()
     expect(items.filter((item) => item.tabIndex === 0)).toEqual([items[0]])
   })
+
+  it('tells that the days are counted in UTC', () => {
+    render(<UptimeBar days={days} />)
+
+    expect(screen.getByText('Days in UTC')).toBeInTheDocument()
+  })
 })

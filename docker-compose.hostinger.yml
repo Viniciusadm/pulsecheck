@@ -67,6 +67,7 @@ services:
     command: ["php", "artisan", "queue:work", "--queue=notifications,default", "--tries=1", "--max-time=3600", "--sleep=1"]
     environment: *app-environment
     depends_on: *app-dependencies
+    stop_grace_period: 100s
     healthcheck:
       disable: true
     deploy:

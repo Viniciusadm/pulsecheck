@@ -30,7 +30,7 @@ class StatusPageResource extends JsonResource
                 'status' => $monitor->status,
             ])->all(),
             'hidden_monitors_count' => $this->monitors->count() - $visibleMonitors->count(),
-            'team_ids' => $this->teams->modelKeys(),
+            'team_ids' => $user->scopedTeamIds($this->teams->modelKeys()),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

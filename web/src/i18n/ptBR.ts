@@ -411,6 +411,7 @@ export const ptBR = {
       legendPartial: '95% a 99,9%',
       legendLow: 'Abaixo de 95%',
       legendNoData: 'Sem dados',
+      legendUtc: 'Dias em UTC',
       notice: 'Os resultados refletem checagens feitas a partir deste servidor. Eles não garantem que o site estava acessível para todos.',
       notFound: 'Este monitor não existe ou foi excluído.',
     },

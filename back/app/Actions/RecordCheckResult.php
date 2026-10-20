@@ -40,6 +40,10 @@ class RecordCheckResult
                 return null;
             }
 
+            if ($monitor->type->isPassive() && ! $outcome->isSuccess && $monitor->type->checker()->check($monitor) === null) {
+                return null;
+            }
+
             $maintenanceEndsAt = $this->maintenanceSchedule->endsAtFor($monitor, $outcome->startedAt);
             $inMaintenance = $maintenanceEndsAt !== null;
 

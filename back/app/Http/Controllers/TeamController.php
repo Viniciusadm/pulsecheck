@@ -9,7 +9,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class TeamController extends Controller
 {
@@ -50,6 +52,15 @@ class TeamController extends Controller
     }
 
     private function save(Team $team, StoreTeamRequest $request): Team
+    {
+        try {
+            return $this->persist($team, $request);
+        } catch (UniqueConstraintViolationException) {
+            throw ValidationException::withMessages(['name' => __('A team with this name already exists.')]);
+        }
+    }
+
+    private function persist(Team $team, StoreTeamRequest $request): Team
     {
         return DB::transaction(function () use ($team, $request) {
             $team->fill(['name' => $request->validated('name')])->save();

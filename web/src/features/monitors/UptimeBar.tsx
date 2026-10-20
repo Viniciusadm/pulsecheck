@@ -120,6 +120,7 @@ export function UptimeBar({ days, label }: { days: UptimeBarDay[]; label?: strin
             {t('status.maintenance')}
           </span>
         )}
+        <span className="ml-auto">{t('monitors.detail.legendUtc')}</span>
       </div>
     </div>
   )

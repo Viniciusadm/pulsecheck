@@ -77,6 +77,10 @@ export function MonitorEditPage() {
   return <MonitorFormLoader key={monitor.data.id} monitor={monitor.data} />
 }
 
+function appliesToTeams(channelTeamIds: number[], monitorTeamIds: number[]): boolean {
+  return monitorTeamIds.length === 0 || channelTeamIds.length === 0 || channelTeamIds.some((teamId) => monitorTeamIds.includes(teamId))
+}
+
 function FormSkeleton() {
   return (
     <div className="flex max-w-3xl flex-col gap-6" aria-busy="true">
@@ -119,15 +123,15 @@ function MonitorForm({ monitor, config }: { monitor?: Monitor; config?: AppConfi
   const [target, setTarget] = useState(() => initialTargetState(monitor))
   const definition = monitorTypes[type]
 
+  const teams = useQuery({ queryKey: queryKeys.teams, queryFn: listTeams })
+  const [selectedTeamIds, setSelectedTeamIds] = useState<number[] | null>(null)
+  const teamIds = selectedTeamIds ?? initialTeamIds(teams.data, monitor?.team_ids)
+
   const channels = useQuery({ queryKey: queryKeys.notificationChannels, queryFn: listNotificationChannels })
   const [selectedChannelIds, setSelectedChannelIds] = useState<number[] | null>(null)
   const channelIds = selectedChannelIds
     ?? monitor?.notification_channel_ids
-    ?? (channels.data ?? []).filter((channel) => channel.is_default).map((channel) => channel.id)
-
-  const teams = useQuery({ queryKey: queryKeys.teams, queryFn: listTeams })
-  const [selectedTeamIds, setSelectedTeamIds] = useState<number[] | null>(null)
-  const teamIds = selectedTeamIds ?? initialTeamIds(teams.data, monitor?.team_ids)
+    ?? (channels.data ?? []).filter((channel) => channel.is_default && appliesToTeams(channel.team_ids, teamIds)).map((channel) => channel.id)
 
   const changeType = (next: MonitorType) => {
     setType(next)
