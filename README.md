@@ -43,6 +43,10 @@ Self-hosted uptime monitoring for one team or organization per deploy: PulseChec
 |---|---|
 | ![Monitor detail with uptime, latency chart, daily availability and incidents](screenshots/monitor-detail.png) | ![Dashboard on a phone](screenshots/mobile-dashboard.png) |
 
+| Dark mode | Public status page |
+|---|---|
+| ![Dashboard in dark mode](screenshots/dashboard-dark.png) | ![Public status page with daily uptime per service and recent incidents](screenshots/status-page.png) |
+
 | Notification channel | Team |
 |---|---|
 | ![New notification channel page with setup help and alert preview](screenshots/channel.png) | ![Team page with its people and monitors](screenshots/team.png) |
