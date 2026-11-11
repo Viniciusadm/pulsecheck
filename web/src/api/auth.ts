@@ -25,9 +25,19 @@ export async function fetchCurrentUser(): Promise<User | null> {
   }
 }
 
-export async function login(input: LoginInput): Promise<User> {
+export type LoginResult = { status: 'authenticated'; user: User } | { status: 'two-factor' }
+
+export type TwoFactorChallengeInput = { code: string } | { recovery_code: string }
+
+export async function login(input: LoginInput): Promise<LoginResult> {
   await fetchCsrfCookie()
-  const response = await http.post<DataResponse<User>>('/api/auth/login', input)
+  const response = await http.post<DataResponse<User> | { two_factor: true }>('/api/auth/login', input)
+
+  return 'two_factor' in response.data ? { status: 'two-factor' } : { status: 'authenticated', user: response.data.data }
+}
+
+export async function completeTwoFactorChallenge(input: TwoFactorChallengeInput): Promise<User> {
+  const response = await http.post<DataResponse<User>>('/api/auth/two-factor-challenge', input)
 
   return response.data.data
 }

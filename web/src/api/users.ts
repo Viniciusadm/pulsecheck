@@ -22,3 +22,7 @@ export async function updateUser(id: number, input: UserInput) {
 export async function deleteUser(id: number) {
   await http.delete(`/api/users/${id}`)
 }
+
+export async function resetUserTwoFactor(id: number) {
+  await http.delete(`/api/users/${id}/two-factor`)
+}

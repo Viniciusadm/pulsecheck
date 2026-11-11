@@ -1,8 +1,14 @@
 <?php
 
+use App\Http\Controllers\Account\ApiTokenController;
+use App\Http\Controllers\Account\PasswordController;
+use App\Http\Controllers\Account\ProfileController;
+use App\Http\Controllers\Account\TwoFactorController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\CurrentUserController;
 use App\Http\Controllers\DashboardErrorBreakdownController;
 use App\Http\Controllers\DashboardIncidentTimelineController;
@@ -39,13 +45,20 @@ use App\Http\Controllers\SetupController;
 use App\Http\Controllers\StatusPageController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\UserTwoFactorController;
+use App\Http\Middleware\EnforceTokenAbilities;
 use App\Http\Middleware\EnsureSetupIsPending;
+use App\Http\Middleware\RequireBrowserSession;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->name('auth.')->group(function () {
     Route::post('login', [AuthenticatedSessionController::class, 'store'])
         ->middleware('throttle:login')
         ->name('login');
+
+    Route::post('two-factor-challenge', TwoFactorChallengeController::class)
+        ->middleware('throttle:two-factor')
+        ->name('two-factor-challenge');
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->middleware('auth:sanctum')
@@ -77,10 +90,27 @@ Route::post('setup', SetupController::class)
     ->name('setup');
 
 Route::get('user', CurrentUserController::class)
-    ->middleware('auth:sanctum')
+    ->middleware(['auth:sanctum', 'throttle:api'])
     ->name('user');
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', EnforceTokenAbilities::class, 'throttle:api'])->group(function () {
+    Route::prefix('me')->name('me.')->middleware(RequireBrowserSession::class)->group(function () {
+        Route::put('profile', [ProfileController::class, 'update'])->middleware('throttle:account-writes')->name('profile.update');
+        Route::put('password', [PasswordController::class, 'update'])->middleware('throttle:account-writes')->name('password.update');
+
+        Route::prefix('two-factor')->name('two-factor.')->controller(TwoFactorController::class)->group(function () {
+            Route::get('/', 'show')->name('show');
+            Route::post('/', 'store')->middleware('throttle:account-writes')->name('store');
+            Route::post('confirm', 'confirm')->middleware('throttle:two-factor')->name('confirm');
+            Route::delete('/', 'destroy')->middleware('throttle:account-writes')->name('destroy');
+            Route::post('recovery-codes', 'recoveryCodes')->middleware('throttle:account-writes')->name('recovery-codes');
+        });
+
+        Route::get('tokens', [ApiTokenController::class, 'index'])->name('tokens.index');
+        Route::post('tokens', [ApiTokenController::class, 'store'])->middleware('throttle:account-writes')->name('tokens.store');
+        Route::delete('tokens/{tokenId}', [ApiTokenController::class, 'destroy'])->whereNumber('tokenId')->middleware('throttle:account-writes')->name('tokens.destroy');
+    });
+
     Route::prefix('dashboard')->name('dashboard.')->group(function () {
         Route::get('summary', DashboardSummaryController::class)->name('summary');
         Route::get('uptime-trend', DashboardUptimeTrendController::class)->name('uptime-trend');
@@ -129,6 +159,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('users', [UserController::class, 'store'])->name('users.store');
         Route::match(['put', 'patch'], 'users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+        Route::delete('users/{user}/two-factor', [UserTwoFactorController::class, 'destroy'])->name('users.two-factor.destroy');
+
+        Route::get('audit-log', AuditLogController::class)->name('audit-log.index');
     });
 
     Route::prefix('incidents/{incident}')->name('incidents.')->middleware('can:view,incident')->scopeBindings()->group(function () {

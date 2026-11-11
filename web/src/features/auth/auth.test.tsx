@@ -39,7 +39,7 @@ describe('authentication', () => {
   })
 
   it('logs in and goes to the dashboard', async () => {
-    vi.mocked(authApi.login).mockResolvedValue(ada)
+    vi.mocked(authApi.login).mockResolvedValue({ status: 'authenticated', user: ada })
     const { router } = renderApp('/login')
     const visitedPaths: string[] = []
     router.subscribe((state) => visitedPaths.push(state.location.pathname))
@@ -56,7 +56,7 @@ describe('authentication', () => {
   })
 
   it('returns to the originally requested page after logging in', async () => {
-    vi.mocked(authApi.login).mockResolvedValue(ada)
+    vi.mocked(authApi.login).mockResolvedValue({ status: 'authenticated', user: ada })
     const { router } = renderApp('/settings')
     const user = userEvent.setup()
 

@@ -1,10 +1,12 @@
 import '@testing-library/jest-dom/vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup, configure } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
 import { getAppConfig } from '../api/config.ts'
 import { setLocale } from '../i18n/index.ts'
 import { setDisplayTimeZone } from '../lib/format.ts'
 import { makeConfig } from './fixtures.ts'
+
+configure({ asyncUtilTimeout: 5000 })
 
 vi.mock('../api/config.ts', () => ({ getAppConfig: vi.fn() }))
 

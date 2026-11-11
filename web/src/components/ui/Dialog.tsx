@@ -37,7 +37,9 @@ export function Dialog({ isOpen, title, onClose, children, footer, isBusy = fals
     }
 
     const previouslyFocused = document.activeElement as HTMLElement | null
-    panelRef.current?.focus()
+
+    const initialFocus = panelRef.current?.querySelector<HTMLElement>('[data-autofocus]') ?? panelRef.current
+    initialFocus?.focus()
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !isBusyRef.current) {
@@ -63,7 +65,7 @@ export function Dialog({ isOpen, title, onClose, children, footer, isBusy = fals
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
-      <div className="absolute inset-0 bg-neutral-900/40" aria-hidden="true" onClick={requestClose} />
+      <div className="absolute inset-0 bg-overlay" aria-hidden="true" onClick={requestClose} />
       <div
         ref={panelRef}
         role="dialog"

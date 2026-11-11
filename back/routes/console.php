@@ -44,3 +44,7 @@ Schedule::command('model:prune')
 Schedule::command('queue:prune-failed', ['--hours' => 168])
     ->dailyAt('03:15')
     ->onOneServer();
+
+Schedule::command('sanctum:prune-expired', ['--hours' => 24])
+    ->dailyAt('03:30')
+    ->onOneServer();

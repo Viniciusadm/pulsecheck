@@ -4,7 +4,7 @@ import { Navigate } from 'react-router'
 import { fieldErrors, generalErrorMessage } from '../../api/errors.ts'
 import { queryKeys } from '../../api/queryKeys.ts'
 import type { User, UserRole } from '../../api/types.ts'
-import { deleteUser, listUsers } from '../../api/users.ts'
+import { deleteUser, listUsers, resetUserTwoFactor } from '../../api/users.ts'
 import { Badge } from '../../components/ui/Badge.tsx'
 import { Button } from '../../components/ui/Button.tsx'
 import { Card } from '../../components/ui/Card.tsx'
@@ -72,6 +72,7 @@ function UserRow({ user, onEdit }: { user: User; onEdit: () => void }) {
   const { showToast } = useToast()
   const { user: currentUser } = useAuth()
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
+  const [isConfirmingReset, setIsConfirmingReset] = useState(false)
   const isCurrentUser = currentUser?.id === user.id
 
   const deleteMutation = useMutation({
@@ -88,6 +89,19 @@ function UserRow({ user, onEdit }: { user: User; onEdit: () => void }) {
     },
   })
 
+  const resetMutation = useMutation({
+    mutationFn: () => resetUserTwoFactor(user.id),
+    onSuccess: () => {
+      setIsConfirmingReset(false)
+      void queryClient.invalidateQueries({ queryKey: queryKeys.users })
+      showToast(t('settings.users.twoFactorReset'))
+    },
+    onError: (error) => {
+      setIsConfirmingReset(false)
+      showToast(generalErrorMessage(error) ?? t('common.genericError'), 'error')
+    },
+  })
+
   return (
     <li className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 flex-col gap-1">
@@ -96,6 +110,7 @@ function UserRow({ user, onEdit }: { user: User; onEdit: () => void }) {
           <Badge className={roleBadgeClassName[user.role]}>
             {t(`settings.users.roles.${user.role}`)}
           </Badge>
+          {user.two_factor_enabled && <Badge className="bg-status-up-soft text-status-up">{t('settings.users.twoFactor')}</Badge>}
           {isCurrentUser && <Badge className="bg-neutral-100 text-neutral-700">{t('settings.users.you')}</Badge>}
         </div>
         <p className="truncate text-xs text-neutral-500" title={user.email}>{user.email}</p>
@@ -104,6 +119,11 @@ function UserRow({ user, onEdit }: { user: User; onEdit: () => void }) {
         <Button variant="secondary" onClick={onEdit} aria-label={`${t('settings.users.edit')}: ${user.name}`}>
           {t('settings.users.edit')}
         </Button>
+        {!isCurrentUser && user.two_factor_enabled && (
+          <Button variant="ghost" onClick={() => setIsConfirmingReset(true)} aria-label={`${t('settings.users.resetTwoFactor')}: ${user.name}`}>
+            {t('settings.users.resetTwoFactor')}
+          </Button>
+        )}
         {!isCurrentUser && (
           <Button
             variant="ghost"
@@ -124,6 +144,16 @@ function UserRow({ user, onEdit }: { user: User; onEdit: () => void }) {
         isPending={deleteMutation.isPending}
         onConfirm={() => deleteMutation.mutate()}
         onClose={() => setIsConfirmingDelete(false)}
+      />
+      <ConfirmDialog
+        isOpen={isConfirmingReset}
+        title={t('settings.users.resetTwoFactorTitle', { name: user.name })}
+        description={t('settings.users.resetTwoFactorDescription')}
+        confirmLabel={t('settings.users.resetTwoFactor')}
+        pendingLabel={t('settings.users.resettingTwoFactor')}
+        isPending={resetMutation.isPending}
+        onConfirm={() => resetMutation.mutate()}
+        onClose={() => setIsConfirmingReset(false)}
       />
     </li>
   )

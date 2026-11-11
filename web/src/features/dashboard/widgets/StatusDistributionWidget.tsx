@@ -25,12 +25,12 @@ function Distribution({ summary }: { summary: DashboardSummary }) {
   }
 
   const slices: Slice[] = [
-    { key: 'up', label: t('status.up'), value: summary.up, color: '#15803d', icon: <UpIcon />, tone: 'text-status-up' },
-    { key: 'degraded', label: t('status.degraded'), value: summary.degraded, color: '#a16207', icon: <DegradedIcon />, tone: 'text-status-degraded' },
-    { key: 'down', label: t('status.down'), value: summary.down, color: '#dc2626', icon: <DownIcon />, tone: 'text-status-down' },
-    { key: 'pending', label: t('status.pending'), value: summary.pending, color: '#b45309', icon: <PendingIcon />, tone: 'text-status-pending' },
-    { key: 'maintenance', label: t('status.maintenance'), value: summary.maintenance, color: '#6d28d9', icon: <MaintenanceIcon />, tone: 'text-status-maintenance' },
-    { key: 'paused', label: t('status.paused'), value: summary.paused, color: '#5f6876', icon: <PausedIcon />, tone: 'text-status-paused' },
+    { key: 'up', label: t('status.up'), value: summary.up, color: 'var(--color-status-up)', icon: <UpIcon />, tone: 'text-status-up' },
+    { key: 'degraded', label: t('status.degraded'), value: summary.degraded, color: 'var(--color-status-degraded)', icon: <DegradedIcon />, tone: 'text-status-degraded' },
+    { key: 'down', label: t('status.down'), value: summary.down, color: 'var(--color-status-down)', icon: <DownIcon />, tone: 'text-status-down' },
+    { key: 'pending', label: t('status.pending'), value: summary.pending, color: 'var(--color-status-pending)', icon: <PendingIcon />, tone: 'text-status-pending' },
+    { key: 'maintenance', label: t('status.maintenance'), value: summary.maintenance, color: 'var(--color-status-maintenance)', icon: <MaintenanceIcon />, tone: 'text-status-maintenance' },
+    { key: 'paused', label: t('status.paused'), value: summary.paused, color: 'var(--color-status-paused)', icon: <PausedIcon />, tone: 'text-status-paused' },
   ]
   const visibleSlices = slices.filter((slice) => slice.value > 0)
 
@@ -45,7 +45,7 @@ function Distribution({ summary }: { summary: DashboardSummary }) {
               nameKey="label"
               innerRadius="62%"
               outerRadius="100%"
-              stroke="#ffffff"
+              stroke="var(--color-surface)"
               strokeWidth={visibleSlices.length > 1 ? 2 : 0}
               isAnimationActive={false}
             >

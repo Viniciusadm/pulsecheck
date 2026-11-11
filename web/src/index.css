@@ -13,6 +13,14 @@
   --color-primary-900: #1a497d;
   --color-primary: var(--color-primary-500);
   --color-primary-ink: #0a2540;
+  --color-brand-panel: #0a2540;
+  --color-accent: #1866bb;
+  --color-accent-hover: #195698;
+  --color-accent-active: #1a497d;
+  --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
+  --color-overlay: rgb(15 18 22 / 0.45);
+  --color-toast: #15181d;
 
   --color-background: #f4f6f8;
   --color-surface: #ffffff;
@@ -41,6 +49,8 @@
   --color-status-degraded-soft: #fef7d6;
   --color-status-maintenance: #6d28d9;
   --color-status-maintenance-soft: #f1ecfd;
+  --color-status-down-ink: #991b1b;
+  --color-status-up-ink: #14532d;
 
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 
@@ -52,6 +62,64 @@
   --text-lg--line-height: 1.6rem;
   --text-2xl: 1.5rem;
   --text-2xl--line-height: 2rem;
+}
+
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+:root {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-primary-50: #0f2742;
+  --color-primary-100: #13314f;
+  --color-primary-200: #1b4570;
+  --color-primary-300: #2a6aa8;
+  --color-primary-400: #3b8ad6;
+  --color-primary-500: #4fa6f5;
+  --color-primary-600: #6db6f7;
+  --color-primary-700: #8cc6fa;
+  --color-primary-800: #b0d8fc;
+  --color-primary-900: #d4eafd;
+  --color-primary-ink: #e8f2fd;
+  --color-brand-panel: #0b1a2c;
+  --color-accent: #2474cf;
+  --color-accent-hover: #2d82e0;
+  --color-accent-active: #3a8fe8;
+  --color-overlay: rgb(0 0 0 / 0.6);
+  --color-toast: #232932;
+
+  --color-background: #0e1115;
+  --color-surface: #161a20;
+  --color-border: #272d36;
+
+  --color-neutral-50: #1b2027;
+  --color-neutral-100: #222830;
+  --color-neutral-200: #2b323c;
+  --color-neutral-300: #3a424e;
+  --color-neutral-400: #6b7584;
+  --color-neutral-500: #98a1ae;
+  --color-neutral-600: #b0b8c3;
+  --color-neutral-700: #c9cfd8;
+  --color-neutral-800: #dfe3e9;
+  --color-neutral-900: #f1f3f6;
+
+  --color-status-up: #34c26b;
+  --color-status-up-soft: #10291b;
+  --color-status-down: #f05252;
+  --color-status-down-soft: #351619;
+  --color-status-paused: #98a1ae;
+  --color-status-paused-soft: #222830;
+  --color-status-pending: #f0a33a;
+  --color-status-pending-soft: #33230f;
+  --color-status-degraded: #e2b53e;
+  --color-status-degraded-soft: #31280f;
+  --color-status-maintenance: #a78bfa;
+  --color-status-maintenance-soft: #241b3d;
+  --color-status-down-ink: #fca5a5;
+  --color-status-up-ink: #86efac;
 }
 
 @layer base {

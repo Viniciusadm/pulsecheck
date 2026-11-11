@@ -19,6 +19,7 @@ export const ada: User = {
   role: 'admin',
   can_view_all_monitors: false,
   team_ids: [],
+  two_factor_enabled: false,
   email_verified_at: null,
   created_at: '2026-10-17T12:00:00Z',
 }
@@ -31,6 +32,7 @@ export function makeUser(overrides: Partial<User> = {}): User {
     role: 'member',
     can_view_all_monitors: false,
     team_ids: [],
+    two_factor_enabled: false,
     email_verified_at: null,
     created_at: '2026-10-17T12:00:00Z',
     ...overrides,

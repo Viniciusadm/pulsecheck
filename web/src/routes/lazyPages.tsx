@@ -20,6 +20,9 @@ export const TeamEditPage = lazy(() => import('../features/teams/TeamFormPage.ts
 export const UsersPage = lazy(() => import('../features/users/UsersPage.tsx').then((module) => ({ default: module.UsersPage })))
 export const SetupPage = lazy(() => import('../features/setup/SetupPage.tsx').then((module) => ({ default: module.SetupPage })))
 
+export const AccountPage = lazy(() => import('../features/account/AccountPage.tsx').then((module) => ({ default: module.AccountPage })))
+export const AuditLogPage = lazy(() => import('../features/auditLog/AuditLogPage.tsx').then((module) => ({ default: module.AuditLogPage })))
+
 export function LazyPage({ children }: { children: ReactNode }) {
   return <Suspense fallback={null}>{children}</Suspense>
 }

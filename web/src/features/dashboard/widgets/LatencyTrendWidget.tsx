@@ -64,7 +64,7 @@ function LatencyTrendChart({ buckets, bucketMinutes }: { buckets: LatencyTrendBu
                 strokeWidth={2}
                 connectNulls={false}
                 dot={false}
-                activeDot={{ r: 4, stroke: '#ffffff', strokeWidth: 2 }}
+                activeDot={{ r: 4, stroke: 'var(--color-surface)', strokeWidth: 2 }}
                 isAnimationActive={false}
               />
             ))}

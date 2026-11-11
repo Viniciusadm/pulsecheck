@@ -46,10 +46,10 @@ export function LatencyChart({ series, className = 'h-56', thresholdMs = null }:
           {thresholdMs !== null && (
             <ReferenceLine
               y={thresholdMs}
-              stroke="#a16207"
+              stroke="var(--color-status-degraded)"
               strokeDasharray="4 4"
               ifOverflow="extendDomain"
-              label={{ value: t('monitors.detail.latencyThreshold', { value: formatLatency(thresholdMs) }), position: 'insideTopRight', fill: '#a16207', fontSize: 12 }}
+              label={{ value: t('monitors.detail.latencyThreshold', { value: formatLatency(thresholdMs) }), position: 'insideTopRight', fill: 'var(--color-status-degraded)', fontSize: 12 }}
             />
           )}
           <Area

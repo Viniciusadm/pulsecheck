@@ -1,13 +1,14 @@
 import { useMutation } from '@tanstack/react-query'
 import { useState, type ComponentType, type SVGProps } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { logout } from '../api/auth.ts'
-import { BellIcon, CloseIcon, DashboardIcon, GlobeIcon, LogOutIcon, MaintenanceIcon, MenuIcon, MonitorsIcon, PulseIcon, SettingsIcon, TeamIcon, UserIcon } from '../components/ui/icons.tsx'
+import { BellIcon, CloseIcon, DashboardIcon, GlobeIcon, LogOutIcon, MaintenanceIcon, MenuIcon, MonitorsIcon, MoonIcon, PulseIcon, SettingsIcon, ShieldIcon, SunIcon, TeamIcon, UserIcon } from '../components/ui/icons.tsx'
 import { useAuth } from '../features/auth/AuthContext.ts'
 import { instanceName, useAppConfig } from '../features/config/ConfigContext.ts'
 import { useMonitorRealtime } from '../features/monitors/useMonitorRealtime.ts'
 import { t, type MessageKey } from '../i18n/index.ts'
 import { isAdmin } from '../lib/permissions.ts'
+import { resolveTheme, setThemePreference, useThemePreference } from '../lib/theme.ts'
 
 type NavigationItem = {
   to: string
@@ -24,6 +25,7 @@ const navigation: NavigationItem[] = [
   { to: '/status-pages', label: 'nav.statusPages', icon: GlobeIcon },
   { to: '/teams', label: 'nav.teams', icon: TeamIcon, isAdminOnly: true },
   { to: '/users', label: 'nav.users', icon: UserIcon, isAdminOnly: true },
+  { to: '/audit-log', label: 'nav.auditLog', icon: ShieldIcon, isAdminOnly: true },
   { to: '/settings', label: 'nav.settings', icon: SettingsIcon, isAdminOnly: true },
 ]
 
@@ -112,6 +114,24 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
   )
 }
 
+function ThemeToggle() {
+  const preference = useThemePreference()
+  const isDark = resolveTheme(preference) === 'dark'
+  const label = isDark ? t('account.appearance.light') : t('account.appearance.dark')
+
+  return (
+    <button
+      type="button"
+      onClick={() => setThemePreference(isDark ? 'light' : 'dark')}
+      aria-label={label}
+      title={label}
+      className="shrink-0 rounded-md p-2 text-lg text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+    >
+      {isDark ? <SunIcon /> : <MoonIcon />}
+    </button>
+  )
+}
+
 function AccountPanel() {
   const { user, setUser } = useAuth()
   const navigate = useNavigate()
@@ -125,10 +145,11 @@ function AccountPanel() {
 
   return (
     <div className="mt-3 flex items-center justify-between gap-2 border-t border-border px-3 pt-3">
-      <div className="min-w-0">
+      <Link to="/account" className="-mx-2 min-w-0 flex-1 rounded-md px-2 py-1 hover:bg-neutral-100" title={t('nav.account')}>
         <p className="truncate font-medium text-neutral-900">{user?.name}</p>
         <p className="truncate text-xs text-neutral-500" title={user?.email}>{user?.email}</p>
-      </div>
+      </Link>
+      <ThemeToggle />
       <button
         type="button"
         onClick={() => logoutMutation.mutate()}

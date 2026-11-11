@@ -26,7 +26,7 @@ export function AuthLayout() {
 
   return (
     <div className="grid min-h-screen lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start">
-      <aside className="hidden flex-col justify-between bg-primary-ink px-12 py-12 text-white lg:sticky lg:top-0 lg:flex lg:h-screen">
+      <aside className="hidden flex-col justify-between bg-brand-panel px-12 py-12 text-white lg:sticky lg:top-0 lg:flex lg:h-screen">
         <Logo className="text-white" />
         <div className="flex max-w-md flex-col gap-6">
           <CheckTicks />

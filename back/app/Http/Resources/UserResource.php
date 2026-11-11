@@ -16,6 +16,7 @@ class UserResource extends JsonResource
             'role' => $this->role,
             'can_view_all_monitors' => $this->can_view_all_monitors,
             'team_ids' => $this->teams->modelKeys(),
+            'two_factor_enabled' => $this->hasTwoFactorEnabled(),
             'email_verified_at' => $this->email_verified_at,
             'created_at' => $this->created_at,
         ];

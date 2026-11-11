@@ -50,7 +50,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             key={toast.id}
             role={toast.tone === 'error' ? 'alert' : 'status'}
-            className="pointer-events-auto flex w-full items-start gap-3 rounded-md bg-neutral-900 px-4 py-3 text-sm text-white shadow-lg"
+            className="pointer-events-auto flex w-full items-start gap-3 rounded-md bg-toast px-4 py-3 text-sm text-white shadow-lg ring-1 ring-white/10"
           >
             <span className={`mt-0.5 text-base ${toast.tone === 'success' ? 'text-green-400' : 'text-red-400'}`}>
               {toast.tone === 'success' ? <UpIcon /> : <DownIcon />}
@@ -60,7 +60,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               type="button"
               onClick={() => dismiss(toast.id)}
               aria-label={t('common.dismiss')}
-              className="rounded p-0.5 text-neutral-300 hover:text-white"
+              className="rounded p-0.5 text-white/70 hover:text-white"
             >
               <CloseIcon />
             </button>

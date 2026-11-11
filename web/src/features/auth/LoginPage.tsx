@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation } from 'react-router'
-import { login } from '../../api/auth.ts'
+import { completeTwoFactorChallenge, login } from '../../api/auth.ts'
 import { fieldErrors, generalErrorMessage } from '../../api/errors.ts'
 import { Alert } from '../../components/ui/Alert.tsx'
 import { Button } from '../../components/ui/Button.tsx'
@@ -17,11 +17,25 @@ export function LoginPage() {
   const state = useLocation().state as LocationState
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [needsTwoFactor, setNeedsTwoFactor] = useState(false)
 
   const mutation = useMutation({
     mutationFn: login,
-    onSuccess: (user) => setUser(user),
+    onSuccess: (result) => {
+      if (result.status === 'two-factor') {
+        setNeedsTwoFactor(true)
+        setPassword('')
+
+        return
+      }
+
+      setUser(result.user)
+    },
   })
+
+  if (needsTwoFactor) {
+    return <TwoFactorChallenge onCancel={() => setNeedsTwoFactor(false)} />
+  }
 
   const errors = fieldErrors(mutation.error)
   const generalError = mutation.isError ? generalErrorMessage(mutation.error) : null
@@ -67,6 +81,86 @@ export function LoginPage() {
         <Button type="submit" isLoading={mutation.isPending} loadingLabel={t('auth.login.submitting')}>
           {t('auth.login.submit')}
         </Button>
+      </form>
+    </div>
+  )
+}
+
+function TwoFactorChallenge({ onCancel }: { onCancel: () => void }) {
+  const { setUser } = useAuth()
+  const [isUsingRecoveryCode, setIsUsingRecoveryCode] = useState(false)
+  const [value, setValue] = useState('')
+
+  const mutation = useMutation({
+    mutationFn: completeTwoFactorChallenge,
+    onSuccess: (user) => setUser(user),
+  })
+
+  const errors = fieldErrors(mutation.error)
+  const generalError = mutation.isError ? generalErrorMessage(mutation.error) : null
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault()
+
+    if (!mutation.isPending) {
+      mutation.mutate(isUsingRecoveryCode ? { recovery_code: value.trim() } : { code: value.replace(/\s+/g, '') })
+    }
+  }
+
+  const toggleMode = () => {
+    setIsUsingRecoveryCode((current) => !current)
+    setValue('')
+    mutation.reset()
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-semibold text-neutral-900">{t('auth.twoFactor.title')}</h1>
+        <p className="text-neutral-600">{isUsingRecoveryCode ? t('auth.twoFactor.recoveryDescription') : t('auth.twoFactor.description')}</p>
+      </div>
+
+      {generalError && <Alert tone="error">{generalError}</Alert>}
+
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+        {isUsingRecoveryCode ? (
+          <TextField
+            key="recovery"
+            label={t('auth.twoFactor.recoveryCode')}
+            name="recovery_code"
+            autoComplete="off"
+            autoFocus
+            required
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+            error={errors.recovery_code ?? errors.code}
+          />
+        ) : (
+          <TextField
+            key="code"
+            label={t('auth.twoFactor.code')}
+            name="code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            autoFocus
+            required
+            maxLength={7}
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+            error={errors.code}
+          />
+        )}
+        <Button type="submit" isLoading={mutation.isPending} loadingLabel={t('auth.twoFactor.verifying')}>
+          {t('auth.twoFactor.verify')}
+        </Button>
+        <div className="flex flex-wrap justify-between gap-2">
+          <button type="button" onClick={toggleMode} className="text-sm font-medium text-primary-700 hover:underline">
+            {isUsingRecoveryCode ? t('auth.twoFactor.useCode') : t('auth.twoFactor.useRecoveryCode')}
+          </button>
+          <button type="button" onClick={onCancel} className="text-sm font-medium text-neutral-600 hover:underline">
+            {t('auth.twoFactor.back')}
+          </button>
+        </div>
       </form>
     </div>
   )

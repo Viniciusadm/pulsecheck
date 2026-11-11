@@ -203,3 +203,29 @@ export function PlusIcon(props: IconProps) {
     </Icon>
   )
 }
+
+export function ShieldIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M10 2.5 16 5v4.5c0 4-2.6 6.8-6 8-3.4-1.2-6-4-6-8V5z" />
+      <path d="m7.25 10 2 2 3.5-3.75" />
+    </Icon>
+  )
+}
+
+export function SunIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="10" cy="10" r="3.25" />
+      <path d="M10 2v1.75M10 16.25V18M2 10h1.75M16.25 10H18M4.35 4.35l1.25 1.25M14.4 14.4l1.25 1.25M4.35 15.65l1.25-1.25M14.4 5.6l1.25-1.25" />
+    </Icon>
+  )
+}
+
+export function MoonIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M16.5 12.25A7 7 0 0 1 7.75 3.5a7 7 0 1 0 8.75 8.75z" />
+    </Icon>
+  )
+}

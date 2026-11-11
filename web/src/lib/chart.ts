@@ -1,17 +1,23 @@
 import type { StatsPeriod } from '../api/types.ts'
 import { formatDate } from './format.ts'
 
-export const PRIMARY = '#349ef4'
+export const PRIMARY = 'var(--color-primary-500)'
 
-export const PRIMARY_DARK = '#195698'
+export const PRIMARY_DARK = 'var(--color-primary-800)'
 
-export const GRID_STROKE = '#e1e5ea'
+export const GRID_STROKE = 'var(--color-neutral-200)'
 
-export const AXIS_TICK = { fill: '#5f6876', fontSize: 12 }
+export const AXIS_TICK = { fill: 'var(--color-neutral-500)', fontSize: 12 }
 
-export const AXIS_LINE = { stroke: '#cdd2da' }
+export const AXIS_LINE = { stroke: 'var(--color-neutral-300)' }
 
-export const TOOLTIP_STYLE = { borderRadius: 6, borderColor: '#e1e5ea', fontSize: 13 }
+export const TOOLTIP_STYLE = {
+  borderRadius: 6,
+  borderColor: 'var(--color-border)',
+  backgroundColor: 'var(--color-surface)',
+  color: 'var(--color-neutral-900)',
+  fontSize: 13,
+}
 
 export const BUCKET_MINUTES: Record<StatsPeriod, number> = { '24h': 15, '7d': 60, '30d': 360 }
 

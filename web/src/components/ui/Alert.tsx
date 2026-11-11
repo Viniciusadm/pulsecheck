@@ -3,8 +3,8 @@ import type { ReactNode } from 'react'
 type Tone = 'error' | 'success' | 'info'
 
 const toneClasses: Record<Tone, string> = {
-  error: 'border-status-down/30 bg-status-down-soft text-red-800',
-  success: 'border-status-up/30 bg-status-up-soft text-green-900',
+  error: 'border-status-down/30 bg-status-down-soft text-status-down-ink',
+  success: 'border-status-up/30 bg-status-up-soft text-status-up-ink',
   info: 'border-primary-200 bg-primary-50 text-primary-900',
 }
 

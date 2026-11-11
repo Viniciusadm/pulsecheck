@@ -11,6 +11,7 @@
     "require": {
         "php": "^8.3",
         "aws/aws-sdk-php": "^3.401",
+        "bacon/bacon-qr-code": "^3.1",
         "laravel/framework": "^13.17",
         "laravel/reverb": "dev-main#2fb770fbe7d20eed29a4bf7f9dc15172197f4c54 as 1.12.1",
         "laravel/sanctum": "^4.0",

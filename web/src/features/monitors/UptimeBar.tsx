@@ -5,7 +5,7 @@ export type UptimeBarDay = Pick<UptimeDay, 'date' | 'uptime_percentage'> & Parti
 import { t } from '../../i18n/index.ts'
 import { formatPercentage, formatShortDate } from '../../lib/format.ts'
 
-const NO_DATA_PATTERN = 'repeating-linear-gradient(135deg, #e1e5ea 0 3px, #f4f6f8 3px 6px)'
+const NO_DATA_PATTERN = 'repeating-linear-gradient(135deg, var(--color-neutral-200) 0 3px, var(--color-background) 3px 6px)'
 
 function dayClass(day: UptimeBarDay): string {
   if (day.uptime_percentage === null) {

@@ -7,6 +7,8 @@ import { AppLayout } from '../layouts/AppLayout.tsx'
 import { AuthLayout } from '../layouts/AuthLayout.tsx'
 import { PublicLayout } from '../layouts/PublicLayout.tsx'
 import {
+  AccountPage,
+  AuditLogPage,
   ChannelsPage,
   ForgotPasswordPage,
   LazyPage,
@@ -79,6 +81,8 @@ export const routes: RouteObject[] = [
               { path: '/teams/:id', element: <LazyPage><TeamEditPage /></LazyPage> },
               { path: '/users', element: <LazyPage><UsersPage /></LazyPage> },
               { path: '/settings', element: <LazyPage><SettingsPage /></LazyPage> },
+              { path: '/account', element: <LazyPage><AccountPage /></LazyPage> },
+              { path: '/audit-log', element: <LazyPage><AuditLogPage /></LazyPage> },
             ],
           },
         ],

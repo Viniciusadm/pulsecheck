@@ -12,6 +12,28 @@ function renderDialog(onClose: () => void, isBusy = false) {
 }
 
 describe('Dialog', () => {
+  it('focuses the field marked to receive focus and returns focus to the opener when closed', async () => {
+    const opener = document.createElement('button')
+    document.body.append(opener)
+    opener.focus()
+    const { rerender } = render(
+      <Dialog isOpen title="Confirm" onClose={() => {}}>
+        <input aria-label="Password" data-autofocus />
+      </Dialog>,
+    )
+
+    expect(screen.getByRole('textbox', { name: 'Password' })).toHaveFocus()
+
+    rerender(
+      <Dialog isOpen={false} title="Confirm" onClose={() => {}}>
+        <input aria-label="Password" data-autofocus />
+      </Dialog>,
+    )
+
+    expect(opener).toHaveFocus()
+    opener.remove()
+  })
+
   it('keeps focus inside when the parent re-renders with a new onClose', async () => {
     const { rerender } = render(renderDialog(() => {}))
     const input = screen.getByRole('textbox', { name: 'Name' })

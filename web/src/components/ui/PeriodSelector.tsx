@@ -18,7 +18,7 @@ export function PeriodSelector({ value, label, optionLabel, onChange }: PeriodSe
           type="button"
           aria-pressed={value === option}
           onClick={() => onChange(option)}
-          className={`rounded px-3 py-1.5 text-sm font-medium ${value === option ? 'bg-primary-700 text-white' : 'text-neutral-700 hover:bg-neutral-100'}`}
+          className={`rounded px-3 py-1.5 text-sm font-medium ${value === option ? 'bg-accent text-white' : 'text-neutral-700 hover:bg-neutral-100'}`}
         >
           {optionLabel(option)}
         </button>

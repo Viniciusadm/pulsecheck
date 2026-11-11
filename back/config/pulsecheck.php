@@ -26,6 +26,8 @@ return [
 
     'uptime_rollup_retention_days' => (int) env('PULSECHECK_UPTIME_ROLLUP_RETENTION_DAYS', 400),
 
+    'audit_log_retention_days' => (int) env('PULSECHECK_AUDIT_LOG_RETENTION_DAYS', 365),
+
     'failures_to_down' => (int) env('PULSECHECK_FAILURES_TO_DOWN', 2),
 
     'successes_to_up' => (int) env('PULSECHECK_SUCCESSES_TO_UP', 2),

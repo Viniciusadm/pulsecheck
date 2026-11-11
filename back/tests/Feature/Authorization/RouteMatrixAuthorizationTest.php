@@ -16,6 +16,7 @@ class RouteMatrixAuthorizationTest extends TestCase
         'POST api/auth/login',
         'POST api/auth/forgot-password',
         'POST api/auth/reset-password',
+        'POST api/auth/two-factor-challenge',
         'GET api/config',
         'POST api/setup',
         'GET api/heartbeat/{token}',

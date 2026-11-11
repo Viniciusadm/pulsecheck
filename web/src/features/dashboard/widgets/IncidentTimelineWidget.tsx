@@ -48,7 +48,7 @@ function TimelineChart({ buckets, bucketMinutes }: { buckets: IncidentTimelineBu
             />
             <YAxis width={32} allowDecimals={false} tick={AXIS_TICK} tickLine={false} axisLine={false} />
             <Tooltip
-              cursor={{ fill: '#eef0f3' }}
+              cursor={{ fill: 'var(--color-neutral-100)' }}
               labelFormatter={(value) => formatDateTime(String(value))}
               formatter={(value) => [value, t('dashboard.charts.incidents')]}
               contentStyle={TOOLTIP_STYLE}

@@ -62,7 +62,7 @@ function UptimeChart({ buckets, bucketMinutes }: { buckets: UptimeTrendBucket[];
               fillOpacity={0.1}
               connectNulls
               dot={false}
-              activeDot={{ r: 4, stroke: '#ffffff', strokeWidth: 2 }}
+              activeDot={{ r: 4, stroke: 'var(--color-surface)', strokeWidth: 2 }}
               isAnimationActive={false}
             />
           </AreaChart>

@@ -5,7 +5,13 @@ namespace App\Providers;
 use App\Mail\InstanceMailConfigurator;
 use App\Models\InstanceSettings;
 use App\Models\MailSettings;
+use App\Models\MaintenanceWindow;
+use App\Models\Monitor;
+use App\Models\NotificationChannel;
+use App\Models\StatusPage;
+use App\Models\Team;
 use App\Models\User;
+use App\Observers\AuditableObserver;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Mail\Factory as MailFactory;
@@ -42,6 +48,14 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRouteBindings();
         $this->configureGates();
         $this->configureInstanceMailer();
+        $this->configureAuditLog();
+    }
+
+    private function configureAuditLog(): void
+    {
+        foreach ([Monitor::class, NotificationChannel::class, User::class, Team::class, StatusPage::class, MaintenanceWindow::class, InstanceSettings::class, MailSettings::class] as $model) {
+            $model::observe(AuditableObserver::class);
+        }
     }
 
     private function configureInstanceMailer(): void
@@ -131,6 +145,12 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('public-status', fn (Request $request): Limit => Limit::perMinute(60)->by($request->ip()));
 
         RateLimiter::for('badges', fn (Request $request): Limit => Limit::perMinute(120)->by($request->ip()));
+
+        RateLimiter::for('two-factor', fn (Request $request): Limit => Limit::perMinute(5)->by($request->session()?->getId() ?: $request->ip()));
+
+        RateLimiter::for('account-writes', fn (Request $request): Limit => Limit::perMinute(10)->by((string) $request->user()?->id ?: $request->ip()));
+
+        RateLimiter::for('api', fn (Request $request): Limit => Limit::perMinute(600)->by((string) $request->user()?->id ?: $request->ip()));
 
         RateLimiter::for('dashboard-writes', fn (Request $request): Limit => Limit::perMinute(60)->by((string) $request->user()?->id ?: $request->ip()));
     }

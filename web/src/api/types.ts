@@ -7,6 +7,7 @@ export type User = {
   role: UserRole
   can_view_all_monitors: boolean
   team_ids: number[]
+  two_factor_enabled: boolean
   email_verified_at: string | null
   created_at: string
 }
@@ -503,4 +504,45 @@ export type SetupInput = {
   password: string
   password_confirmation: string
   token?: string
+}
+
+export type TwoFactorStatus = {
+  enabled: boolean
+  pending_confirmation: boolean
+  confirmed_at: string | null
+  recovery_codes_remaining: number
+}
+
+export type TwoFactorSetup = {
+  secret: string
+  otpauth_url: string
+  qr_code_svg: string
+}
+
+export type TokenAbility = 'read' | 'write'
+
+export type ApiToken = {
+  id: number
+  name: string
+  abilities: TokenAbility[]
+  last_used_at: string | null
+  expires_at: string | null
+  created_at: string
+}
+
+export type ApiTokenInput = {
+  name: string
+  abilities: TokenAbility[]
+  expires_in_days: number | null
+}
+
+export type AuditLogEntry = {
+  id: number
+  action: string
+  actor: { id: number | null; name: string | null } | null
+  subject: { type: string; id: number | null; label: string | null } | null
+  metadata: { fields?: string[]; abilities?: string[]; email?: string }
+  ip_address: string | null
+  user_agent: string | null
+  created_at: string
 }

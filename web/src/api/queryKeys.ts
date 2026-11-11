@@ -28,4 +28,7 @@ export const queryKeys = {
   teams: ['teams'] as const,
   team: (id: number) => ['teams', id] as const,
   mailSettings: ['mail-settings'] as const,
+  twoFactor: ['account', 'two-factor'] as const,
+  apiTokens: ['account', 'api-tokens'] as const,
+  auditLog: (page: number, subjectType?: string) => ['audit-log', page, subjectType ?? 'all'] as const,
 }
