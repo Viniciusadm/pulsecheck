@@ -28,7 +28,7 @@ class ShowSetupToken extends Command
             return self::SUCCESS;
         }
 
-        $this->components->info("Setup token: {$token}");
+        $this->line("Setup token: {$token}");
 
         return self::SUCCESS;
     }

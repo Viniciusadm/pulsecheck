@@ -146,7 +146,7 @@ class SetupTest extends TestCase
         $this->assertIsString($token);
         $this->assertSame(32, strlen($token));
         $this->fromSpa()->getJson('/api/config')->assertJsonPath('data.setup_token_required', true);
-        $this->artisan('pulsecheck:setup-token')->expectsOutputToContain($token)->assertSuccessful();
+        $this->artisan('pulsecheck:setup-token')->expectsOutput("Setup token: {$token}")->assertSuccessful();
 
         $this->fromSpa()->postJson('/api/setup', $this->validPayload(['token' => 'wrong']))
             ->assertUnprocessable()
