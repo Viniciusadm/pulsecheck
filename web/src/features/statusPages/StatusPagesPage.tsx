@@ -57,7 +57,7 @@ function StatusPageRow({ statusPage, canManage, onEdit }: { statusPage: StatusPa
   const { showToast } = useToast()
   const deleteMutation = useDeleteStatusPage(statusPage.id)
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
-  const publicUrl = `${window.location.origin}${statusPage.public_path}`
+  const publicUrl = statusPage.custom_domain ? statusPage.public_url : `${window.location.origin}${statusPage.public_path}`
 
   const copyLink = () => void navigator.clipboard?.writeText(publicUrl).then(() => showToast(t('statusPages.linkCopied')))
 
@@ -85,13 +85,13 @@ function StatusPageRow({ statusPage, canManage, onEdit }: { statusPage: StatusPa
           )}
         </div>
         <p className="text-xs text-neutral-500">
-          {statusPage.public_path} · {t('statusPages.monitorsCount', { count: statusPage.monitors.length + statusPage.hidden_monitors_count })}
+          {statusPage.custom_domain ?? statusPage.public_path} · {t('statusPages.monitorsCount', { count: statusPage.monitors.length + statusPage.hidden_monitors_count })}
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
         {statusPage.is_published && (
           <>
-            <a href={statusPage.public_path} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center px-3 text-sm font-medium text-primary-700 hover:underline">
+            <a href={statusPage.custom_domain ? statusPage.public_url : statusPage.public_path} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center px-3 text-sm font-medium text-primary-700 hover:underline">
               {t('statusPages.open')}
             </a>
             <Button variant="secondary" onClick={copyLink}>

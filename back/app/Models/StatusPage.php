@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(['name', 'slug', 'description', 'is_published', 'show_latency', 'show_incidents', 'uptime_days'])]
+#[Fillable(['name', 'slug', 'description', 'custom_domain', 'is_published', 'show_latency', 'show_incidents', 'uptime_days'])]
 class StatusPage extends Model
 {
     /** @use HasFactory<StatusPageFactory> */
@@ -37,6 +37,33 @@ class StatusPage extends Model
         return $this->belongsToMany(Monitor::class)
             ->withPivot('sort_order', 'display_name')
             ->orderByPivot('sort_order');
+    }
+
+    public static function forHost(string $host): ?self
+    {
+        $host = mb_strtolower(rtrim($host, '.'));
+
+        if ($host === '' || $host === self::applicationHost()) {
+            return null;
+        }
+
+        return static::query()->where('custom_domain', $host)->first();
+    }
+
+    public static function applicationHost(): string
+    {
+        return mb_strtolower((string) parse_url((string) config('app.url'), PHP_URL_HOST));
+    }
+
+    public function publicUrl(): string
+    {
+        if ($this->custom_domain === null) {
+            return rtrim((string) config('app.url'), '/')."/status/{$this->slug}";
+        }
+
+        $scheme = parse_url((string) config('app.url'), PHP_URL_SCHEME) ?: 'https';
+
+        return "{$scheme}://{$this->custom_domain}";
     }
 
     public function cacheKey(): string

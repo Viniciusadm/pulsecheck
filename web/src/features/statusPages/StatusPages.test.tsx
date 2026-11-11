@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as authApi from '../../api/auth.ts'
@@ -28,6 +28,8 @@ function makeStatusPage(overrides: Partial<StatusPage> = {}): StatusPage {
     show_incidents: true,
     uptime_days: 90,
     public_path: '/status/acme',
+    custom_domain: null,
+    public_url: 'http://localhost:3000/status/acme',
     monitors: [{ monitor_id: 7, name: 'Shop API', display_name: null, status: 'up' }],
     hidden_monitors_count: 0,
     team_ids: [],
@@ -118,5 +120,40 @@ describe('status pages', () => {
     renderApp('/status/missing')
 
     expect(await screen.findByText('This status page does not exist or is not published.')).toBeInTheDocument()
+  })
+
+  it('saves a custom domain and links to it', async () => {
+    vi.mocked(statusPagesApi.listStatusPages).mockResolvedValue([makeStatusPage()])
+    vi.mocked(statusPagesApi.updateStatusPage).mockResolvedValue(makeStatusPage({ custom_domain: 'status.acme.com', public_url: 'https://status.acme.com' }))
+    const user = userEvent.setup()
+    renderApp('/status-pages')
+
+    await user.click(await screen.findByRole('button', { name: 'Edit Acme status' }))
+    const dialog = await screen.findByRole('dialog')
+    await user.type(within(dialog).getByLabelText('Custom domain'), 'status.acme.com')
+    await user.click(within(dialog).getByRole('button', { name: /Save/ }))
+
+    await waitFor(() => expect(statusPagesApi.updateStatusPage).toHaveBeenCalledWith(1, expect.objectContaining({ custom_domain: 'status.acme.com' })))
+  })
+
+  it('links to the custom domain of a page', async () => {
+    vi.mocked(statusPagesApi.listStatusPages).mockResolvedValue([makeStatusPage({ custom_domain: 'status.acme.com', public_url: 'https://status.acme.com' })])
+    renderApp('/status-pages')
+
+    expect(await screen.findByText(/status\.acme\.com ·/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Open page' })).toHaveAttribute('href', 'https://status.acme.com')
+  })
+
+  it('serves only the status page on its custom domain', async () => {
+    vi.mocked(configApi.getAppConfig).mockResolvedValue(makeConfig({ status_page_domain: { slug: 'acme' } }))
+    vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(null)
+    vi.mocked(statusPagesApi.getPublicStatusPage).mockResolvedValue(publicPage)
+    const { router } = renderApp('/login')
+
+    expect(await screen.findByRole('heading', { name: 'Acme status' })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/')
+    expect(screen.queryByRole('heading', { name: 'Log in' })).not.toBeInTheDocument()
+    expect(statusPagesApi.getPublicStatusPage).toHaveBeenCalledWith('acme')
+    expect(document.title).toBe('Acme status')
   })
 })

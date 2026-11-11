@@ -46,6 +46,7 @@ class MonitorConfigTest extends TestCase
                         'timeout_default' => 10,
                     ],
                     'realtime' => null,
+                    'status_page_domain' => null,
                 ],
             ]);
     }

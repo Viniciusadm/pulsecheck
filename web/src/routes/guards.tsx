@@ -2,6 +2,8 @@ import { Navigate, Outlet, useLocation } from 'react-router'
 import { FullPageSpinner } from '../components/ui/FullPageSpinner.tsx'
 import { useAuth } from '../features/auth/AuthContext.ts'
 import { useAppConfig } from '../features/config/ConfigContext.ts'
+import { PublicLayout } from '../layouts/PublicLayout.tsx'
+import { LazyPage, PublicStatusPage } from './lazyPages.tsx'
 
 export function RequireSetup() {
   const { setup_required: isSetupRequired } = useAppConfig()
@@ -51,4 +53,25 @@ export function RedirectIfAuthenticated() {
   }
 
   return <Outlet />
+}
+
+export function ServeStatusPageDomain() {
+  const { status_page_domain: statusPageDomain } = useAppConfig()
+  const { pathname } = useLocation()
+
+  if (statusPageDomain === null) {
+    return <Outlet />
+  }
+
+  if (pathname !== '/') {
+    return <Navigate to="/" replace />
+  }
+
+  return (
+    <PublicLayout>
+      <LazyPage>
+        <PublicStatusPage slug={statusPageDomain.slug} />
+      </LazyPage>
+    </PublicLayout>
+  )
 }

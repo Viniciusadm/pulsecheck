@@ -536,6 +536,8 @@ export const en = {
       name: 'Name',
       slug: 'Address',
       slugHint: 'Lowercase letters, numbers and dashes. The page will be at /status/{slug}.',
+      customDomain: 'Custom domain',
+      customDomainHint: 'Optional, such as status.example.com. Point it to this server with a CNAME record to {host} and serve it over HTTPS with your reverse proxy. That domain shows only this page.',
       description: 'Description',
       publish: 'Published',
       publishHint: 'Anyone with the link can open the page. Monitor names are shown, so use public display names.',

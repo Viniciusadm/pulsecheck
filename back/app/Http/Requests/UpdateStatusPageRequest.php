@@ -19,4 +19,9 @@ class UpdateStatusPageRequest extends StoreStatusPageRequest
     {
         return parent::uniqueSlug()->ignore($this->route('statusPage'));
     }
+
+    protected function uniqueCustomDomain(): Unique
+    {
+        return parent::uniqueCustomDomain()->ignore($this->route('statusPage'));
+    }
 }

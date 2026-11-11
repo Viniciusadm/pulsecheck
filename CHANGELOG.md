@@ -16,7 +16,7 @@ All notable changes are listed here. Versions follow [Semantic Versioning](https
 - **Search** and **bulk pause, resume and delete** on the monitor list.
 - Keyword, TCP port, SSL certificate and heartbeat monitors; degraded state by response time; advanced HTTP options.
 - Incident acknowledgement, notes and repeated alerts; one-off and weekly maintenance windows.
-- Public status pages and uptime badges.
+- Public status pages and uptime badges, with an optional custom domain per page that serves only that page.
 - Per-channel events, quiet hours, message format and live preview; mail service configured from the panel.
 - Teams with per-team monitors and channels, roles (administrator, manager, member) and a first-run setup wizard.
 - Customizable dashboard and real-time updates over WebSockets (Reverb).

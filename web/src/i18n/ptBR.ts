@@ -538,6 +538,8 @@ export const ptBR = {
       name: 'Nome',
       slug: 'Endereço',
       slugHint: 'Letras minúsculas, números e hífens. A página ficará em /status/{slug}.',
+      customDomain: 'Domínio próprio',
+      customDomainHint: 'Opcional, como status.exemplo.com. Aponte-o para este servidor com um registro CNAME para {host} e sirva-o por HTTPS no seu proxy reverso. Esse domínio mostra só esta página.',
       description: 'Descrição',
       publish: 'Publicada',
       publishHint: 'Qualquer pessoa com o link consegue abrir a página. Os nomes dos monitores aparecem, então use nomes públicos.',

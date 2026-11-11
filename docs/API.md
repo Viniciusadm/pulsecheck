@@ -159,6 +159,8 @@ Common fields: `name`, `enabled`, `is_default`, `events`, `quiet_hours_start`, `
 | `GET` · `PATCH` · `DELETE /api/status-pages/{id}` | Read, change or delete one. |
 | `GET /api/public/status-pages/{slug}` | Public data of a published page, no authentication. |
 
+Fields: `name`, `slug`, `description`, `custom_domain` (a host name such as `status.example.com`, or `null`), `is_published`, `show_latency`, `show_incidents`, `uptime_days` (`30`, `60` or `90`), `monitors` (`[{"monitor_id": 1, "display_name": "API"}]`, in display order) and `team_ids`. Responses include `public_url`, the address where the page is published.
+
 ## Dashboard and metrics
 
 | Method and path | Description |

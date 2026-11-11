@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
+import { useEffect } from 'react'
 import { useParams } from 'react-router'
 import { getPublicStatusPage } from '../../api/statusPages.ts'
 import { queryKeys } from '../../api/queryKeys.ts'
@@ -33,8 +34,9 @@ const overallClasses: Record<PublicOverallStatus, string> = {
   unknown: 'border-border bg-neutral-50 text-neutral-700',
 }
 
-export function PublicStatusPage() {
-  const slug = useParams().slug ?? ''
+export function PublicStatusPage({ slug: slugProp }: { slug?: string }) {
+  const params = useParams()
+  const slug = slugProp ?? params.slug ?? ''
   const page = useQuery({
     queryKey: queryKeys.publicStatusPage(slug),
     queryFn: () => getPublicStatusPage(slug),
@@ -57,6 +59,10 @@ export function PublicStatusPage() {
 }
 
 function StatusPageContent({ page }: { page: PublicStatusPageData }) {
+  useEffect(() => {
+    document.title = page.name
+  }, [page.name])
+
   const monitorNames = new Map(page.monitors.map((monitor) => [monitor.key, monitor.name]))
 
   return (

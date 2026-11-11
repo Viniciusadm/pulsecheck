@@ -10,8 +10,8 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      '/api': { target: apiTarget, changeOrigin: true },
-      '/sanctum': { target: apiTarget, changeOrigin: true },
+      '/api': { target: apiTarget },
+      '/sanctum': { target: apiTarget },
       '/app': { target: realtimeTarget, ws: true },
     },
   },

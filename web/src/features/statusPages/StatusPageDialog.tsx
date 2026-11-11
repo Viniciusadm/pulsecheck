@@ -51,6 +51,7 @@ export function StatusPageDialog({ statusPage, onClose }: { statusPage?: StatusP
     name: statusPage?.name ?? '',
     slug: statusPage?.slug ?? '',
     description: statusPage?.description ?? '',
+    customDomain: statusPage?.custom_domain ?? '',
     isPublished: statusPage?.is_published ?? false,
     showLatency: statusPage?.show_latency ?? false,
     showIncidents: statusPage?.show_incidents ?? true,
@@ -88,6 +89,7 @@ export function StatusPageDialog({ statusPage, onClose }: { statusPage?: StatusP
       name: form.name.trim(),
       slug: form.slug.trim(),
       description: form.description.trim() === '' ? null : form.description.trim(),
+      custom_domain: form.customDomain.trim() === '' ? null : form.customDomain.trim(),
       is_published: form.isPublished,
       show_latency: form.showLatency,
       show_incidents: form.showIncidents,
@@ -140,6 +142,19 @@ export function StatusPageDialog({ statusPage, onClose }: { statusPage?: StatusP
           value={form.description}
           onChange={(event) => setForm({ ...form, description: event.target.value })}
           error={errors.description}
+        />
+        <TextField
+          label={t('statusPages.form.customDomain')}
+          name="custom_domain"
+          inputMode="url"
+          autoComplete="off"
+          spellCheck={false}
+          maxLength={253}
+          placeholder="status.example.com"
+          hint={t('statusPages.form.customDomainHint', { host: window.location.host })}
+          value={form.customDomain}
+          onChange={(event) => setForm({ ...form, customDomain: event.target.value })}
+          error={errors.custom_domain}
         />
         <div className="flex flex-col gap-2">
           <label className="inline-flex items-center gap-2 text-sm font-medium text-neutral-800">

@@ -24,7 +24,7 @@ Self-hosted uptime monitoring for one team or organization per deploy: PulseChec
 - **Languages**: the interface, alerts and validation messages written by PulseCheck follow the instance language (English or Portuguese).
 - **Check history** with date filters and pagination.
 - **Monitor forms on their own pages** (`/monitors/new`, `/monitors/{id}/edit`), with the form grouped in sections.
-- **Public status pages** at `/status/{slug}`, without login: overall status, each chosen monitor with its uptime for the last 30, 60 or 90 days, optionally the average response time and the incidents of the last 14 days. Monitors can get a public display name; URLs, error details and incident causes are never shown. Pages belong to teams like monitors, start as drafts and are cached for 60 seconds.
+- **Public status pages** at `/status/{slug}`, without login: overall status, each chosen monitor with its uptime for the last 30, 60 or 90 days, optionally the average response time and the incidents of the last 14 days. Monitors can get a public display name; URLs, error details and incident causes are never shown. Pages belong to teams like monitors, start as drafts and are cached for 60 seconds. Each page can also have its **own domain** (`status.yourcompany.com`), where it opens at the root and nothing else of PulseCheck is reachable; see [Status pages on their own domain](#status-pages-on-their-own-domain).
 - **Uptime badges**: per-monitor SVG images (`/api/public/badges/{token}/status.svg` and `uptime.svg?days=7|30|90`) for a README or an internal page. The token is random, not the monitor id, and can be regenerated or turned off.
 - **Notification channels** on down and recovery: Slack, Microsoft Teams, Discord, Google Chat, Telegram, PagerDuty (incidents open and resolve on their own), Pushover, ntfy (ntfy.sh or self-hosted), email and a generic JSON webhook for anything else. Each channel has its own page where you choose which events it receives, set quiet hours, pick a detailed or compact message, mention `@here`/`@channel` on Slack or a role on Discord, send Telegram messages silently and see a live preview of the alert. Each monitor picks its channels; every channel has a test button, and secrets (tokens, webhook URLs, headers) are stored encrypted and never shown again.
 - **Email service from the panel**: SMTP, Mailgun, Postmark, Resend or Amazon SES configured under **Settings › Email**, with a test email. Credentials are stored encrypted and take priority over the `MAIL_*` variables.
@@ -332,6 +332,24 @@ Webhook payload (version 1). `event` is `monitor.down`, `monitor.still_down` (a 
 ```
 
 `severity` is `critical` for `monitor.down` and `monitor.still_down`, `warning` for `monitor.degraded`, `resolved` for `monitor.recovered`, `monitor.degradation_resolved` and `monitor.incident_closed`, and `info` for `test`. `incident.kind` is `outage` or `degradation`. On recovery or closing, `resolved_at` and `duration_seconds` are filled.
+
+## Status pages on their own domain
+
+A status page normally lives at `APP_URL/status/{slug}`. To serve it at the root of its own domain, such as `https://status.yourcompany.com`, while the panel stays at `APP_URL`:
+
+1. In the page's settings, fill in **Custom domain** with `status.yourcompany.com`.
+2. Create a DNS `CNAME` record from `status.yourcompany.com` to the host of `APP_URL` (or an `A`/`AAAA` record to the server's address).
+3. Serve the new domain over HTTPS with the same reverse proxy that serves `APP_URL`, passing the original `Host` header. With Caddy, which also obtains the certificates:
+
+   ```caddy
+   monitor.yourcompany.com, status.yourcompany.com, status.client.com {
+       reverse_proxy localhost:80
+   }
+   ```
+
+   With Traefik or Nginx, add the domain to the same router or `server_name` and keep `Host` (Nginx: `proxy_set_header Host $host;`). If the proxy rewrites `Host` and sends `X-Forwarded-Host` instead, set `TRUSTED_PROXIES`.
+
+On that domain, only the page itself, its data and uptime badges answer: the login, the panel and every other API endpoint return 404, and any other path redirects to the page. A domain can belong to one page only and cannot be the host of `APP_URL`. Each page can have its own domain, so one instance can serve status pages for several products or clients. Heartbeat URLs and links in alerts keep using `APP_URL`.
 
 ## API and Prometheus
 

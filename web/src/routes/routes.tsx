@@ -26,68 +26,73 @@ import {
   TeamsPage,
   UsersPage,
 } from './lazyPages.tsx'
-import { RedirectIfAuthenticated, RedirectIfSetupDone, RequireAuth, RequireSetup } from './guards.tsx'
+import { RedirectIfAuthenticated, RedirectIfSetupDone, RequireAuth, RequireSetup, ServeStatusPageDomain } from './guards.tsx'
 import { NotFoundPage } from './NotFoundPage.tsx'
 
 export const routes: RouteObject[] = [
   {
-    element: <RedirectIfSetupDone />,
+    element: <ServeStatusPageDomain />,
     children: [
       {
-        element: <AuthLayout />,
-        children: [{ path: '/setup', element: <LazyPage><SetupPage /></LazyPage> }],
-      },
-    ],
-  },
-  {
-    element: <RequireSetup />,
-    children: [
-      {
-        element: <AuthLayout />,
+        element: <RedirectIfSetupDone />,
         children: [
           {
-            element: <RedirectIfAuthenticated />,
-            children: [
-              { path: '/login', element: <LazyPage><LoginPage /></LazyPage> },
-              { path: '/forgot-password', element: <LazyPage><ForgotPasswordPage /></LazyPage> },
-            ],
-          },
-          { path: '/reset-password', element: <LazyPage><ResetPasswordPage /></LazyPage> },
-        ],
-      },
-      {
-        element: <PublicLayout />,
-        children: [{ path: '/status/:slug', element: <LazyPage><PublicStatusPage /></LazyPage> }],
-      },
-      {
-        element: <RequireAuth />,
-        children: [
-          {
-            element: <AppLayout />,
-            children: [
-              { path: '/', element: <Navigate to="/dashboard" replace /> },
-              { path: '/dashboard', element: <DashboardPage /> },
-              { path: '/monitors', element: <MonitorsPage /> },
-              { path: '/monitors/new', element: <MonitorCreatePage /> },
-              { path: '/monitors/:id', element: <MonitorDetailPage /> },
-              { path: '/monitors/:id/edit', element: <MonitorEditPage /> },
-              { path: '/channels', element: <LazyPage><ChannelsPage /></LazyPage> },
-              { path: '/channels/new', element: <LazyPage><NotificationChannelCreatePage /></LazyPage> },
-              { path: '/channels/:id', element: <LazyPage><NotificationChannelEditPage /></LazyPage> },
-              { path: '/maintenance', element: <LazyPage><MaintenancePage /></LazyPage> },
-              { path: '/status-pages', element: <LazyPage><StatusPagesPage /></LazyPage> },
-              { path: '/teams', element: <LazyPage><TeamsPage /></LazyPage> },
-              { path: '/teams/new', element: <LazyPage><TeamCreatePage /></LazyPage> },
-              { path: '/teams/:id', element: <LazyPage><TeamEditPage /></LazyPage> },
-              { path: '/users', element: <LazyPage><UsersPage /></LazyPage> },
-              { path: '/settings', element: <LazyPage><SettingsPage /></LazyPage> },
-              { path: '/account', element: <LazyPage><AccountPage /></LazyPage> },
-              { path: '/audit-log', element: <LazyPage><AuditLogPage /></LazyPage> },
-            ],
+            element: <AuthLayout />,
+            children: [{ path: '/setup', element: <LazyPage><SetupPage /></LazyPage> }],
           },
         ],
       },
-      { path: '*', element: <NotFoundPage /> },
+      {
+        element: <RequireSetup />,
+        children: [
+          {
+            element: <AuthLayout />,
+            children: [
+              {
+                element: <RedirectIfAuthenticated />,
+                children: [
+                  { path: '/login', element: <LazyPage><LoginPage /></LazyPage> },
+                  { path: '/forgot-password', element: <LazyPage><ForgotPasswordPage /></LazyPage> },
+                ],
+              },
+              { path: '/reset-password', element: <LazyPage><ResetPasswordPage /></LazyPage> },
+            ],
+          },
+          {
+            element: <PublicLayout />,
+            children: [{ path: '/status/:slug', element: <LazyPage><PublicStatusPage /></LazyPage> }],
+          },
+          {
+            element: <RequireAuth />,
+            children: [
+              {
+                element: <AppLayout />,
+                children: [
+                  { path: '/', element: <Navigate to="/dashboard" replace /> },
+                  { path: '/dashboard', element: <DashboardPage /> },
+                  { path: '/monitors', element: <MonitorsPage /> },
+                  { path: '/monitors/new', element: <MonitorCreatePage /> },
+                  { path: '/monitors/:id', element: <MonitorDetailPage /> },
+                  { path: '/monitors/:id/edit', element: <MonitorEditPage /> },
+                  { path: '/channels', element: <LazyPage><ChannelsPage /></LazyPage> },
+                  { path: '/channels/new', element: <LazyPage><NotificationChannelCreatePage /></LazyPage> },
+                  { path: '/channels/:id', element: <LazyPage><NotificationChannelEditPage /></LazyPage> },
+                  { path: '/maintenance', element: <LazyPage><MaintenancePage /></LazyPage> },
+                  { path: '/status-pages', element: <LazyPage><StatusPagesPage /></LazyPage> },
+                  { path: '/teams', element: <LazyPage><TeamsPage /></LazyPage> },
+                  { path: '/teams/new', element: <LazyPage><TeamCreatePage /></LazyPage> },
+                  { path: '/teams/:id', element: <LazyPage><TeamEditPage /></LazyPage> },
+                  { path: '/users', element: <LazyPage><UsersPage /></LazyPage> },
+                  { path: '/settings', element: <LazyPage><SettingsPage /></LazyPage> },
+                  { path: '/account', element: <LazyPage><AccountPage /></LazyPage> },
+                  { path: '/audit-log', element: <LazyPage><AuditLogPage /></LazyPage> },
+                ],
+              },
+            ],
+          },
+          { path: '*', element: <NotFoundPage /> },
+        ],
+      },
     ],
   },
 ]

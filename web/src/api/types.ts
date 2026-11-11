@@ -190,6 +190,8 @@ export type StatusPage = {
   show_incidents: boolean
   uptime_days: 30 | 60 | 90
   public_path: string
+  custom_domain: string | null
+  public_url: string
   monitors: StatusPageMonitor[]
   hidden_monitors_count: number
   team_ids: number[]
@@ -201,6 +203,7 @@ export type StatusPageInput = {
   name: string
   slug: string
   description: string | null
+  custom_domain: string | null
   is_published: boolean
   show_latency: boolean
   show_incidents: boolean
@@ -417,6 +420,7 @@ export type AppConfig = {
     timeout_default: number
   }
   realtime: { key: string } | null
+  status_page_domain: { slug: string } | null
 }
 
 export type NotificationChannelType = 'telegram' | 'webhook' | 'slack' | 'discord' | 'email' | 'microsoft_teams' | 'google_chat' | 'ntfy' | 'pushover' | 'pagerduty'

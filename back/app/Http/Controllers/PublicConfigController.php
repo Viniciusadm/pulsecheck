@@ -3,13 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\InstanceSettings;
+use App\Models\StatusPage;
 use App\Support\SetupToken;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class PublicConfigController extends Controller
 {
-    public function __invoke(): JsonResponse
+    public function __invoke(Request $request): JsonResponse
     {
+        $statusPage = $request->attributes->get(StatusPage::class);
+
         return response()->json([
             'data' => [
                 'setup_required' => InstanceSettings::current() === null,
@@ -33,6 +37,7 @@ class PublicConfigController extends Controller
                 'realtime' => config('broadcasting.default') === 'reverb'
                     ? ['key' => config('broadcasting.connections.reverb.key')]
                     : null,
+                'status_page_domain' => $statusPage instanceof StatusPage ? ['slug' => $statusPage->slug] : null,
             ],
         ]);
     }

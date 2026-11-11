@@ -23,6 +23,8 @@ class StatusPageResource extends JsonResource
             'show_incidents' => $this->show_incidents,
             'uptime_days' => $this->uptime_days,
             'public_path' => "/status/{$this->slug}",
+            'custom_domain' => $this->custom_domain,
+            'public_url' => $this->publicUrl(),
             'monitors' => $visibleMonitors->map(fn (Monitor $monitor) => [
                 'monitor_id' => $monitor->id,
                 'name' => $monitor->name,
