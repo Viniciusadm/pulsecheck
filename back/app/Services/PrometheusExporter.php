@@ -21,7 +21,7 @@ class PrometheusExporter
         $openIncidents = Incident::query()->whereIn('monitor_id', $monitorIds)->whereNull('resolved_at')->pluck('monitor_id')->flip();
 
         $metrics = [
-            $this->family('pulsecheck_monitor_up', 'gauge', 'Whether the monitor is up (1), degraded counts as up, or down (0). Absent while pending or paused.', $monitors
+            $this->family('pulsecheck_monitor_up', 'gauge', '1 when the monitor is up or degraded, 0 when it is down. Absent while pending or paused.', $monitors
                 ->filter(fn (Monitor $monitor) => ! $monitor->is_paused && $monitor->status !== MonitorStatus::Pending)
                 ->map(fn (Monitor $monitor) => [$this->labels($monitor), $monitor->status === MonitorStatus::Down ? 0 : 1])),
             $this->family('pulsecheck_monitor_status', 'gauge', 'Current status of the monitor, one series per possible status.', $monitors->flatMap(

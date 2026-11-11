@@ -1,6 +1,6 @@
 # PulseCheck
 
-Self-hosted uptime monitoring for one team or organization per deploy: PulseCheck checks your websites and APIs every few minutes, records response times and incidents, and alerts you on Telegram, Slack, Discord, email or any webhook when something goes down and when it comes back.
+Self-hosted uptime monitoring for one team or organization per deploy: PulseCheck checks your websites, APIs, ports, certificates and cron jobs every few minutes, records response times and incidents, and alerts you on Slack, Microsoft Teams, Discord, Google Chat, Telegram, PagerDuty, Pushover, ntfy, email or any webhook when something goes down and when it comes back.
 
 ![Dashboard with the status summary, uptime, status distribution, response time and slowest monitors charts](screenshots/dashboard.png)
 
@@ -26,10 +26,16 @@ Self-hosted uptime monitoring for one team or organization per deploy: PulseChec
 - **Monitor forms on their own pages** (`/monitors/new`, `/monitors/{id}/edit`), with the form grouped in sections.
 - **Public status pages** at `/status/{slug}`, without login: overall status, each chosen monitor with its uptime for the last 30, 60 or 90 days, optionally the average response time and the incidents of the last 14 days. Monitors can get a public display name; URLs, error details and incident causes are never shown. Pages belong to teams like monitors, start as drafts and are cached for 60 seconds.
 - **Uptime badges**: per-monitor SVG images (`/api/public/badges/{token}/status.svg` and `uptime.svg?days=7|30|90`) for a README or an internal page. The token is random, not the monitor id, and can be regenerated or turned off.
-- **Notification channels** on down and recovery: Telegram, Slack, Discord, email and a generic JSON webhook for anything else. Each channel has its own page where you choose which events it receives, set quiet hours, pick a detailed or compact message, mention `@here`/`@channel` on Slack or a role on Discord, send Telegram messages silently and see a live preview of the alert. Each monitor picks its channels; every channel has a test button, and secrets (tokens, webhook URLs, headers) are stored encrypted and never shown again.
+- **Notification channels** on down and recovery: Slack, Microsoft Teams, Discord, Google Chat, Telegram, PagerDuty (incidents open and resolve on their own), Pushover, ntfy (ntfy.sh or self-hosted), email and a generic JSON webhook for anything else. Each channel has its own page where you choose which events it receives, set quiet hours, pick a detailed or compact message, mention `@here`/`@channel` on Slack or a role on Discord, send Telegram messages silently and see a live preview of the alert. Each monitor picks its channels; every channel has a test button, and secrets (tokens, webhook URLs, headers) are stored encrypted and never shown again.
 - **Email service from the panel**: SMTP, Mailgun, Postmark, Resend or Amazon SES configured under **Settings › Email**, with a test email. Credentials are stored encrypted and take priority over the `MAIL_*` variables.
 - **One instance per organization**: the first visit opens a setup wizard (instance name, time zone, language and the first administrator). Monitors and notification channels belong to teams, and each person sees only the teams they were given.
 - **Teams, users and roles**: administrators manage teams and accounts on the **Teams** and **Users** pages. Each team has its own page to choose its people and monitors; each account gets a role (`admin`, `manager` or `member`) and teams, or access to all monitors. Managers create and edit the monitors and channels of their teams; members only view them. There is no public sign-up. Login and password reset for everyone.
+- **Search and bulk actions**: find monitors by name or address and pause, resume or delete many at once.
+- **Your account**: change your name, email and password (other sessions are logged out) and pick a light, dark or system theme.
+- **Two-factor authentication** with any authenticator app (TOTP), one-time recovery codes and protection against code reuse. Administrators can reset it for someone who lost their phone.
+- **REST API with personal tokens**: everything in the interface is available to scripts and CI with read-only or read-and-write tokens that can expire. See the [API reference](docs/API.md).
+- **Prometheus endpoint** (`/api/metrics`) with status, response time, 24-hour uptime, certificate expiry and open incidents per monitor, ready for Grafana and Alertmanager.
+- **Audit log**: who created, changed or deleted monitors, channels, status pages, maintenance windows, teams, users and settings, plus logins, failed logins and security changes, with filters. Kept for a year by default.
 - **SSRF protection**: monitors cannot reach private networks, cloud metadata endpoints or other internal addresses, including through redirects or DNS tricks.
 - **Single `docker compose up`** on any Linux server; Redis is optional.
 
@@ -136,6 +142,7 @@ All variables live in the `.env` file next to `docker-compose.yml` (template: [`
 | `PULSECHECK_GENERATE_SETUP_TOKEN` | no | `true` | Generate a setup token when `PULSECHECK_SETUP_TOKEN` is empty. Set to `false` only on a private network. |
 | `PULSECHECK_HISTORY_RETENTION_DAYS` | no | `30` | Check results older than this are deleted daily. Incidents are kept. |
 | `PULSECHECK_UPTIME_ROLLUP_RETENTION_DAYS` | no | `400` | Daily uptime totals older than this are deleted. They keep the daily uptime bar filled after check results are deleted. |
+| `PULSECHECK_AUDIT_LOG_RETENTION_DAYS` | no | `365` | Audit log entries older than this are deleted daily. |
 | `PULSECHECK_ALLOW_PRIVATE_TARGETS` | no | `false` | Allow private/internal targets. Read [Security](#security) first. |
 | `APP_IMAGE` / `WEB_IMAGE` | no | `pulsecheck-app:latest` / `pulsecheck-web:latest` | Image names; point them to prebuilt images to skip local builds. |
 
@@ -285,10 +292,15 @@ Every channel also has delivery preferences:
 | Telegram | Bot token, chat ID, optional silent delivery | Plain-text message through the Bot API. Silent messages arrive without sound. |
 | Slack | Incoming webhook URL (`https://hooks.slack.com/…`), optional mention | Block Kit message. Critical alerts can mention `@here` or `@channel`. |
 | Discord | Webhook URL (`https://discord.com/api/webhooks/…`), optional role ID | Colored embed. Critical alerts can mention one role; every other mention is disabled. |
+| Microsoft Teams | Workflows webhook URL | Adaptive Card. Create it in the channel menu → Workflows → “Post to a channel when a webhook request is received”. |
+| Google Chat | Space webhook URL (`https://chat.googleapis.com/…`) | Formatted text message. |
+| PagerDuty | Events API v2 integration key | Down and degraded alerts trigger an incident; recovery, resolved degradation and closed incidents resolve it (same `dedup_key` per incident). The test message triggers and resolves a test event. |
+| Pushover | User key, application token, optional device | High priority for down alerts and reminders. |
+| ntfy | Topic, optional server and access token | Priority 5 for critical alerts. Works with ntfy.sh or a self-hosted server; on ntfy.sh the topic acts as a password. |
 | Email | Address | Sent with the mail service from **Settings › Email**, or `MAIL_*` when none is set. |
 | Webhook | URL, optional headers (up to 10) | JSON `POST` for any other service (PagerDuty, Opsgenie, n8n, Zapier, your own API…). |
 
-Slack, Discord and webhook deliveries go through the same SSRF guard as checks: private and internal addresses are refused, the connection is pinned to the validated IP and redirects are not followed. Webhook headers can carry credentials such as `Authorization`; `Host`, `Content-Type`, `Content-Length`, `Transfer-Encoding`, `Connection` and `User-Agent` are reserved.
+Every HTTP-based delivery (Slack, Teams, Discord, Google Chat, PagerDuty, Pushover, ntfy and webhooks) goes through the same SSRF guard as checks: private and internal addresses are refused, the connection is pinned to the validated IP and redirects are not followed. Webhook headers can carry credentials such as `Authorization`; `Host`, `Content-Type`, `Content-Length`, `Transfer-Encoding`, `Connection` and `User-Agent` are reserved.
 
 Webhook payload (version 1). `event` is `monitor.down`, `monitor.still_down` (a repeated alert), `monitor.recovered`, `monitor.degraded`, `monitor.degradation_resolved`, `monitor.incident_closed` (the monitor URL or request options changed while an incident was open, so it was closed without a recovery check) or `test` (with `monitor` and `incident` set to `null`); `monitor.type` is `http`, `keyword`, `tcp`, `ssl` or `heartbeat`; `monitor.host` never contains the URL path or query string (it is `host:port` for TCP and `Heartbeat` for heartbeat monitors); `instance.name` is the name chosen at setup. Times in `text` use the instance time zone, while the ISO fields are always UTC. Any 2xx response counts as delivered.
 
@@ -316,6 +328,16 @@ Webhook payload (version 1). `event` is `monitor.down`, `monitor.still_down` (a 
 ```
 
 `severity` is `critical` for `monitor.down` and `monitor.still_down`, `warning` for `monitor.degraded`, `resolved` for `monitor.recovered`, `monitor.degradation_resolved` and `monitor.incident_closed`, and `info` for `test`. `incident.kind` is `outage` or `degradation`. On recovery or closing, `resolved_at` and `duration_seconds` are filled.
+
+## API and Prometheus
+
+Create a token under **My account › API tokens** and call the API with `Authorization: Bearer <token>`. Tokens act with the role and teams of the person who created them, can be read-only or read-and-write, can expire, and start with `pulse_` so secret scanners recognize them.
+
+```sh
+curl -H "Authorization: Bearer $PULSECHECK_TOKEN" -H "Accept: application/json" https://status.example.com/api/monitors?status=down
+```
+
+Prometheus can scrape `https://status.example.com/api/metrics` with a read-only token. The [API reference](docs/API.md) lists every endpoint, the metrics and a scrape configuration.
 
 ## Uptime
 
@@ -358,11 +380,14 @@ What is **not** guaranteed:
 ### Data and access
 
 - Monitors and notification channels are visible only to administrators, users with access to all monitors, and members of the teams they belong to; items without a team are hidden from everyone else, and anything outside a user's scope answers 404. Real-time updates go to a per-user channel (`users.{id}.monitors`) and reach only users who can see the monitor. Managers and administrators can change monitors and channels; members are read-only and do not receive channel settings. Only administrators can manage teams, users and instance settings (administrators already see everything, so they are not team members); the last administrator cannot be demoted or deleted, and nobody can delete their own account.
+- Accounts can turn on two-factor authentication (TOTP, RFC 6238). Secrets are encrypted with `APP_KEY`, a code is accepted only once, recovery codes are stored hashed and work once, and a pending login expires after 5 minutes. Changing the password logs out every other session.
+- API tokens are stored hashed, can only do what their owner's role allows, need the write permission for anything but `GET`, and cannot manage passwords, two-factor authentication or other tokens.
+- The audit log records changes made by people (never the routine updates made by checks), logins, failed logins and security events with time, IP address and the names of changed fields. Values, including secrets, are never stored in it.
 - There is no public sign-up. The setup endpoint only works while the instance has not been set up, and requires a setup token (`PULSECHECK_SETUP_TOKEN` or a generated one).
 - Session cookies are `HttpOnly`, `SameSite=Lax` and `Secure` when `SESSION_SECURE_COOKIE=true`; state-changing requests require the CSRF token.
 - Notification channel settings and the mail service credentials are encrypted with `APP_KEY`. Secrets (Telegram bot token, Slack, Discord and generic webhook URLs, webhook headers) are never returned by the API or logged, and delivery errors are reported with generic messages.
 - Error messages stored for failed checks drop URL query strings and are truncated.
-- Rate limits (per minute): login 5 per email and IP; setup, forgot-password and reset-password 5 per IP; monitor, notification channel, incident, maintenance window and status page changes 30 per user; dashboard layout changes 60 per user; test notifications and test emails 5 per user; heartbeats 30 per token and IP; public status pages 60 and badges 120 per IP.
+- Rate limits (per minute): login 5 per email and IP; two-factor codes 5 per login attempt; setup, forgot-password and reset-password 5 per IP; account changes 10 per user; API requests 600 per user; monitor, notification channel, incident, maintenance window and status page changes 30 per user; dashboard layout changes 60 per user; test notifications and test emails 5 per user; heartbeats 30 per token and IP; public status pages 60 and badges 120 per IP.
 - Production passwords need at least 8 characters with mixed case and numbers, and are checked against known breaches.
 - Password reset links contain a token: Nginx does not write `/reset-password` requests to its access log, but the `log` mailer writes the emails to the container logs, so use SMTP in production.
 
@@ -399,6 +424,12 @@ docker compose exec app ls -ld storage bootstrap/cache
 
 ```sh
 docker compose logs queue | grep -i "notification delivery failed"
+```
+
+**Locked out by two-factor authentication.** Someone who lost both their phone and their recovery codes can ask an administrator to use *Reset 2FA* on the **Users** page. If the only administrator is locked out, reset it from the server:
+
+```sh
+docker compose exec app php artisan pulsecheck:reset-two-factor admin@example.com
 ```
 
 **Every monitor fails with "Blocked destination".** The server's DNS resolver is returning private addresses (split-horizon DNS, a filtering resolver, or monitoring internal hosts). Check what the container resolves:

@@ -1,0 +1,48 @@
+name: Bug report
+description: Something does not work as described in the README.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem. **Do not report security issues here**; follow [SECURITY.md](../blob/master/SECURITY.md) instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Create an HTTP monitor for …
+        2. …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: PulseCheck version
+      description: Image tag or commit (`git rev-parse --short HEAD`).
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How do you run it?
+      options:
+        - docker compose (docker-compose.yml)
+        - Hostinger (docker-compose.hostinger.yml)
+        - Local development
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: For example `docker compose logs --tail=100 app queue`. Remove tokens, webhook URLs and other secrets.
+      render: shell

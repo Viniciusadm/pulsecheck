@@ -11,7 +11,8 @@ Thanks for your interest in PulseCheck.
    cd web && npm run lint && npm run test && npm run build
    ```
 
-4. Write code, comments and UI text in English; UI strings go in `web/src/i18n/en.ts`.
-5. Explain notable design decisions in the pull request description.
+4. Write code and UI text in English. UI strings go in `web/src/i18n/en.ts` (and `ptBR.ts` for the Portuguese translation); backend messages use English sentences as keys with translations in `back/lang/pt-BR.json`.
+5. Prefer clear names over comments. Endpoints, configuration and behavior changes need the README or `docs/API.md` updated in the same pull request.
+6. Explain notable design decisions in the pull request description.
 
-Security problems should be reported privately; see [SECURITY.md](SECURITY.md).
+Security problems should be reported privately; see [SECURITY.md](SECURITY.md). Everyone taking part is expected to follow the [code of conduct](CODE_OF_CONDUCT.md).
