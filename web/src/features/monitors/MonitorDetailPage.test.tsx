@@ -104,6 +104,34 @@ describe('MonitorDetailPage', () => {
     expect(screen.getByLabelText('Oct 17: 100% (288 checks)')).toHaveClass('bg-status-up')
   })
 
+  it('reloads the monitor when opening the edit form even if the detail page just loaded it', async () => {
+    vi.mocked(monitorsApi.getMonitor).mockClear()
+    const user = userEvent.setup()
+    renderApp('/monitors/7')
+
+    await user.click(await screen.findByRole('button', { name: 'Edit' }))
+
+    expect(await screen.findByRole('form', { name: 'Edit monitor' })).toBeInTheDocument()
+    await waitFor(() => expect(monitorsApi.getMonitor).toHaveBeenCalledTimes(2))
+  })
+
+  it('reuses fresh monitor data when coming back to the detail page', async () => {
+    const { router } = renderApp('/monitors/7')
+
+    expect(await screen.findByRole('button', { name: 'Edit' })).toBeInTheDocument()
+    await waitFor(() => expect(monitorsApi.getMonitorStats).toHaveBeenCalled())
+    vi.mocked(monitorsApi.getMonitor).mockClear()
+    vi.mocked(monitorsApi.getMonitorStats).mockClear()
+
+    await router.navigate('/monitors')
+    await waitFor(() => expect(monitorsApi.listMonitors).toHaveBeenCalled())
+    await router.navigate('/monitors/7')
+
+    expect(await screen.findByRole('button', { name: 'Edit' })).toBeInTheDocument()
+    expect(monitorsApi.getMonitor).not.toHaveBeenCalled()
+    expect(monitorsApi.getMonitorStats).not.toHaveBeenCalled()
+  })
+
   it('edits the monitor from the detail page', async () => {
     vi.mocked(monitorsApi.updateMonitor).mockResolvedValue(makeMonitor({ interval_minutes: 10 }))
     const user = userEvent.setup()

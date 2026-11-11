@@ -65,6 +65,35 @@ describe('DashboardPage', () => {
     expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument()
   })
 
+  it('loads the summary once although the page and several widgets show it', async () => {
+    vi.mocked(dashboardApi.getDashboardSummary).mockClear()
+
+    renderApp('/dashboard')
+
+    expect(await screen.findByRole('region', { name: 'Status distribution' })).toBeInTheDocument()
+    expect(await screen.findByRole('region', { name: 'Status summary' })).toBeInTheDocument()
+    expect(dashboardApi.getDashboardSummary).toHaveBeenCalledTimes(1)
+  })
+
+  it('reuses fresh data when coming back to the dashboard', async () => {
+    const { router } = renderApp('/dashboard')
+
+    expect(await screen.findByRole('region', { name: 'Uptime' })).toBeInTheDocument()
+    await waitFor(() => expect(dashboardApi.getUptimeTrend).toHaveBeenCalled())
+    vi.mocked(dashboardApi.getUptimeTrend).mockClear()
+    vi.mocked(dashboardApi.getDashboardLayout).mockClear()
+    vi.mocked(dashboardApi.getDashboardSummary).mockClear()
+
+    await router.navigate('/monitors')
+    await waitFor(() => expect(monitorsApi.listMonitors).toHaveBeenCalled())
+    await router.navigate('/dashboard')
+
+    await screen.findByRole('region', { name: 'Uptime' })
+    expect(dashboardApi.getUptimeTrend).not.toHaveBeenCalled()
+    expect(dashboardApi.getDashboardLayout).not.toHaveBeenCalled()
+    expect(dashboardApi.getDashboardSummary).not.toHaveBeenCalled()
+  })
+
   it('renders every widget of the saved layout', async () => {
     renderApp('/dashboard')
 

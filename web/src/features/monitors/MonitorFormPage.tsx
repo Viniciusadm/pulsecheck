@@ -47,6 +47,7 @@ export function MonitorEditPage() {
     queryKey: queryKeys.monitor(monitorId),
     queryFn: () => getMonitor(monitorId),
     enabled: isValidId,
+    staleTime: 0,
   })
 
   if (!canManageResources(user)) {
