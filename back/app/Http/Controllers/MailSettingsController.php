@@ -7,8 +7,8 @@ use App\Http\Resources\MailSettingsResource;
 use App\Models\MailSettings;
 use App\Support\SecretMerger;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 class MailSettingsController extends Controller
 {

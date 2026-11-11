@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Monitors;
 
+use App\Actions\RecordCheckResult;
 use App\Enums\MonitorStatus;
 use App\Enums\MonitorType;
-use App\Actions\RecordCheckResult;
 use App\Events\MonitorChecked;
 use App\Jobs\RunMonitorCheck;
 use App\Models\Monitor;

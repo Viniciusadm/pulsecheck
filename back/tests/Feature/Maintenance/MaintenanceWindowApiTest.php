@@ -12,9 +12,9 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class MaintenanceWindowApiTest extends TestCase
