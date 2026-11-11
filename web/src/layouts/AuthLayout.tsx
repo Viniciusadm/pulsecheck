@@ -13,7 +13,7 @@ function CheckTicks() {
       {Array.from({ length: TICK_COUNT }, (_, index) => (
         <span
           key={index}
-          className={`w-1.5 origin-bottom rounded-sm ${FAILED_TICKS.has(index) ? 'h-6 bg-red-400' : 'h-16 bg-green-400'}`}
+          className={`w-1.5 origin-bottom rounded-sm ${FAILED_TICKS.has(index) ? 'h-6 bg-signal-down' : 'h-16 bg-signal-up'}`}
           style={{ animation: `tick-in 320ms ease-out ${index * 18}ms both` }}
         />
       ))}
@@ -30,7 +30,7 @@ export function AuthLayout() {
         <Logo className="text-white" />
         <div className="flex max-w-md flex-col gap-6">
           <CheckTicks />
-          <p className="text-2xl font-semibold leading-snug">{t('auth.tagline')}</p>
+          <p className="font-display text-[1.75rem] font-semibold leading-snug">{t('auth.tagline')}</p>
         </div>
       </aside>
       <main className="flex flex-col px-4 py-10 sm:px-8 lg:min-h-screen lg:justify-center lg:px-16">
@@ -48,7 +48,7 @@ function Logo({ className = '' }: { className?: string }) {
 
   return (
     <span className={`inline-flex items-center gap-2 text-lg font-bold ${className}`}>
-      <PulseIcon className="size-6 text-primary-500" />
+      <PulseIcon className="size-6 text-panel-signal" />
       {instanceName(config, t('app.name'))}
     </span>
   )

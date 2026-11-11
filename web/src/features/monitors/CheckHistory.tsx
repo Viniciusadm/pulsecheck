@@ -43,7 +43,7 @@ export function CheckHistory({ monitorId }: { monitorId: number }) {
 
   return (
     <section className="flex flex-col gap-3" aria-labelledby="check-history">
-      <h2 id="check-history" className="text-lg font-semibold text-neutral-900">
+      <h2 id="check-history" className="font-display text-lg font-semibold text-neutral-900">
         {t('monitors.checks.heading')}
       </h2>
 

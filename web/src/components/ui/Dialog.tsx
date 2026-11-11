@@ -75,7 +75,7 @@ export function Dialog({ isOpen, title, onClose, children, footer, isBusy = fals
         className="relative w-full max-w-md rounded-lg bg-surface p-6 shadow-lg focus:outline-none"
       >
         <div className="mb-4 flex items-start justify-between gap-4">
-          <h2 id={titleId} className="text-lg font-semibold text-neutral-900">
+          <h2 id={titleId} className="font-display text-lg font-semibold text-neutral-900">
             {title}
           </h2>
           <button

@@ -5,11 +5,11 @@ export type UptimeBarDay = Pick<UptimeDay, 'date' | 'uptime_percentage'> & Parti
 import { t } from '../../i18n/index.ts'
 import { formatPercentage, formatShortDate } from '../../lib/format.ts'
 
-const NO_DATA_PATTERN = 'repeating-linear-gradient(135deg, var(--color-neutral-200) 0 3px, var(--color-background) 3px 6px)'
+const NO_DATA_CLASS = 'border border-dashed border-neutral-300'
 
 function dayClass(day: UptimeBarDay): string {
   if (day.uptime_percentage === null) {
-    return (day.maintenance_checks ?? 0) > 0 ? 'bg-status-maintenance' : ''
+    return (day.maintenance_checks ?? 0) > 0 ? 'bg-status-maintenance' : NO_DATA_CLASS
   }
 
   if (day.uptime_percentage === 100) {
@@ -90,7 +90,6 @@ export function UptimeBar({ days, label }: { days: UptimeBarDay[]; label?: strin
             onBlur={() => setHighlightedIndex(null)}
             onMouseEnter={() => setHighlightedIndex(index)}
             className={`flex-1 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 ${dayClass(day)}`}
-            style={day.uptime_percentage === null && !day.maintenance_checks ? { backgroundImage: NO_DATA_PATTERN } : undefined}
           />
         ))}
       </ol>
@@ -111,7 +110,7 @@ export function UptimeBar({ days, label }: { days: UptimeBarDay[]; label?: strin
           {t('monitors.detail.legendLow')}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="size-3 rounded-sm" style={{ backgroundImage: NO_DATA_PATTERN }} aria-hidden="true" />
+          <span className={`size-3 rounded-sm ${NO_DATA_CLASS}`} aria-hidden="true" />
           {t('monitors.detail.legendNoData')}
         </span>
         {days.some((day) => day.uptime_percentage === null && (day.maintenance_checks ?? 0) > 0) && (

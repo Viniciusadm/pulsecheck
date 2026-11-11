@@ -2,6 +2,12 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/); each `vX.Y.Z` tag publishes `ghcr.io/viniciusadm/pulsecheck-app` and `pulsecheck-web` images.
 
+## 2.0.1 — 2026-11-11
+
+### Fixed
+
+- Health checks for the `queue` and `reverb` services, so `docker compose up --wait` succeeds. The 2.0.0 release images were never published because of this; 2.0.1 is the first published 2.x release.
+
 ## 2.0.0 — 2026-11-11
 
 Install 2.0.0 on a new database; upgrading a 1.0.0 database is not supported because accounts and monitors now belong to an organization and its teams.

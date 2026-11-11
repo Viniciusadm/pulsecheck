@@ -32,7 +32,7 @@ export function DashboardPage() {
   const summary = useQuery({ queryKey: queryKeys.summary, queryFn: getDashboardSummary, refetchInterval })
   const layout = useQuery({ queryKey: queryKeys.dashboardLayout, queryFn: getDashboardLayout })
 
-  const title = <h1 className="text-2xl font-semibold text-neutral-900">{t('dashboard.title')}</h1>
+  const title = <h1 className="page-title">{t('dashboard.title')}</h1>
 
   if (summary.isPending || layout.isPending) {
     return (

@@ -50,7 +50,7 @@ export function LoginPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold text-neutral-900">{t('auth.login.title')}</h1>
+      <h1 className="page-title">{t('auth.login.title')}</h1>
 
       {state?.notice && <Alert tone="success">{state.notice}</Alert>}
       {generalError && <Alert tone="error">{generalError}</Alert>}
@@ -116,7 +116,7 @@ function TwoFactorChallenge({ onCancel }: { onCancel: () => void }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold text-neutral-900">{t('auth.twoFactor.title')}</h1>
+        <h1 className="page-title">{t('auth.twoFactor.title')}</h1>
         <p className="text-neutral-600">{isUsingRecoveryCode ? t('auth.twoFactor.recoveryDescription') : t('auth.twoFactor.description')}</p>
       </div>
 

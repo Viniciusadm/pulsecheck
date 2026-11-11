@@ -15,7 +15,7 @@ const statusStyles: Record<DisplayStatus, { className: string; icon: ReactNode }
 
 export function Badge({ className = '', children }: { className?: string; children: ReactNode }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${className}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-sm px-2 py-0.5 text-xs font-semibold ${className}`}>
       {children}
     </span>
   )

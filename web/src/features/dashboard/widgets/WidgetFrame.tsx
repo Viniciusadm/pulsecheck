@@ -18,13 +18,13 @@ export function WidgetFrame({ title, isEditing, canDrag, onRemove, children }: W
   return (
     <section
       aria-labelledby={titleId}
-      className={`flex h-full flex-col overflow-hidden rounded-lg border bg-surface ${isEditing ? 'border-primary-300 shadow-sm' : 'border-border'}`}
+      className={`flex h-full flex-col overflow-hidden rounded-lg border bg-surface ${isEditing ? 'border-accent' : 'border-border'}`}
     >
       <header
         className={`flex min-h-11 items-center gap-2 border-b border-border px-4 py-2 ${isEditing && canDrag ? `${DRAG_HANDLE_CLASS} cursor-grab select-none active:cursor-grabbing` : ''}`}
       >
         {isEditing && canDrag && <GripIcon className="shrink-0 text-neutral-400" />}
-        <h2 id={titleId} className="min-w-0 flex-1 truncate font-semibold text-neutral-900">
+        <h2 id={titleId} className="min-w-0 flex-1 truncate font-display font-semibold text-neutral-900">
           {title}
         </h2>
         {isEditing && (

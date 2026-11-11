@@ -20,7 +20,7 @@ export function MonitorBadgeCard({ monitor }: { monitor: Monitor }) {
 
   return (
     <section className="flex flex-col gap-3" aria-labelledby="monitor-badge">
-      <h2 id="monitor-badge" className="text-lg font-semibold text-neutral-900">
+      <h2 id="monitor-badge" className="font-display text-lg font-semibold text-neutral-900">
         {t('monitors.detail.badge.title')}
       </h2>
       <Card className="flex flex-col gap-3 px-4 py-4">

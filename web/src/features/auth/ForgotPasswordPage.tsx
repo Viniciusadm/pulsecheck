@@ -26,7 +26,7 @@ export function ForgotPasswordPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold text-neutral-900">{t('auth.forgotPassword.title')}</h1>
+        <h1 className="page-title">{t('auth.forgotPassword.title')}</h1>
         {!mutation.isSuccess && <p className="text-neutral-600">{t('auth.forgotPassword.description')}</p>}
       </div>
 

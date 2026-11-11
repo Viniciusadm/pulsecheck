@@ -69,7 +69,7 @@ function ChannelFormLayout({ channel }: { channel?: NotificationChannel }) {
         <Link to="/channels" className="self-start text-sm font-medium text-primary-700 hover:underline">
           {t('settings.channels.page.back')}
         </Link>
-        <h1 className="text-2xl font-semibold text-neutral-900">
+        <h1 className="page-title">
           {channel ? t('settings.channels.form.editTitle', { name: channel.name }) : t('settings.channels.form.createTitle')}
         </h1>
       </div>

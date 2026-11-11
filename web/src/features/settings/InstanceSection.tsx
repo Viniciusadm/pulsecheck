@@ -42,7 +42,7 @@ export function InstanceSection() {
     <section aria-labelledby="instance-heading">
       <Card className="flex max-w-3xl flex-col gap-6 px-5 py-6 sm:px-6">
         <div className="flex max-w-prose flex-col gap-1">
-          <h2 id="instance-heading" className="text-lg font-semibold text-neutral-900">{t('settings.instance.heading')}</h2>
+          <h2 id="instance-heading" className="font-display text-lg font-semibold text-neutral-900">{t('settings.instance.heading')}</h2>
           <p className="text-neutral-600">{t('settings.instance.description')}</p>
         </div>
         <form onSubmit={handleSubmit} noValidate className="flex max-w-md flex-col gap-4">

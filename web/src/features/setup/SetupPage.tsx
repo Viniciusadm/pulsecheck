@@ -110,7 +110,7 @@ export function SetupPage() {
   if (isAlreadySetUp) {
     return (
       <div className="flex flex-col gap-6">
-        <h1 className="text-2xl font-semibold text-neutral-900">{t('setup.title')}</h1>
+        <h1 className="page-title">{t('setup.title')}</h1>
         <Alert tone="info">{t('setup.alreadyDone')}</Alert>
         <div>
           <Button onClick={() => leaveSetup()}>{t('setup.goToLogin')}</Button>
@@ -123,7 +123,7 @@ export function SetupPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
         <p className="text-sm font-medium text-primary-700">{t('setup.step', { current: step, total: TOTAL_STEPS })}</p>
-        <h1 className="text-2xl font-semibold text-neutral-900">{t('setup.title')}</h1>
+        <h1 className="page-title">{t('setup.title')}</h1>
       </div>
 
       {step === 1 && (
@@ -233,7 +233,7 @@ export function SetupPage() {
 function StepHeading({ title, description }: { title: string; description: string }) {
   return (
     <div className="flex flex-col gap-1">
-      <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>
+      <h2 className="font-display text-lg font-semibold text-neutral-900">{title}</h2>
       <p className="text-neutral-600">{description}</p>
     </div>
   )

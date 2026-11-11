@@ -18,8 +18,8 @@ export function RankedBars({ items }: { items: RankedBar[] }) {
             <span className="min-w-0 truncate text-neutral-800">{item.label}</span>
             <span className="shrink-0 tabular-nums text-neutral-600">{item.valueLabel}</span>
           </div>
-          <div className="h-2 rounded-full bg-neutral-100" aria-hidden="true">
-            <div className="h-2 rounded-full bg-primary-500" style={{ width: `${Math.max((item.value / largest) * 100, 2)}%` }} />
+          <div className="h-2 rounded-sm bg-neutral-100" aria-hidden="true">
+            <div className="h-2 rounded-sm bg-primary-500" style={{ width: `${Math.max((item.value / largest) * 100, 2)}%` }} />
           </div>
         </li>
       ))}

@@ -124,7 +124,7 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex min-w-0 flex-col gap-2">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl font-semibold text-neutral-900">{monitor.name}</h1>
+              <h1 className="page-title">{monitor.name}</h1>
               <StatusBadge status={displayStatus(monitor)} />
             </div>
             {monitor.url ? (
@@ -184,7 +184,7 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
 
       <section className="flex flex-col gap-4" aria-labelledby="monitor-metrics">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 id="monitor-metrics" className="text-lg font-semibold text-neutral-900">
+          <h2 id="monitor-metrics" className="font-display text-lg font-semibold text-neutral-900">
             {t('monitors.detail.latencyChart')}
           </h2>
           <PeriodSelector
@@ -211,7 +211,7 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
       </section>
 
       <section className="flex flex-col gap-3" aria-labelledby="daily-uptime">
-        <h2 id="daily-uptime" className="text-lg font-semibold text-neutral-900">
+        <h2 id="daily-uptime" className="font-display text-lg font-semibold text-neutral-900">
           {t('monitors.detail.dailyUptime')}
         </h2>
         {uptimeHistory.isPending && <Skeleton className="h-10" />}
@@ -220,7 +220,7 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
       </section>
 
       <section className="flex flex-col gap-3" aria-labelledby="monitor-incidents">
-        <h2 id="monitor-incidents" className="text-lg font-semibold text-neutral-900">
+        <h2 id="monitor-incidents" className="font-display text-lg font-semibold text-neutral-900">
           {t('monitors.incidents.heading')}
         </h2>
         {incidents.isPending && <Skeleton className="h-24" />}
@@ -253,10 +253,10 @@ function MonitorDetail({ monitor }: { monitor: Monitor }) {
 
 function StatsCards({ stats }: { stats: MonitorStats }) {
   return (
-    <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <div className="flex flex-col gap-1 rounded-lg border border-border bg-surface px-4 py-4">
+    <dl className="grid grid-cols-1 divide-y divide-border rounded-lg border border-border bg-surface sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+      <div className="flex flex-col gap-1 px-4 py-4">
         <dt className="text-sm font-medium text-neutral-600">{t('monitors.detail.uptime')}</dt>
-        <dd className="text-2xl font-semibold tabular-nums text-neutral-900">
+        <dd className="font-display text-2xl font-semibold tabular-nums text-neutral-900">
           {stats.uptime_percentage === null ? t('monitors.detail.noData') : formatPercentage(stats.uptime_percentage)}
         </dd>
         <dd className="text-xs text-neutral-500">
@@ -265,13 +265,13 @@ function StatsCards({ stats }: { stats: MonitorStats }) {
             : t('monitors.detail.checksSummary', { successful: stats.successful_checks, total: stats.total_checks })}
         </dd>
       </div>
-      <div className="flex flex-col gap-1 rounded-lg border border-border bg-surface px-4 py-4">
+      <div className="flex flex-col gap-1 px-4 py-4">
         <dt className="text-sm font-medium text-neutral-600">{t('monitors.detail.averageLatency')}</dt>
-        <dd className="text-2xl font-semibold tabular-nums text-neutral-900">{formatLatency(stats.average_latency_ms)}</dd>
+        <dd className="font-display text-2xl font-semibold tabular-nums text-neutral-900">{formatLatency(stats.average_latency_ms)}</dd>
       </div>
-      <div className="flex flex-col gap-1 rounded-lg border border-border bg-surface px-4 py-4">
+      <div className="flex flex-col gap-1 px-4 py-4">
         <dt className="text-sm font-medium text-neutral-600">{t('monitors.detail.p95Latency')}</dt>
-        <dd className="text-2xl font-semibold tabular-nums text-neutral-900">{formatLatency(stats.p95_latency_ms)}</dd>
+        <dd className="font-display text-2xl font-semibold tabular-nums text-neutral-900">{formatLatency(stats.p95_latency_ms)}</dd>
       </div>
     </dl>
   )

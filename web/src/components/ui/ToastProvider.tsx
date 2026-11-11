@@ -52,7 +52,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             role={toast.tone === 'error' ? 'alert' : 'status'}
             className="pointer-events-auto flex w-full items-start gap-3 rounded-md bg-toast px-4 py-3 text-sm text-white shadow-lg ring-1 ring-white/10"
           >
-            <span className={`mt-0.5 text-base ${toast.tone === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+            <span className={`mt-0.5 text-base ${toast.tone === 'success' ? 'text-signal-up' : 'text-signal-down'}`}>
               {toast.tone === 'success' ? <UpIcon /> : <DownIcon />}
             </span>
             <p className="flex-1">{toast.message}</p>

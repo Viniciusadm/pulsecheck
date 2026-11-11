@@ -87,7 +87,11 @@ services:
     depends_on: *app-dependencies
     stop_grace_period: 100s
     healthcheck:
-      disable: true
+      test: ["CMD-SHELL", "pgrep -f 'artisan queue:work' > /dev/null"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
     deploy:
       replicas: ${QUEUE_WORKERS:-2}
     restart: unless-stopped
@@ -99,7 +103,11 @@ services:
     environment: *app-environment
     depends_on: *app-dependencies
     healthcheck:
-      disable: true
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 8080) ? 0 : 1);"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
     restart: unless-stopped
     networks: [internal]
 

@@ -4,7 +4,7 @@ import { getUptimeTrend } from '../../../api/dashboard.ts'
 import { queryKeys } from '../../../api/queryKeys.ts'
 import type { UptimeTrendBucket } from '../../../api/types.ts'
 import { t } from '../../../i18n/index.ts'
-import { AXIS_LINE, AXIS_TICK, BUCKET_MINUTES, GRID_STROKE, PRIMARY, TOOLTIP_STYLE, bucketTickLabel } from '../../../lib/chart.ts'
+import { AXIS_LINE, AXIS_TICK, BUCKET_MINUTES, GRID_PROPS, PRIMARY, TOOLTIP_STYLE, bucketTickLabel } from '../../../lib/chart.ts'
 import { formatDateTime, formatPercentage } from '../../../lib/format.ts'
 import { EmptyChart, QueryContent } from './QueryContent.tsx'
 import { useRefreshInterval } from './refresh.ts'
@@ -32,13 +32,13 @@ function UptimeChart({ buckets, bucketMinutes }: { buckets: UptimeTrendBucket[];
   return (
     <div className="flex h-full flex-col gap-2">
       <p className="flex items-baseline gap-2">
-        <span className="text-2xl font-semibold tabular-nums text-neutral-900">{formatPercentage(uptime)}</span>
+        <span className="font-display text-2xl font-semibold tabular-nums text-neutral-900">{formatPercentage(uptime)}</span>
         <span className="text-xs text-neutral-500">{t('dashboard.charts.uptimeInPeriod')}</span>
       </p>
       <div className="min-h-0 flex-1" role="img" aria-label={t('dashboard.charts.uptimeChart', { value: formatPercentage(uptime) })}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={buckets} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid stroke={GRID_STROKE} vertical={false} />
+            <CartesianGrid {...GRID_PROPS} />
             <XAxis
               dataKey="bucket_start"
               tickFormatter={(value: string) => bucketTickLabel(value, bucketMinutes)}

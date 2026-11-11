@@ -4,7 +4,7 @@ import { getLatencyTrend } from '../../../api/dashboard.ts'
 import { queryKeys } from '../../../api/queryKeys.ts'
 import type { LatencyTrendBucket } from '../../../api/types.ts'
 import { t } from '../../../i18n/index.ts'
-import { AXIS_LINE, AXIS_TICK, BUCKET_MINUTES, GRID_STROKE, PRIMARY, PRIMARY_DARK, TOOLTIP_STYLE, bucketTickLabel } from '../../../lib/chart.ts'
+import { AXIS_LINE, AXIS_TICK, BUCKET_MINUTES, GRID_PROPS, PRIMARY, PRIMARY_DARK, TOOLTIP_STYLE, bucketTickLabel } from '../../../lib/chart.ts'
 import { formatDateTime, formatLatency } from '../../../lib/format.ts'
 import { EmptyChart, QueryContent } from './QueryContent.tsx'
 import { useRefreshInterval } from './refresh.ts'
@@ -40,7 +40,7 @@ function LatencyTrendChart({ buckets, bucketMinutes }: { buckets: LatencyTrendBu
       <div className="min-h-0 flex-1" role="img" aria-label={t('dashboard.charts.latencyChart')}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={buckets} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid stroke={GRID_STROKE} vertical={false} />
+            <CartesianGrid {...GRID_PROPS} />
             <XAxis
               dataKey="bucket_start"
               tickFormatter={(value: string) => bucketTickLabel(value, bucketMinutes)}

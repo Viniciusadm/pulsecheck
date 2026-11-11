@@ -35,7 +35,7 @@ export function ChannelsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex max-w-prose flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-neutral-900">{t('settings.channels.heading')}</h1>
+          <h1 className="page-title">{t('settings.channels.heading')}</h1>
           <p className="text-neutral-600">{t('settings.channels.description')}</p>
         </div>
         {canManage && channels.data && channels.data.length > 0 && (

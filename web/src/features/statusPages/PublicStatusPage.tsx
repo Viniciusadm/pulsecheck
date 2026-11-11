@@ -68,11 +68,11 @@ function StatusPageContent({ page }: { page: PublicStatusPageData }) {
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold text-neutral-900">{page.name}</h1>
+        <h1 className="page-title">{page.name}</h1>
         {page.description && <p className="text-neutral-600">{page.description}</p>}
       </header>
 
-      <p role="status" className={`rounded-lg border px-4 py-3 text-lg font-semibold ${overallClasses[page.overall_status]}`}>
+      <p role="status" className={`rounded-lg border px-4 py-3 font-display text-lg font-semibold ${overallClasses[page.overall_status]}`}>
         {t(`publicStatus.overall.${page.overall_status}`)}
       </p>
 
@@ -99,7 +99,7 @@ function StatusPageContent({ page }: { page: PublicStatusPageData }) {
       </ul>
 
       <section className="flex flex-col gap-3" aria-labelledby="public-incidents">
-        <h2 id="public-incidents" className="text-lg font-semibold text-neutral-900">
+        <h2 id="public-incidents" className="font-display text-lg font-semibold text-neutral-900">
           {t('publicStatus.incidents')}
         </h2>
         {page.incidents.length === 0 ? (

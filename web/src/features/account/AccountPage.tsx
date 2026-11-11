@@ -9,7 +9,7 @@ export function AccountPage() {
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold text-neutral-900">{t('account.title')}</h1>
+        <h1 className="page-title">{t('account.title')}</h1>
         <p className="text-neutral-600">{t('account.description')}</p>
       </div>
       <ProfileSection />

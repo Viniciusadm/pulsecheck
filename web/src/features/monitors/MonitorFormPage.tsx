@@ -219,7 +219,7 @@ function MonitorForm({ monitor, config }: { monitor?: Monitor; config?: AppConfi
         <Link to={backPath} className="self-start text-sm font-medium text-primary-700 hover:underline">
           {monitor ? monitor.name : t('monitors.detail.back')}
         </Link>
-        <h1 id={titleId} className="text-2xl font-semibold text-neutral-900">
+        <h1 id={titleId} className="page-title">
           {monitor ? t('monitors.form.editTitle') : t('monitors.form.createTitle')}
         </h1>
       </div>

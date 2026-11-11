@@ -35,7 +35,7 @@ export function AppLayout() {
 
   return (
     <div className="min-h-screen lg:pl-72">
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-surface px-4 lg:hidden">
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between bg-brand-panel px-4 lg:hidden">
         <Logo />
         <button
           type="button"
@@ -43,20 +43,20 @@ export function AppLayout() {
           aria-expanded={isMenuOpen}
           aria-controls="mobile-navigation"
           aria-label={isMenuOpen ? t('nav.closeMenu') : t('nav.openMenu')}
-          className="rounded-md p-2 text-lg text-neutral-700 hover:bg-neutral-100"
+          className="rounded-md p-2 text-lg text-panel-text hover:bg-panel-hover hover:text-white"
         >
           {isMenuOpen ? <CloseIcon /> : <MenuIcon />}
         </button>
       </header>
 
       {isMenuOpen && (
-        <div id="mobile-navigation" className="sticky top-14 z-20 border-b border-border bg-surface px-3 py-3 lg:hidden">
+        <div id="mobile-navigation" className="sticky top-14 z-20 border-t border-panel-border bg-brand-panel px-3 py-3 lg:hidden">
           <Navigation onNavigate={() => setIsMenuOpen(false)} />
           <AccountPanel />
         </div>
       )}
 
-      <aside className="fixed inset-y-0 left-0 hidden w-72 flex-col border-r border-border bg-surface px-3 py-5 lg:flex">
+      <aside className="fixed inset-y-0 left-0 hidden w-72 flex-col border-r border-panel-border bg-brand-panel px-3 py-5 lg:flex">
         <div className="mb-8 px-3">
           <Logo />
         </div>
@@ -77,8 +77,8 @@ function Logo() {
   const config = useAppConfig()
 
   return (
-    <span className="inline-flex min-w-0 items-center gap-2 text-base font-bold text-primary-ink">
-      <PulseIcon className="size-5 shrink-0 text-primary-500" />
+    <span className="inline-flex min-w-0 items-center gap-2 font-display text-lg font-semibold text-white">
+      <PulseIcon className="size-5 shrink-0 text-panel-signal" />
       <span className="truncate">{instanceName(config, t('app.name'))}</span>
     </span>
   )
@@ -97,10 +97,10 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
               to={to}
               onClick={onNavigate}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-md border-l-[3px] px-3 py-2 font-medium ${
+                `flex items-center gap-3 rounded-r-md border-l-[3px] px-3 py-2 font-medium ${
                   isActive
-                    ? 'border-primary-500 bg-primary-50 text-primary-800'
-                    : 'border-transparent text-neutral-700 hover:bg-neutral-100'
+                    ? 'border-panel-signal bg-panel-active text-white'
+                    : 'border-transparent text-panel-text hover:bg-panel-hover hover:text-white'
                 }`
               }
             >
@@ -125,7 +125,7 @@ function ThemeToggle() {
       onClick={() => setThemePreference(isDark ? 'light' : 'dark')}
       aria-label={label}
       title={label}
-      className="shrink-0 rounded-md p-2 text-lg text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+      className="shrink-0 rounded-md p-2 text-lg text-panel-muted hover:bg-panel-hover hover:text-white"
     >
       {isDark ? <SunIcon /> : <MoonIcon />}
     </button>
@@ -144,10 +144,10 @@ function AccountPanel() {
   })
 
   return (
-    <div className="mt-3 flex items-center justify-between gap-2 border-t border-border px-3 pt-3">
-      <Link to="/account" className="-mx-2 min-w-0 flex-1 rounded-md px-2 py-1 hover:bg-neutral-100" title={t('nav.account')}>
-        <p className="truncate font-medium text-neutral-900">{user?.name}</p>
-        <p className="truncate text-xs text-neutral-500" title={user?.email}>{user?.email}</p>
+    <div className="mt-3 flex items-center justify-between gap-2 border-t border-panel-border px-3 pt-3">
+      <Link to="/account" className="-mx-2 min-w-0 flex-1 rounded-md px-2 py-1 hover:bg-panel-hover" title={t('nav.account')}>
+        <p className="truncate font-medium text-white">{user?.name}</p>
+        <p className="truncate text-xs text-panel-muted" title={user?.email}>{user?.email}</p>
       </Link>
       <ThemeToggle />
       <button
@@ -156,7 +156,7 @@ function AccountPanel() {
         disabled={logoutMutation.isPending}
         aria-label={t('nav.logOut')}
         title={t('nav.logOut')}
-        className="shrink-0 rounded-md p-2 text-lg text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 disabled:opacity-60"
+        className="shrink-0 rounded-md p-2 text-lg text-panel-muted hover:bg-panel-hover hover:text-white disabled:opacity-60"
       >
         <LogOutIcon />
       </button>

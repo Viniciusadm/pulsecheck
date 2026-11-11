@@ -29,7 +29,7 @@ export function MonitorMaintenanceSection({ monitorId, canManage }: { monitorId:
   return (
     <section className="flex flex-col gap-3" aria-labelledby="monitor-maintenance">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="monitor-maintenance" className="text-lg font-semibold text-neutral-900">
+        <h2 id="monitor-maintenance" className="font-display text-lg font-semibold text-neutral-900">
           {t('monitors.detail.maintenanceHeading')}
         </h2>
         {canManage && (

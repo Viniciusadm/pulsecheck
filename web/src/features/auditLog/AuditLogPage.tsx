@@ -52,7 +52,7 @@ export function AuditLogPage() {
   return (
     <section aria-labelledby="audit-log-heading" className="flex flex-col gap-6">
       <div className="flex max-w-prose flex-col gap-1">
-        <h1 id="audit-log-heading" className="text-2xl font-semibold text-neutral-900">{t('auditLog.title')}</h1>
+        <h1 id="audit-log-heading" className="page-title">{t('auditLog.title')}</h1>
         <p className="text-neutral-600">{t('auditLog.description')}</p>
       </div>
 

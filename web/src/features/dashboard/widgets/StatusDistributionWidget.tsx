@@ -57,7 +57,7 @@ function Distribution({ summary }: { summary: DashboardSummary }) {
           </PieChart>
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-semibold tabular-nums text-neutral-900">{summary.total}</span>
+          <span className="font-display text-2xl font-semibold tabular-nums text-neutral-900">{summary.total}</span>
           <span className="text-xs text-neutral-500">{t('dashboard.summary.total')}</span>
         </div>
       </div>

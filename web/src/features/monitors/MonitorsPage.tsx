@@ -117,7 +117,7 @@ export function MonitorsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-neutral-900">{t('monitors.title')}</h1>
+        <h1 className="page-title">{t('monitors.title')}</h1>
         {canManage && <Button onClick={() => navigate('/monitors/new')}>{t('monitors.add')}</Button>}
       </div>
 

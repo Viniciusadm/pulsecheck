@@ -5,14 +5,14 @@ export const PRIMARY = 'var(--color-primary-500)'
 
 export const PRIMARY_DARK = 'var(--color-primary-800)'
 
-export const GRID_STROKE = 'var(--color-neutral-200)'
+export const GRID_PROPS = { stroke: 'var(--color-neutral-200)', strokeDasharray: '2 4' }
 
-export const AXIS_TICK = { fill: 'var(--color-neutral-500)', fontSize: 12 }
+export const AXIS_TICK = { fill: 'var(--color-neutral-500)', fontSize: 12, fontVariantNumeric: 'tabular-nums' }
 
 export const AXIS_LINE = { stroke: 'var(--color-neutral-300)' }
 
 export const TOOLTIP_STYLE = {
-  borderRadius: 6,
+  borderRadius: 4,
   borderColor: 'var(--color-border)',
   backgroundColor: 'var(--color-surface)',
   color: 'var(--color-neutral-900)',

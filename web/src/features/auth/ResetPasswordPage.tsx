@@ -28,7 +28,7 @@ export function ResetPasswordPage() {
   if (token === '' || email === '') {
     return (
       <div className="flex flex-col gap-6">
-        <h1 className="text-2xl font-semibold text-neutral-900">{t('auth.resetPassword.title')}</h1>
+        <h1 className="page-title">{t('auth.resetPassword.title')}</h1>
         <Alert tone="error">{t('auth.resetPassword.missingToken')}</Alert>
         <Link to="/forgot-password" className="self-start font-medium text-primary-700 hover:underline">
           {t('auth.resetPassword.requestNewLink')}
@@ -47,7 +47,7 @@ export function ResetPasswordPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold text-neutral-900">{t('auth.resetPassword.title')}</h1>
+      <h1 className="page-title">{t('auth.resetPassword.title')}</h1>
 
       {generalError && <Alert tone="error">{generalError}</Alert>}
       {errors.email && (

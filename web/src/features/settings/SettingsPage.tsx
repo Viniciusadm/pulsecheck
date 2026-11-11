@@ -14,7 +14,7 @@ export function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold text-neutral-900">{t('settings.title')}</h1>
+      <h1 className="page-title">{t('settings.title')}</h1>
       <InstanceSection />
       <MailSection />
     </div>

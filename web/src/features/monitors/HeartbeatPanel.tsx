@@ -27,7 +27,7 @@ export function HeartbeatPanel({ monitor, heartbeatUrl }: { monitor: Monitor; he
 
   return (
     <section className="flex flex-col gap-3" aria-labelledby="heartbeat-url">
-      <h2 id="heartbeat-url" className="text-lg font-semibold text-neutral-900">
+      <h2 id="heartbeat-url" className="font-display text-lg font-semibold text-neutral-900">
         {t('monitors.detail.heartbeat.title')}
       </h2>
       <Card className="flex flex-col gap-3 px-4 py-4">

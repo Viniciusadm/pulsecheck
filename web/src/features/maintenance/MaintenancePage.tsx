@@ -33,7 +33,7 @@ export function MaintenancePage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex max-w-prose flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-neutral-900">{t('maintenance.title')}</h1>
+          <h1 className="page-title">{t('maintenance.title')}</h1>
           <p className="text-neutral-600">{t('maintenance.description')}</p>
         </div>
         {windows.data && windows.data.data.length > 0 && addButton}

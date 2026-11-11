@@ -73,7 +73,7 @@ function TeamFormLayout({ team }: { team?: Team }) {
         <Link to="/teams" className="self-start text-sm font-medium text-primary-700 hover:underline">
           {t('settings.teams.page.back')}
         </Link>
-        <h1 className="text-2xl font-semibold text-neutral-900">
+        <h1 className="page-title">
           {team ? t('settings.teams.form.editTitle', { name: team.name }) : t('settings.teams.form.createTitle')}
         </h1>
       </div>

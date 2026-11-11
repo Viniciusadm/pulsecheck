@@ -118,7 +118,7 @@ export function MailSection() {
     <section aria-labelledby="mail-heading">
       <Card className="flex max-w-3xl flex-col gap-6 px-5 py-6 sm:px-6">
         <div className="flex max-w-prose flex-col gap-1">
-          <h2 id="mail-heading" className="text-lg font-semibold text-neutral-900">{t('settings.mail.heading')}</h2>
+          <h2 id="mail-heading" className="font-display text-lg font-semibold text-neutral-900">{t('settings.mail.heading')}</h2>
           <p className="text-neutral-600">{t('settings.mail.description')}</p>
         </div>
         {settings.isPending && <Skeleton className="h-64" />}
