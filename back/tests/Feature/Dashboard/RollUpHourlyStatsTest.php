@@ -48,6 +48,20 @@ class RollUpHourlyStatsTest extends TestCase
         $this->assertSame(290, $row->p95_latency_ms);
     }
 
+    public function test_first_run_rolls_up_every_closed_hour_still_in_history(): void
+    {
+        $monitor = Monitor::factory()->create();
+        $this->checkAt($monitor, CarbonImmutable::parse('2026-10-12 08:30:00'));
+        $this->checkAt($monitor, CarbonImmutable::parse('2026-10-18 10:30:00'));
+
+        $this->artisan('metrics:rollup')->assertSuccessful();
+
+        $this->assertSame(
+            ['2026-10-12 08:00:00', '2026-10-18 10:00:00'],
+            MonitorHourlyStat::query()->orderBy('hour')->get()->map(fn ($row) => $row->hour->utc()->format('Y-m-d H:i:s'))->all(),
+        );
+    }
+
     public function test_running_again_recomputes_the_hour_without_duplicating(): void
     {
         $monitor = Monitor::factory()->create();

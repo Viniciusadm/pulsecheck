@@ -4,9 +4,15 @@ All notable changes are listed here. Versions follow [Semantic Versioning](https
 
 ## 2.0.1 — 2026-11-11
 
+### Changed
+
+- New visual identity: teal palette, Instrument Sans and Bricolage Grotesque fonts (bundled, no external requests), a dark navigation panel and a new icon.
+- Pages reuse live data fetched in the last 30 seconds when you navigate back to them, instead of loading everything again.
+
 ### Fixed
 
 - Health checks for the `queue` and `reverb` services, so `docker compose up --wait` succeeds. The 2.0.0 release images were never published because of this; 2.0.1 is the first published 2.x release.
+- The first hourly metrics rollup now covers all retained history, so 7- and 30-day dashboard charts are complete right after installing or updating.
 
 ## 2.0.0 — 2026-11-11
 

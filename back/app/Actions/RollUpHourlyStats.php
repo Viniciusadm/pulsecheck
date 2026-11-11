@@ -14,11 +14,9 @@ class RollUpHourlyStats
         $to = CarbonImmutable::now('UTC')->startOfHour();
         $from = $to->subHours($hours);
         $latestHour = MonitorHourlyStat::query()->max('hour');
-
-        if ($latestHour !== null) {
-            $catchUpFrom = CarbonImmutable::parse($latestHour)->utc()->addHour()->max($to->subDays((int) config('pulsecheck.history_retention_days')));
-            $from = $from->min($catchUpFrom);
-        }
+        $retainedFrom = $to->subDays((int) config('pulsecheck.history_retention_days'));
+        $catchUpFrom = $latestHour === null ? $retainedFrom : CarbonImmutable::parse($latestHour)->utc()->addHour()->max($retainedFrom);
+        $from = $from->min($catchUpFrom);
 
         $stats = HourlyStats::aggregate(DB::table('check_results')
             ->where('started_at', '>=', $from)
