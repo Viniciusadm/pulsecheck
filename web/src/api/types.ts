@@ -419,7 +419,7 @@ export type AppConfig = {
   realtime: { key: string } | null
 }
 
-export type NotificationChannelType = 'telegram' | 'webhook' | 'slack' | 'discord' | 'email'
+export type NotificationChannelType = 'telegram' | 'webhook' | 'slack' | 'discord' | 'email' | 'microsoft_teams' | 'google_chat' | 'ntfy' | 'pushover' | 'pagerduty'
 
 export type NotificationEvent = 'down' | 'recovered' | 'closed' | 'degraded' | 'degradation_resolved' | 'reminder'
 

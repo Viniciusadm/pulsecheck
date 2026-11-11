@@ -65,6 +65,46 @@ class NotificationChannelFactory extends Factory
         ]);
     }
 
+    public function microsoftTeams(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'type' => NotificationChannelType::MicrosoftTeams,
+            'config' => ['webhook_url' => 'https://prod-01.westus.logic.azure.com:443/workflows/'.fake()->regexify('[a-f0-9]{32}').'/triggers/manual/paths/invoke?sig='.fake()->regexify('[A-Za-z0-9]{40}')],
+        ]);
+    }
+
+    public function googleChat(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'type' => NotificationChannelType::GoogleChat,
+            'config' => ['webhook_url' => 'https://chat.googleapis.com/v1/spaces/AAAA'.fake()->regexify('[A-Za-z0-9]{7}').'/messages?key='.fake()->regexify('[A-Za-z0-9]{39}').'&token='.fake()->regexify('[A-Za-z0-9]{40}')],
+        ]);
+    }
+
+    public function ntfy(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'type' => NotificationChannelType::Ntfy,
+            'config' => ['topic' => 'pulsecheck-'.fake()->regexify('[a-z0-9]{16}')],
+        ]);
+    }
+
+    public function pushover(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'type' => NotificationChannelType::Pushover,
+            'config' => ['app_token' => fake()->regexify('[a-z0-9]{30}'), 'user_key' => fake()->regexify('[a-z0-9]{30}')],
+        ]);
+    }
+
+    public function pagerDuty(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'type' => NotificationChannelType::PagerDuty,
+            'config' => ['routing_key' => fake()->regexify('[a-z0-9]{32}')],
+        ]);
+    }
+
     public function disabled(): static
     {
         return $this->state(fn (array $attributes) => ['enabled' => false]);

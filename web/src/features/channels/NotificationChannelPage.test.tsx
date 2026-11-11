@@ -75,6 +75,25 @@ describe('NotificationChannelPage', () => {
     expect(router.state.location.pathname).toBe('/channels/9')
   })
 
+  it('creates an ntfy channel on a self-hosted server', async () => {
+    vi.mocked(channelsApi.createNotificationChannel).mockResolvedValue(makeChannel({ id: 10, type: 'ntfy', name: 'Phones' }))
+    vi.mocked(channelsApi.listNotificationChannels).mockResolvedValue([makeChannel({ id: 10, type: 'ntfy', name: 'Phones' })])
+    const user = userEvent.setup()
+    renderApp('/channels/new')
+
+    await user.selectOptions(await screen.findByLabelText('Type'), 'ntfy')
+    expect(screen.getByText(/subscribe to it in the ntfy app/)).toBeInTheDocument()
+    await user.type(screen.getByLabelText('Name'), 'Phones')
+    await user.type(screen.getByLabelText('Topic'), 'acme-alerts')
+    await user.type(screen.getByLabelText('Server'), 'https://ntfy.example.com')
+    await user.click(screen.getByRole('button', { name: 'Add channel' }))
+
+    expect(await screen.findByText('Channel added.')).toBeInTheDocument()
+    expect(channelsApi.createNotificationChannel).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'ntfy', name: 'Phones', config: { topic: 'acme-alerts', server_url: 'https://ntfy.example.com' } }),
+    )
+  })
+
   it('assigns the teams picked in the form to a new channel', async () => {
     vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(makeUser({ role: 'manager', team_ids: [1, 2] }))
     vi.mocked(teamsApi.listTeams).mockResolvedValue([makeTeam({ id: 1, name: 'Platform' }), makeTeam({ id: 2, name: 'Commerce' })])

@@ -918,7 +918,7 @@ export const ptBR = {
       description: 'Para onde vão os alertas quando um monitor sai do ar e quando se recupera. Escolha quais canais cada monitor usa nas configurações dele.',
       add: 'Adicionar canal',
       emptyTitle: 'Nenhum canal de notificação ainda',
-      emptyDescription: 'Adicione um canal para receber alertas no Telegram, Slack, Discord, por e-mail ou em qualquer serviço que aceite webhooks.',
+      emptyDescription: 'Adicione um canal para receber alertas no Slack, Microsoft Teams, Discord, Google Chat, Telegram, PagerDuty, Pushover, ntfy, por e-mail ou em qualquer serviço que aceite webhooks.',
       default: 'Padrão',
       disabled: 'Desativado',
       monitorsNone: 'Não usado por nenhum monitor',
@@ -939,6 +939,11 @@ export const ptBR = {
         slack: 'Slack',
         discord: 'Discord',
         email: 'E-mail',
+        microsoft_teams: 'Microsoft Teams',
+        google_chat: 'Google Chat',
+        ntfy: 'ntfy',
+        pushover: 'Pushover',
+        pagerduty: 'PagerDuty',
       },
       form: {
         createTitle: 'Adicionar canal de notificação',
@@ -967,6 +972,12 @@ export const ptBR = {
         mentionChannel: '@channel (todos)',
         mentionRole: 'Cargo a mencionar',
         mentionRoleHint: 'ID do cargo, opcional. Adicionado só nos alertas de queda e nos lembretes. No Discord, ative o Modo desenvolvedor e clique com o botão direito no cargo para copiar o ID.',
+        serverUrl: 'Servidor',
+        serverUrlHint: 'Opcional. Deixe em branco para usar o ntfy.sh ou informe o endereço do seu próprio servidor ntfy.',
+        accessToken: 'Token de acesso',
+        accessTokenHint: 'Opcional, para tópicos protegidos. Guardado criptografado e nunca mostrado de novo.',
+        device: 'Dispositivo',
+        deviceHint: 'Opcional. Envia só para este dispositivo do Pushover em vez de todos.',
       },
       events: {
         down: 'Monitor fora do ar',
@@ -1013,6 +1024,11 @@ export const ptBR = {
         url: 'URL',
         urlHint: 'Endereço http ou https público. Endereços privados e internos são bloqueados.',
         webhookUrl: 'URL do webhook',
+        topic: 'Tópico',
+        topicHint: 'Trate como uma senha: no ntfy.sh, qualquer pessoa que souber o tópico lê seus alertas.',
+        userKey: 'Chave de usuário',
+        appToken: 'Token da aplicação',
+        routingKey: 'Chave de integração',
         email: 'Endereço de e-mail',
       },
       headers: {
@@ -1045,6 +1061,26 @@ export const ptBR = {
         },
         email: {
           sender: 'Os alertas são enviados pelo servidor de e-mail configurado em Configurações › E-mail.',
+        },
+        microsoft_teams: {
+          workflow: 'No Teams, abra o menu ••• do canal → Fluxos de trabalho e escolha “Publicar em um canal quando uma solicitação de webhook for recebida”.',
+          copyUrl: 'Conclua o fluxo e copie a URL exibida.',
+        },
+        google_chat: {
+          openSpace: 'No Google Chat, abra o espaço e vá em Apps e integrações → Webhooks → Adicionar webhook.',
+          copyUrl: 'Copie a URL do webhook (https://chat.googleapis.com/…).',
+        },
+        ntfy: {
+          subscribe: 'Escolha um nome de tópico difícil de adivinhar e assine-o no app do ntfy no celular ou no computador.',
+          selfHosted: 'Usa seu próprio servidor ntfy? Informe o endereço abaixo e, para tópicos protegidos, um token de acesso.',
+        },
+        pushover: {
+          userKey: 'Copie sua chave de usuário no topo do painel do Pushover (pushover.net).',
+          app: 'Crie uma aplicação em pushover.net/apps/build e copie o token de API dela.',
+        },
+        pagerduty: {
+          integration: 'No PagerDuty, abra o serviço → Integrations → Add an integration → Events API V2 e copie a chave de integração.',
+          resolve: 'Alertas de queda e degradação abrem um incidente no PagerDuty; a recuperação o resolve automaticamente.',
         },
       },
     },

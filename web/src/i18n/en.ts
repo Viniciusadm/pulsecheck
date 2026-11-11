@@ -916,7 +916,7 @@ export const en = {
       description: 'Where alerts go when a monitor goes down and when it recovers. Choose which channels each monitor uses in its settings.',
       add: 'Add channel',
       emptyTitle: 'No notification channels yet',
-      emptyDescription: 'Add a channel to get alerts in Telegram, Slack, Discord, by email, or on any service that accepts webhooks.',
+      emptyDescription: 'Add a channel to get alerts in Slack, Microsoft Teams, Discord, Google Chat, Telegram, PagerDuty, Pushover, ntfy, by email, or on any service that accepts webhooks.',
       default: 'Default',
       disabled: 'Disabled',
       monitorsNone: 'Not used by any monitor',
@@ -937,6 +937,11 @@ export const en = {
         slack: 'Slack',
         discord: 'Discord',
         email: 'Email',
+        microsoft_teams: 'Microsoft Teams',
+        google_chat: 'Google Chat',
+        ntfy: 'ntfy',
+        pushover: 'Pushover',
+        pagerduty: 'PagerDuty',
       },
       form: {
         createTitle: 'Add notification channel',
@@ -965,6 +970,12 @@ export const en = {
         mentionChannel: '@channel (everyone)',
         mentionRole: 'Role to mention',
         mentionRoleHint: 'Optional role ID, added only to down alerts and reminders. In Discord, turn on Developer Mode and right-click the role to copy its ID.',
+        serverUrl: 'Server',
+        serverUrlHint: 'Optional. Leave blank to use ntfy.sh, or enter the address of your own ntfy server.',
+        accessToken: 'Access token',
+        accessTokenHint: 'Optional, for protected topics. Stored encrypted and never shown again.',
+        device: 'Device',
+        deviceHint: 'Optional. Send only to this Pushover device instead of all of them.',
       },
       events: {
         down: 'Monitor down',
@@ -1011,6 +1022,11 @@ export const en = {
         url: 'URL',
         urlHint: 'Public http or https address. Private and internal addresses are blocked.',
         webhookUrl: 'Webhook URL',
+        topic: 'Topic',
+        topicHint: 'Treat it like a password: on ntfy.sh, anyone who knows the topic can read your alerts.',
+        userKey: 'User key',
+        appToken: 'Application API token',
+        routingKey: 'Integration key',
         email: 'Email address',
       },
       headers: {
@@ -1043,6 +1059,26 @@ export const en = {
         },
         email: {
           sender: 'Alerts are sent by the mail server configured in Settings › Email.',
+        },
+        microsoft_teams: {
+          workflow: 'In Teams, open the channel’s ••• menu → Workflows and choose “Post to a channel when a webhook request is received”.',
+          copyUrl: 'Finish the workflow and copy the URL it shows.',
+        },
+        google_chat: {
+          openSpace: 'In Google Chat, open the space, then Apps & integrations → Webhooks → Add webhook.',
+          copyUrl: 'Copy the webhook URL (https://chat.googleapis.com/…).',
+        },
+        ntfy: {
+          subscribe: 'Pick a hard-to-guess topic name and subscribe to it in the ntfy app on your phone or desktop.',
+          selfHosted: 'Using your own ntfy server? Enter its address below and, for protected topics, an access token.',
+        },
+        pushover: {
+          userKey: 'Copy your user key from the top of the Pushover dashboard (pushover.net).',
+          app: 'Create an application at pushover.net/apps/build and copy its API token.',
+        },
+        pagerduty: {
+          integration: 'In PagerDuty, open the service → Integrations → Add an integration → Events API V2, and copy the integration key.',
+          resolve: 'Down and degraded alerts open a PagerDuty incident; recoveries resolve it automatically.',
         },
       },
     },
