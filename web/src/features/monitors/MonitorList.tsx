@@ -27,9 +27,18 @@ function EditButton({ monitor }: { monitor: Monitor }) {
   )
 }
 
-export function MonitorList({ monitors }: { monitors: Monitor[] }) {
+type MonitorSelection = {
+  selectedIds: number[]
+  onToggle: (id: number) => void
+  onToggleAll: () => void
+}
+
+const checkboxClassName = 'size-4 accent-primary-600'
+
+export function MonitorList({ monitors, selection }: { monitors: Monitor[]; selection?: MonitorSelection }) {
   const { user } = useAuth()
   const canManage = canManageResources(user)
+  const isAllSelected = selection !== undefined && monitors.length > 0 && selection.selectedIds.length === monitors.length
 
   return (
     <>
@@ -37,6 +46,22 @@ export function MonitorList({ monitors }: { monitors: Monitor[] }) {
         <table className="w-full text-left">
           <thead className="border-b border-border bg-neutral-50 text-xs font-semibold text-neutral-600">
             <tr>
+              {selection && (
+                <th scope="col" className="w-10 py-2.5 pl-4">
+                  <input
+                    type="checkbox"
+                    className={checkboxClassName}
+                    aria-label={t('monitors.bulk.selectAll')}
+                    checked={isAllSelected}
+                    ref={(input) => {
+                      if (input) {
+                        input.indeterminate = !isAllSelected && selection.selectedIds.length > 0
+                      }
+                    }}
+                    onChange={selection.onToggleAll}
+                  />
+                </th>
+              )}
               <th scope="col" className="px-4 py-2.5">{t('monitors.columns.name')}</th>
               <th scope="col" className="px-4 py-2.5">{t('monitors.columns.status')}</th>
               <th scope="col" className="px-4 py-2.5 text-right">{t('monitors.columns.latency')}</th>
@@ -49,7 +74,18 @@ export function MonitorList({ monitors }: { monitors: Monitor[] }) {
           </thead>
           <tbody className="divide-y divide-border">
             {monitors.map((monitor) => (
-              <tr key={monitor.id} className="hover:bg-neutral-50">
+              <tr key={monitor.id} className={selection?.selectedIds.includes(monitor.id) ? 'bg-primary-50' : 'hover:bg-neutral-50'}>
+                {selection && (
+                  <td className="w-10 py-3 pl-4">
+                    <input
+                      type="checkbox"
+                      className={checkboxClassName}
+                      aria-label={t('monitors.bulk.select', { name: monitor.name })}
+                      checked={selection.selectedIds.includes(monitor.id)}
+                      onChange={() => selection.onToggle(monitor.id)}
+                    />
+                  </td>
+                )}
                 <td className="px-4 py-3">
                   <Link to={`/monitors/${monitor.id}`} className="font-semibold text-neutral-900 hover:text-primary-700 hover:underline">
                     {monitor.name}

@@ -64,6 +64,58 @@ describe('MonitorsPage', () => {
     expect(router.state.location.pathname).toBe('/monitors/7')
   })
 
+  it('searches monitors and keeps the search in the address', async () => {
+    vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([makeMonitor()]))
+    const user = userEvent.setup()
+    const { router } = renderApp('/monitors')
+
+    await screen.findAllByRole('link', { name: 'Shop API' })
+    vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([]))
+    await user.type(screen.getByRole('searchbox', { name: 'Search monitors' }), 'nothing')
+
+    expect(await screen.findByText('No monitors match “nothing”.')).toBeInTheDocument()
+    expect(monitorsApi.listMonitors).toHaveBeenLastCalledWith({ page: 1, status: undefined, search: 'nothing' })
+    expect(router.state.location.search).toBe('?q=nothing')
+  })
+
+  it('pauses the selected monitors in bulk', async () => {
+    vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([makeMonitor({ id: 1, name: 'Shop API' }), makeMonitor({ id: 2, name: 'Docs' })]))
+    vi.mocked(monitorsApi.bulkMonitorAction).mockResolvedValue(2)
+    const user = userEvent.setup()
+    renderApp('/monitors')
+
+    await screen.findAllByRole('link', { name: 'Docs' })
+    await user.click(screen.getByRole('checkbox', { name: 'Select all monitors on this page' }))
+    const bar = within(screen.getByRole('region', { name: '2 selected' }))
+    await user.click(bar.getByRole('button', { name: 'Pause' }))
+
+    expect(await screen.findByText('2 monitors updated.')).toBeInTheDocument()
+    expect(monitorsApi.bulkMonitorAction).toHaveBeenCalledWith('pause', [1, 2])
+  })
+
+  it('asks before deleting monitors in bulk', async () => {
+    vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([makeMonitor({ id: 1, name: 'Shop API' }), makeMonitor({ id: 2, name: 'Docs' })]))
+    vi.mocked(monitorsApi.bulkMonitorAction).mockResolvedValue(1)
+    const user = userEvent.setup()
+    renderApp('/monitors')
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Select Docs' }))
+    await user.click(within(screen.getByRole('region', { name: '1 selected' })).getByRole('button', { name: 'Delete' }))
+    const dialog = within(await screen.findByRole('dialog'))
+    await user.click(dialog.getByRole('button', { name: 'Delete' }))
+
+    await waitFor(() => expect(monitorsApi.bulkMonitorAction).toHaveBeenCalledWith('delete', [2]))
+  })
+
+  it('does not offer bulk selection to members', async () => {
+    vi.mocked(authApi.fetchCurrentUser).mockResolvedValue(makeUser())
+    vi.mocked(monitorsApi.listMonitors).mockResolvedValue(paginated([makeMonitor()]))
+    renderApp('/monitors')
+
+    await screen.findAllByRole('link', { name: 'Shop API' })
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+  })
+
   it('offers to go back when the page is past the last one', async () => {
     vi.mocked(monitorsApi.listMonitors).mockImplementation(async ({ page } = {}) => ({
       data: page === 1 ? [makeMonitor()] : [],

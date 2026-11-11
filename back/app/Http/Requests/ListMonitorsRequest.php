@@ -17,6 +17,7 @@ class ListMonitorsRequest extends FormRequest
     {
         return [
             'status' => ['sometimes', 'string', 'in:'.implode(',', self::STATUS_FILTERS)],
+            'search' => ['sometimes', 'nullable', 'string', 'max:100'],
         ];
     }
 }

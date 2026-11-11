@@ -15,7 +15,15 @@ import type {
 
 export type MonitorStatusFilter = 'up' | 'degraded' | 'down' | 'pending' | 'maintenance' | 'paused'
 
-export async function listMonitors(params: { page?: number; status?: MonitorStatusFilter } = {}) {
+export type BulkMonitorAction = 'pause' | 'resume' | 'delete'
+
+export async function bulkMonitorAction(action: BulkMonitorAction, ids: number[]): Promise<number> {
+  const response = await http.post<{ data: { affected: number } }>('/api/monitors/bulk', { action, ids })
+
+  return response.data.data.affected
+}
+
+export async function listMonitors(params: { page?: number; status?: MonitorStatusFilter; search?: string } = {}) {
   const response = await http.get<PaginatedResponse<Monitor>>('/api/monitors', { params })
 
   return response.data

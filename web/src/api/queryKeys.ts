@@ -9,7 +9,7 @@ export const queryKeys = {
   monitors: ['monitors'] as const,
   allMonitors: ['monitors', 'all'] as const,
   monitorLists: ['monitors', 'list'] as const,
-  monitorList: (page: number, status?: string) => ['monitors', 'list', page, status ?? 'all'] as const,
+  monitorList: (page: number, status?: string, search?: string) => ['monitors', 'list', page, status ?? 'all', search ?? ''] as const,
   monitor: (id: number) => ['monitors', id] as const,
   stats: (id: number, period: StatsPeriod) => ['monitors', id, 'stats', period] as const,
   latency: (id: number, period: StatsPeriod) => ['monitors', id, 'latency', period] as const,

@@ -25,6 +25,7 @@ use App\Http\Controllers\MailSettingsController;
 use App\Http\Controllers\MailSettingsTestController;
 use App\Http\Controllers\MaintenanceWindowController;
 use App\Http\Controllers\MonitorBadgeTokenController;
+use App\Http\Controllers\MonitorBulkActionController;
 use App\Http\Controllers\MonitorCheckResultController;
 use App\Http\Controllers\MonitorController;
 use App\Http\Controllers\MonitorHeartbeatTokenController;
@@ -37,6 +38,7 @@ use App\Http\Controllers\MonitorUptimeHistoryController;
 use App\Http\Controllers\NotificationChannelController;
 use App\Http\Controllers\NotificationChannelPreviewController;
 use App\Http\Controllers\NotificationChannelTestController;
+use App\Http\Controllers\PrometheusMetricsController;
 use App\Http\Controllers\PublicBadgeController;
 use App\Http\Controllers\PublicConfigController;
 use App\Http\Controllers\PublicStatusPageController;
@@ -128,6 +130,8 @@ Route::middleware(['auth:sanctum', EnforceTokenAbilities::class, 'throttle:api']
 
     Route::get('incidents', RecentIncidentController::class)->name('incidents.recent');
 
+    Route::get('metrics', PrometheusMetricsController::class)->name('metrics');
+
     Route::get('teams', [TeamController::class, 'index'])->name('teams.index');
 
     Route::get('notification-channels', [NotificationChannelController::class, 'index'])->name('notification-channels.index');
@@ -185,6 +189,7 @@ Route::middleware(['auth:sanctum', EnforceTokenAbilities::class, 'throttle:api']
 
     Route::get('monitors', [MonitorController::class, 'index'])->name('monitors.index');
     Route::post('monitors', [MonitorController::class, 'store'])->middleware(['can:manage-resources', 'throttle:monitor-writes'])->name('monitors.store');
+    Route::post('monitors/bulk', MonitorBulkActionController::class)->middleware(['can:manage-resources', 'throttle:monitor-writes'])->name('monitors.bulk');
 
     Route::prefix('monitors/{monitor}')->name('monitors.')->scopeBindings()->group(function () {
         Route::middleware('can:view,monitor')->group(function () {

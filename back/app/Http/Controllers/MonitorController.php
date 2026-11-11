@@ -17,6 +17,7 @@ class MonitorController extends Controller
     public function index(ListMonitorsRequest $request): AnonymousResourceCollection
     {
         $status = $request->validated('status');
+        $search = trim((string) $request->validated('search'));
 
         $monitors = Monitor::query()
             ->visibleTo($request->user())
@@ -24,6 +25,10 @@ class MonitorController extends Controller
             ->when($status === 'paused', fn ($query) => $query->where('is_paused', true))
             ->when($status === 'maintenance', fn ($query) => $query->where('is_paused', false)->whereNotNull('maintenance_ends_at'))
             ->when($status !== null && ! in_array($status, ['paused', 'maintenance'], true), fn ($query) => $query->where('is_paused', false)->whereNull('maintenance_ends_at')->where('status', $status))
+            ->when($search !== '', function ($query) use ($search) {
+                $pattern = '%'.addcslashes($search, '\\%_').'%';
+                $query->where(fn ($inner) => $inner->whereLike('name', $pattern)->orWhereLike('url', $pattern));
+            })
             ->orderByDesc('id')
             ->paginate(20)
             ->withQueryString();
