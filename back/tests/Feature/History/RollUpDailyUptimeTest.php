@@ -24,7 +24,7 @@ class RollUpDailyUptimeTest extends TestCase
         $this->travelTo(CarbonImmutable::parse('2026-10-17 12:00:00'));
     }
 
-    public function test_rolls_up_only_closed_days_within_the_window(): void
+    public function test_first_run_rolls_up_every_closed_day_still_in_history(): void
     {
         $monitor = Monitor::factory()->create();
         $this->checkAt($monitor, CarbonImmutable::parse('2026-10-16 00:00:00'), latencyMs: 100);
@@ -38,12 +38,24 @@ class RollUpDailyUptimeTest extends TestCase
 
         $rows = MonitorDailyUptime::query()->orderBy('date')->get();
 
-        $this->assertSame(['2026-10-15', '2026-10-16'], $rows->map(fn ($row) => $row->date->toDateString())->all());
-        $this->assertSame(1, $rows[0]->total_checks);
-        $this->assertSame(3, $rows[1]->total_checks);
-        $this->assertSame(2, $rows[1]->successful_checks);
-        $this->assertSame(400, $rows[1]->latency_sum_ms);
-        $this->assertSame(2, $rows[1]->latency_samples);
+        $this->assertSame(['2026-10-14', '2026-10-15', '2026-10-16'], $rows->map(fn ($row) => $row->date->toDateString())->all());
+        $this->assertSame(1, $rows[1]->total_checks);
+        $this->assertSame(3, $rows[2]->total_checks);
+        $this->assertSame(2, $rows[2]->successful_checks);
+        $this->assertSame(400, $rows[2]->latency_sum_ms);
+        $this->assertSame(2, $rows[2]->latency_samples);
+    }
+
+    public function test_later_runs_only_recompute_recent_days(): void
+    {
+        $monitor = Monitor::factory()->create();
+        $this->checkAt($monitor, CarbonImmutable::parse('2026-10-16 10:00:00'));
+        $this->artisan('uptime:rollup')->assertSuccessful();
+        $this->checkAt($monitor, CarbonImmutable::parse('2026-10-10 10:00:00'));
+
+        $this->artisan('uptime:rollup')->assertSuccessful();
+
+        $this->assertSame(['2026-10-16'], MonitorDailyUptime::query()->pluck('date')->map->toDateString()->all());
     }
 
     public function test_running_again_recomputes_the_day_without_duplicating(): void

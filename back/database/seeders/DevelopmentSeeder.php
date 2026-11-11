@@ -7,6 +7,7 @@ use App\Enums\MonitorStatus;
 use App\Models\CheckResult;
 use App\Models\InstanceSettings;
 use App\Models\Monitor;
+use App\Models\StatusPage;
 use App\Models\Team;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -67,6 +68,22 @@ class DevelopmentSeeder extends Seeder
             'name' => 'Commerce Viewer',
             'email' => 'viewer@example.com',
         ])->teams()->attach($commerce);
+
+        $statusPage = StatusPage::query()->create([
+            'name' => 'Acme status',
+            'slug' => 'acme',
+            'description' => 'Live status of the Acme website, API and checkout.',
+            'is_published' => true,
+            'show_latency' => true,
+            'show_incidents' => true,
+            'uptime_days' => 30,
+        ]);
+        $statusPage->teams()->attach([$platform->id, $commerce->id]);
+        $statusPage->monitors()->attach([
+            $website->id => ['sort_order' => 0, 'display_name' => 'Website'],
+            $api->id => ['sort_order' => 1, 'display_name' => 'Public API'],
+            $shop->id => ['sort_order' => 2, 'display_name' => 'Checkout'],
+        ]);
     }
 
     private function monitor(string $name, string $url, int $intervalMinutes): Monitor
