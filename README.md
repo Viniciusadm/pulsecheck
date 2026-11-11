@@ -227,7 +227,7 @@ Before deploying, set these three variables in the Docker Manager (everything el
 
 The setup wizard asks for a setup token. Set `PULSECHECK_SETUP_TOKEN` to a value of your choice, or leave it empty and read the generated one in the logs of the `app` container (`Setup token`).
 
-The images are published by the release workflow when a `v*.*.*` tag is pushed; `PULSECHECK_VERSION` selects the image tag (default `1.0.0`; real-time updates need 1.1.0 or newer, together with the Compose file from that release). You can also deploy on any Hostinger VPS (or other server) with the regular [Quick start](#quick-start-docker-compose).
+The images are published by the release workflow when a `v*.*.*` tag is pushed; `PULSECHECK_VERSION` selects the image tag: `2` (default) follows the latest 2.x release, and an exact version such as `2.0.0` pins it. You can also deploy on any Hostinger VPS (or other server) with the regular [Quick start](#quick-start-docker-compose).
 
 ## Local development
 
