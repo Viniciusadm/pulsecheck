@@ -5,7 +5,7 @@ RUN npm ci --no-audit --no-fund
 COPY web/ ./
 RUN npm run build
 
-FROM composer:2.10 AS vendor
+FROM composer:2.11 AS vendor
 WORKDIR /app
 COPY back/composer.json back/composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-interaction --no-progress
